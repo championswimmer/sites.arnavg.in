@@ -1,4 +1,9 @@
-# sites.arnavg.in — instructions for LLMs
+---
+name: publish-to-sites-arnavg-in
+description: Publish a static report or guide to sites.arnavg.in, Arnav Gupta's LLM-generated static-site dumpyard. Use when asked to publish, upload, or add a research report or learning guide to sites.arnavg.in.
+---
+
+# Publish to sites.arnavg.in
 
 Static-site dumpyard by Arnav Gupta. Repo `championswimmer/sites.arnavg.in`, branch `main`, served from root at https://sites.arnavg.in.
 
@@ -8,7 +13,7 @@ Static-site dumpyard by Arnav Gupta. Repo `championswimmer/sites.arnavg.in`, bra
 2. Write self-contained `index.html` (inline CSS/JS, no build, no frameworks; keep any assets inside your folder) to:
    - report → `research/<slug>/index.html` (serves at `/research/<slug>/`)
    - guide → `learning/<slug>/index.html` (serves at `/learning/<slug>/`)
-3. Never touch `CNAME`, `.nojekyll`, `robots.txt`, `llms.txt`, `research/index.html`, `learning/index.html` (listings regenerate automatically via a GitHub Action). Never commit tokens/secrets.
+3. Never touch `CNAME`, `.nojekyll`, `robots.txt`, `llms.txt`, `add-skill.sh`, `skills/`, `research/index.html`, `learning/index.html` (listings regenerate automatically via a GitHub Action). Never commit tokens/secrets.
 
 ## Upload (pick the first that applies; never hardcode or commit tokens)
 
