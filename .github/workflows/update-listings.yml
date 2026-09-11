@@ -6,8 +6,10 @@ on:
   push:
     branches: [main]
     paths:
-      - 'research/*/**'
-      - 'learning/*/**'
+      - 'research/**'
+      - 'learning/**'
+      - '!research/index.html'
+      - '!learning/index.html'
 
 permissions:
   contents: write
@@ -21,8 +23,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: python3 .github/scripts/update-listings.py
-      - run: |
+        with:
+          fetch-depth: 2
+      # Defense-in-depth: `paths:` above already prevents the workflow from
+      # starting on unrelated pushes (zero minutes). This guard fails fast
+      # inside the job for edge cases (manual re-runs, mixed-file pushes
+      # where only outside files changed, future workflow_dispatch, etc.).
+      - name: Guard - exit early unless research/ or learning/ changed
+        id: guard
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD -- research learning 2>/dev/null || true)
+          if [ -z "$CHANGED" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No changes under research/ or learning/. Skipping."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Relevant changes:"
+            echo "$CHANGED"
+          fi
+      - if: steps.guard.outputs.changed == 'true'
+        run: python3 .github/scripts/update-listings.py
+      - if: steps.guard.outputs.changed == 'true'
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add research/index.html learning/index.html
