@@ -1,6 +1,6 @@
 ---
-name: publish-to-sites-arnavg-in
-description: Publish a static report or guide to sites.arnavg.in, Arnav Gupta's LLM-generated static-site dumpyard. Use when asked to publish, upload, or add a research report or learning guide to sites.arnavg.in.
+name: publish-site-artifact
+description: Publish a static site artifact — a self-contained report or guide page — to the static-site dumpyard. Use when asked to publish, upload, or add a static page artifact.
 ---
 
 # Publish to sites.arnavg.in

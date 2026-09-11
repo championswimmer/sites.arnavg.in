@@ -11,11 +11,12 @@
 #   curl -fsSL https://sites.arnavg.in/add-skill.sh | bash -s -- --uninstall
 #
 # Off-the-shelf alternative (skills.sh package manager, same skill):
-#   npx skills add championswimmer/sites.arnavg.in --skill publish-to-sites-arnavg-in
+#   npx skills add championswimmer/sites.arnavg.in --skill publish-site-artifact
 #   Ref: https://github.com/vercel-labs/skills
 set -euo pipefail
 
-SKILL="publish-to-sites-arnavg-in"
+SKILL="publish-site-artifact"
+LEGACY_SKILL="publish-to-sites-arnavg-in"  # removed on install if present
 BASE_URL="${ADD_SKILL_BASE_URL:-https://sites.arnavg.in}"
 SRC_URL="${ADD_SKILL_URL:-$BASE_URL/skills/$SKILL/SKILL.md}"
 
@@ -119,6 +120,7 @@ for agent in $selected; do
   want "$agent" || { echo "skipped   ($agent)"; continue; }
   target_dirs "$agent" | while IFS= read -r dir; do
     mkdir -p "$dir/$SKILL"
+    [ "$dir/$LEGACY_SKILL" != "$dir/$SKILL" ] && rm -rf "$dir/$LEGACY_SKILL"
     if [ -f "$dir/$SKILL/SKILL.md" ] && cmp -s "$tmp" "$dir/$SKILL/SKILL.md"; then
       echo "up-to-date $dir/$SKILL/"
     else
