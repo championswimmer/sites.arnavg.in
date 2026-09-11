@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+# AI agents / LLMs: see /llms.txt for how to add sites to this domain.
