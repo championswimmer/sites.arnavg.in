@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="September 2026 comparison of AI agent sandbox providers: Vercel, Daytona, E2B, Cloudflare, Fly Sprites, Modal, Railway, Northflank, Blaxel, Runloop and the rest. Start times, measured vs claimed, pricing, isolation, persistence, GPU, BYOC.">
+<meta name="theme-color" content="#101e31">
+<title>AI Agent Sandbox Providers — 2026 comparison</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%23101e31'/%3E%3Cpath d='M7 7h7v7H7zm11 0h7v7h-7zM7 18h7v7H7zm11 0h7v7h-7z' fill='%23c9f27a'/%3E%3C/svg%3E">
+<style>
+:root{--bg:#f3f6fa;--paper:#fff;--ink:#152338;--muted:#536378;--line:#dce3ec;--nav:#101e31;--teal:#087f75;--lime:#c9f27a;--blue:#214dcc;--warn:#9a4a12;--bad:#862f25;--ok:#07574e;--mono:ui-monospace,SFMono-Regular,Consolas,monospace}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.7 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select{font:inherit}
+button,a,input,select,summary{-webkit-tap-highlight-color:transparent}
+button{cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #d27a00;outline-offset:3px}
+a{color:var(--blue);text-underline-offset:3px}
+p{margin:0 0 18px}
+h1{font-size:clamp(32px,4.4vw,52px);line-height:1.12;letter-spacing:-1.8px;margin:8px 0 16px;font-weight:750}
+h2{font-size:26px;letter-spacing:-.6px;line-height:1.28;margin:42px 0 14px}
+h3{font-size:19px;margin:26px 0 10px}
+b,strong{font-weight:680}
+.shell{display:grid;grid-template-columns:272px minmax(0,1fr);min-height:100vh}
+.sidebar{background:var(--nav);color:#f7faff;padding:32px 20px;position:fixed;inset:0 auto 0 0;width:272px;display:flex;flex-direction:column;overflow:auto}
+.brand{font-family:var(--mono);font-size:14px;display:flex;align-items:center;gap:12px;font-weight:700;line-height:1.25}
+.brandmark{width:32px;height:32px;background:var(--lime);display:grid;grid-template-columns:repeat(2,6px);gap:3px;place-content:center;border-radius:5px;flex-shrink:0}
+.brandmark i{width:6px;height:6px;background:var(--nav)}
+.course-label{font-size:11px;letter-spacing:2px;color:#a7b6c9;margin:32px 8px 12px}
+.sidebar nav{display:grid;gap:2px}
+.navitem{display:grid;grid-template-columns:28px 1fr;gap:6px;text-align:left;border:0;background:none;color:#bac8d9;padding:9px 8px;font-size:13px;font-weight:500;line-height:1.35;text-decoration:none;border-radius:5px}
+.navitem .num{font:12px/1.6 var(--mono);color:#8497af}
+.navitem:hover{background:#1a2c43;color:#fff}
+.navitem.active{background:#25394e;color:#fff}
+.navitem.active .num{color:var(--lime)}
+.sidebar-footer{margin-top:auto;padding:24px 8px 8px;font-size:12px;color:#acbbcc;line-height:1.55}
+.sidebar-footer a{color:#cfddf0}
+.workspace{grid-column:2;min-width:0}
+.topbar{height:64px;background:#fff;border-bottom:1px solid var(--line);padding:0 5%;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--muted);position:sticky;top:0;z-index:8}
+.tag{font:11px/1.5 var(--mono);padding:4px 8px;border:1px solid var(--line);border-radius:4px;color:var(--teal)}
+main{max-width:1120px;margin:auto;padding:36px 5% 80px}
+.eyebrow{color:var(--teal);font:12px/1.5 var(--mono);letter-spacing:1.5px;font-weight:700}
+.lead{font-size:21px;line-height:1.5;color:var(--muted);max-width:780px;padding-bottom:24px;border-bottom:1px solid var(--line);margin-bottom:26px}
+.concepts{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:22px 0 28px}
+.concepts>div{padding:16px 0 0;border-top:3px solid var(--teal)}
+.concepts p{font-size:14px;color:var(--muted);margin:6px 0 0}
+.note{border-left:3px solid var(--teal);background:#e5f2ef;padding:16px 20px;margin:22px 0;font-size:15px}
+.warn{border-left-color:var(--warn);background:#f7efe4}
+.tablewrap{overflow-x:auto;margin:18px 0 28px;border:1px solid var(--line);border-radius:8px;background:#fff}
+table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.45;background:#fff}
+th{text-align:left;background:#e9eff6;font-size:12px;letter-spacing:.2px;white-space:nowrap;position:sticky;top:0}
+td,th{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:13px}
+.mono{font-family:var(--mono);font-size:.9em}
+code{font:.86em/1.6 var(--mono);background:#e7edf4;padding:1px 5px;border-radius:3px}
+.chip{display:inline-block;background:#d6ede7;color:#07574e;padding:2px 7px;border-radius:4px;margin:1px 2px;font-size:12px;font-weight:600}
+.chip.navy{background:#dce6f4;color:#1a3560}
+.chip.warn{background:#f3e2c8;color:#7a3e0c}
+.chip.bad{background:#f7deda;color:#862f25}
+.chip.muted{background:#e8edf3;color:#536378}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 8px}
+.filters button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--ink)}
+.filters button.on{background:var(--nav);color:#fff;border-color:var(--nav)}
+.lab{border:1px solid #c6d7e5;background:var(--paper);margin:22px 0;padding:22px;border-radius:10px}
+.labtitle{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.labtitle span{color:var(--teal);font:11px/1.5 var(--mono);letter-spacing:1px}
+.controls{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:12px 0}
+.controls label{display:block;font-size:13px;color:var(--muted)}
+.controls input,.controls select{display:block;width:100%;background:#f8fafc;border:1px solid #b9c7d6;color:var(--ink);padding:9px 10px;border-radius:5px;margin-top:4px;font-size:15px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0}
+.metric{background:#edf3f8;border-radius:8px;padding:14px 16px}
+.metric span{display:block;color:var(--muted);font:12px/1.4 system-ui}
+.metric b{font-size:22px;display:block;margin-top:4px;font-weight:650;letter-spacing:-.4px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.card h3{margin:0 0 8px;font-size:18px}
+.card p{font-size:15px;margin:0 0 10px;color:var(--muted)}
+.card .meta{font:12px/1.5 var(--mono);color:var(--teal);margin-bottom:8px}
+details{margin:14px 0;background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px 18px}
+summary{cursor:pointer;font-weight:650;font-size:16px}
+details[open] summary{margin-bottom:10px}
+.barrow{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:13px}
+.bar{height:9px;background:#dce6ef;border-radius:99px;flex:1;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--teal);border-radius:99px}
+.bar.claim i{background:#8aa3c0}
+.source{font-size:13px;color:var(--muted);margin:10px 0 22px}
+.source a{color:var(--muted)}
+ol.tree,ul.plain{padding-left:22px}
+li{margin:6px 0}
+.footer{border-top:1px solid var(--line);margin-top:48px;padding-top:22px;font-size:13px;color:var(--muted)}
+#mobile-nav{display:none}
+.skip{position:absolute;left:10px;top:-80px;background:#fff;padding:8px}
+.skip:focus{top:10px;z-index:30}
+.sort{cursor:pointer;user-select:none}
+.sort:after{content:" ↕";opacity:.35;font-size:10px}
+.hidden-row{display:none}
+@media(max-width:1050px){.shell{grid-template-columns:232px minmax(0,1fr)}.sidebar{width:232px}.controls,.metrics,.concepts,.cards{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){
+  .shell{display:block}
+  .sidebar{display:none}
+  .workspace{width:100%}
+  .topbar{height:auto;min-height:56px;padding:12px 16px;flex-wrap:wrap;gap:8px}
+  #mobile-nav{display:block;width:100%;font-size:14px;padding:8px}
+  main{padding:24px 16px 56px}
+  h1{letter-spacing:-1px}
+  .lead{font-size:18px}
+  .controls,.metrics,.concepts,.cards{grid-template-columns:1fr}
+  .tag{display:none}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{
+  .sidebar,.topbar,.filters,button{display:none!important}
+  .shell{display:block}
+  main{padding:0;max-width:none}
+  body{background:#fff;font-size:11pt}
+  details{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to report</a>
+<div class="shell">
+<aside class="sidebar">
+  <div class="brand"><span class="brandmark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>SANDBOX<br>PROVIDERS</div>
+  <div class="course-label">RESEARCH · SEP 2026</div>
+  <nav aria-label="Report sections">
+    <a class="navitem active" href="#intro"><span class="num">01</span>What this is</a>
+    <a class="navitem" href="#tldr"><span class="num">02</span>How to pick</a>
+    <a class="navitem" href="#isolation"><span class="num">03</span>Isolation</a>
+    <a class="navitem" href="#billing"><span class="num">04</span>Billing models</a>
+    <a class="navitem" href="#matrix"><span class="num">05</span>Comparison matrix</a>
+    <a class="navitem" href="#starts"><span class="num">06</span>Start times</a>
+    <a class="navitem" href="#exec"><span class="num">07</span>Execution speed</a>
+    <a class="navitem" href="#cost"><span class="num">08</span>Cost calculator</a>
+    <a class="navitem" href="#persist"><span class="num">09</span>Persistence</a>
+    <a class="navitem" href="#gpu"><span class="num">10</span>GPUs</a>
+    <a class="navitem" href="#dossiers"><span class="num">11</span>Provider dossiers</a>
+    <a class="navitem" href="#tail"><span class="num">12</span>Long tail</a>
+    <a class="navitem" href="#security"><span class="num">13</span>Security</a>
+    <a class="navitem" href="#sources"><span class="num">14</span>Sources</a>
+  </nav>
+  <div class="sidebar-footer">
+    Snapshot dated 11 Sep 2026. Rates move. Recheck vendor pages before you commit architecture.
+    <p style="margin-top:10px"><a href="https://sites.arnavg.in/research/">Arnav's research ↗</a></p>
+  </div>
+</aside>
+<div class="workspace">
+<header class="topbar">
+  <span>sites.arnavg.in / research</span>
+  <span class="tag">AI AGENT INFRA</span>
+  <label for="mobile-nav" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Jump to section</label>
+  <select id="mobile-nav">
+    <option value="#intro">What this is</option>
+    <option value="#tldr">How to pick</option>
+    <option value="#isolation">Isolation</option>
+    <option value="#billing">Billing models</option>
+    <option value="#matrix">Comparison matrix</option>
+    <option value="#starts">Start times</option>
+    <option value="#exec">Execution speed</option>
+    <option value="#cost">Cost calculator</option>
+    <option value="#persist">Persistence</option>
+    <option value="#gpu">GPUs</option>
+    <option value="#dossiers">Provider dossiers</option>
+    <option value="#tail">Long tail</option>
+    <option value="#security">Security</option>
+    <option value="#sources">Sources</option>
+  </select>
+</header>
+<main id="main">
+
+<section id="intro">
+  <div class="eyebrow">11 SEPTEMBER 2026 · INDUSTRY RESEARCH</div>
+  <h1>Where should an agent run code?</h1>
+  <p class="lead">A working comparison of the sandbox platforms that actually matter in 2026 — start time, execution, isolation, persistence, GPU, BYOC, and what you will pay once marketing numbers leave the room.</p>
+  <p>Eighteen months ago “AI sandbox” meant E2B. Now every hyperscaler, edge network, and PaaS has a product in the category, and a second wave (Sprites, Blaxel, Runloop, Railway Sandboxes, Northflank, Upstash Box) is competing on persistence, idle cost, and the agent loop itself. They look interchangeable on a feature page. They are not.</p>
+  <div class="concepts">
+    <div><b>Claimed ≠ measured</b><p>Vendor cold starts are often 5–10× faster than independent create-to-first-exec. Reliability (success rate, P99) beats a 90&nbsp;ms median that fails two thirds of the time.</p></div>
+    <div><b>Billing is the trap</b><p>Wall-clock vs active-CPU vs cgroup-usage vs idle-free hibernation changes the bill more than the sticker rate. A “cheap” vCPU-hour can be the expensive one.</p></div>
+    <div><b>Isolation is a stack</b><p>Firecracker is a floor, not a ceiling. DNS, credentials, and network policy are how sandboxes actually get owned — AWS AgentCore already had a public stress-test.</p></div>
+  </div>
+  <aside class="note warn"><strong>How to read this.</strong> Sticker rates are from vendor pages as of May–September 2026. Create/resume timings in the “measured” column are from LogRocket’s August 2026 hands-on (create → exec → pause → resume) and the January 2026 sandbox-comparison.pages.dev run, called out separately. Northflank’s scale-cost tables are theirs; treat them as a directional PaaS ranking, not a quote. Recheck before you sign a contract.</aside>
+</section>
+
+<section id="tldr">
+  <h2>How to pick</h2>
+  <p>The decision is the constraint, not a league table.</p>
+  <div class="cards">
+    <div class="card"><div class="meta">UNTRUSTED CODE AT SCALE</div><h3>E2B</h3><p>Firecracker microVMs, the category default, 1B+ sandboxes started, pause/resume with memory, Python+TS SDKs. Pro is $150/mo + usage. BYOC exists but is sales-gated.</p></div>
+    <div class="card"><div class="meta">CODING AGENT, STATEFUL, IDLE-FREE</div><h3>Fly Sprites</h3><p>Persistent ext4 on Firecracker, auto-hibernate, ~300&nbsp;ms checkpoints, network allowlists the guest cannot rewrite. You pay cgroup usage; a sleeping sprite costs storage only. GPU is not here — use Fly Machines.</p></div>
+    <div class="card"><div class="meta">ALREADY ON VERCEL / NEXT</div><h3>Vercel Sandbox</h3><p>Firecracker, persistence-by-default, TypeScript-first, active-CPU billing (I/O wait is free). Measured resume is slow (~3.3&nbsp;s). iad1-only. No GPU, no BYOC.</p></div>
+    <div class="card"><div class="meta">ALREADY ON WORKERS</div><h3>Cloudflare Sandbox</h3><p>Containers next to Workers, V8 isolates if you can live in Code Mode. Active CPU, $5 Workers Paid floor. Cold container start is seconds, not milliseconds. No GPU in the sandbox.</p></div>
+    <div class="card"><div class="meta">GPU IN THE BOX</div><h3>Modal — then Northflank / Daytona</h3><p>Modal has the deepest serverless GPU catalogue (T4–B200), gVisor isolation, scale-to-zero. Northflank undercuts GPU and CPU on PaaS and is the self-serve BYOC play. Daytona advertises H100 sandboxes and Computer Use.</p></div>
+    <div class="card"><div class="meta">AGENT NEXT TO THE APP</div><h3>Railway Sandboxes</h3><p>Full VMs billed at $50/vCPU-month and $50/GB-month while running. Checkpoints + fork. Optional private-network join to the project’s Postgres/Redis. Default image now ships Claude Code, Codex, Cursor, Droid, OpenCode, Pi. Idle is still billed until destroy/timeout.</p></div>
+    <div class="card"><div class="meta">FASTEST ADVERTISED CREATE</div><h3>Daytona, with a caveat</h3><p>Sub-90&nbsp;ms is the pitch; LogRocket measured ~742&nbsp;ms create. CreateOS’s 26-provider run (Aug 2026) saw 0.22&nbsp;s median and a <em>37% success rate</em>. Public repo froze June 2026 (last OSS is AGPL v0.190.0). Use the hosted product, not the GitHub star count.</p></div>
+    <div class="card"><div class="meta">CHEAPEST AT 200 CONCURRENT</div><h3>Northflank</h3><p>$0.01667/vCPU-hr on PaaS — roughly 3× cheaper than E2B/Daytona at the published CPU rate — plus self-serve BYOC on AWS/GCP/Azure/Oracle/CoreWeave/bare metal. Isolation is Kata or gVisor per workload.</p></div>
+  </div>
+</section>
+
+<section id="isolation">
+  <h2>Isolation is not one knob</h2>
+  <p>Four floors are in production. Stronger isolation costs start time and density. Weaker isolation is how you get 90&nbsp;ms creates.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Floor</th><th>What it actually means</th><th>Who ships it</th><th>Tradeoff</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip">microVM</span></td><td>Hardware virtualization, own kernel. Firecracker (AWS-born) or libkrun. Guest root is not host root.</td><td>E2B, Vercel, Sprites, CodeSandbox/Together, AWS AgentCore, Railway VMs, Microsandbox, Zeroboot</td><td>Strongest default for untrusted code. Start time is the tax, unless you snapshot.</td></tr>
+        <tr><td><span class="chip navy">gVisor</span></td><td>User-space kernel intercepts syscalls. Not a second kernel; a filter in front of the host kernel.</td><td>Modal, Google Agent Sandbox / GKE, some Northflank workloads</td><td>Good density, GPU-friendly. Weaker than a microVM against kernel bugs.</td></tr>
+        <tr><td><span class="chip warn">Kata / Sysbox</span></td><td>Container API, VM or user-namespace backend. Daytona’s “opt-in stronger runtime.”</td><td>Northflank (Kata), Daytona (opt-in), OpenSandbox (pluggable)</td><td>You have to turn it on. Default Docker is not this.</td></tr>
+        <tr><td><span class="chip bad">container / V8</span></td><td>Shared host kernel (Docker) or process-level isolate (Cloudflare Worker Loader).</td><td>Daytona default, Cloudflare isolates, AIO Sandbox, Quilt (dormant)</td><td>Fast and dense. Shared fate with the host kernel. Isolates cannot run arbitrary Linux binaries.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Isolation is the compute boundary. The 2026 lesson is that <em>network</em> is how you actually lose: researchers showed DNS-exfiltration and credential-extraction paths in AWS’s code-interpreter sandboxes. AWS called the network behaviour intended and published hardening guidance. A Firecracker box with an open resolver is still a mailbox.</p>
+</section>
+
+<section id="billing">
+  <h2>Four ways you get billed</h2>
+  <p>Comparing “$/vCPU-hour” without the meter is how people overpay.</p>
+  <ol class="tree">
+    <li><strong>Wall-clock while alive.</strong> E2B and Daytona charge CPU + RAM for every second the sandbox exists, whether it is computing or waiting on the model. Pause (E2B) stops the meter and keeps state; you pay storage.</li>
+    <li><strong>Active CPU, provisioned memory.</strong> Vercel and Cloudflare bill CPU only when the guest is on-CPU. Memory is provisioned for the whole lifetime. I/O-wait-heavy agent loops get dramatically cheaper. A 100% busy compiler does not.</li>
+    <li><strong>cgroup actuals, zero idle.</strong> Sprites meters <code>cpu.stat</code> and <code>memory.current</code> (with a 6.25% CPU / 250&nbsp;MB floor per second of runtime). Warm and cold sprites are not billed for compute. Blaxel’s standby is the same idea with memory-tier SKUs.</li>
+    <li><strong>Running VM, including idle.</strong> Railway Sandboxes bill VM CPU+RAM the whole time the VM is up, including the idle-timeout window, then destroy. Short <code>idleTimeoutMinutes</code> is the cost control, not hibernation.</li>
+  </ol>
+  <aside class="note">Floors matter as much as rates. E2B Pro is $150/mo before a second of compute. Runloop Pro is $250/mo. Sprites gates concurrency behind $20–$2,000 plans. Cloudflare needs Workers Paid ($5). Vercel Sandbox on Pro is the $20 Vercel plan. Daytona and Blaxel have no subscription floor. Modal gives ~$30/mo credits.</aside>
+</section>
+
+<section id="matrix">
+  <h2>Comparison matrix</h2>
+  <p>Filter the field. Sort any numeric column. “Create (claimed)” is vendor copy. “Create / resume (measured)” is LogRocket, August 2026, unless marked.</p>
+  <div class="filters" id="filters">
+    <button type="button" class="on" data-f="all">All</button>
+    <button type="button" data-f="microvm">microVM</button>
+    <button type="button" data-f="gpu">GPU</button>
+    <button type="button" data-f="idlefree">Zero idle compute</button>
+    <button type="button" data-f="byoc">BYOC / self-host</button>
+    <button type="button" data-f="oss">Open source</button>
+  </div>
+  <div class="tablewrap">
+    <table id="grid">
+      <thead>
+        <tr>
+          <th>Provider</th>
+          <th>Isolation</th>
+          <th class="num sort" data-k="claim">Claimed create</th>
+          <th class="num sort" data-k="meas">Measured create</th>
+          <th class="num sort" data-k="cpu">CPU $/vCPU-hr</th>
+          <th>Meter</th>
+          <th>Persist</th>
+          <th>GPU</th>
+          <th>SDK</th>
+        </tr>
+      </thead>
+      <tbody id="grid-body"></tbody>
+    </table>
+  </div>
+  <p class="source">CPU rates are published list prices, not discounts. Modal’s $0.1419 is per <em>physical core</em> (~2 vCPU), shown here as ~$0.071/vCPU-hr. Railway is $50/vCPU-month ≈ $0.069/vCPU-hr. Blaxel is memory-tier bundled (XS 2&nbsp;GB = $0.0828/hr). Empty measured cells were not in the LogRocket set.</p>
+</section>
+
+<section id="starts">
+  <h2>Start time: claimed vs measured</h2>
+  <p>Every vendor advertises sandbox creation as if it were time-to-first-useful-exec. Independent runs include API RTT, image pull/cache, and “ready for a command.” That is the number your agent loop feels.</p>
+  <div class="lab">
+    <div class="labtitle"><span>LOGROCKET · 4 AUG 2026</span><b>Create and resume, same harness</b></div>
+    <p>Create a sandbox, run a command, pause, resume. Lower is better. Grey bars are vendor claims on a different scale — they are not the same experiment.</p>
+    <div class="barrow"><span style="width:110px">E2B</span><div class="bar"><i style="width:24%"></i></div><span class="mono">717 / 662 ms</span></div>
+    <div class="barrow"><span style="width:110px">Daytona</span><div class="bar"><i style="width:25%"></i></div><span class="mono">742 / 1254 ms</span></div>
+    <div class="barrow"><span style="width:110px">Vercel</span><div class="bar"><i style="width:62%"></i></div><span class="mono">1852 / 3333 ms</span></div>
+    <div class="barrow"><span style="width:110px">Modal</span><div class="bar"><i style="width:82%"></i></div><span class="mono">2437 / 2347 ms*</span></div>
+    <div class="barrow"><span style="width:110px">Blaxel</span><div class="bar"><i style="width:95%"></i></div><span class="mono">2824 / 1924 ms</span></div>
+    <p class="source" style="margin-bottom:0">*Modal “resume” is snapshot boot, not in-place resume. Vendor claims for comparison: Daytona ~90&nbsp;ms, E2B ~150&nbsp;ms, Blaxel <25&nbsp;ms <em>resume</em>, Vercel “milliseconds,” Sprites 1–2&nbsp;s create / 100–500&nbsp;ms warm.</p>
+  </div>
+  <p>Two further data points, different methodologies:</p>
+  <ul class="plain">
+    <li><strong>sandbox-comparison.pages.dev (17 Jan 2026)</strong> — E2B cold start 0.515&nbsp;s (best of five), Daytona 0.753&nbsp;s, Sprites ~1&nbsp;s wake, Modal 1.512&nbsp;s, Blaxel 2.9&nbsp;s create / 25&nbsp;ms advertised resume. Snapshot story in that run is stale: E2B has since shipped pause/resume with memory.</li>
+    <li><strong>CreateOS / ComputeSDK 26-provider TTI (14 Aug 2026)</strong> — CreateOS 0.34&nbsp;s median, 100% success; Northflank 0.38&nbsp;s; E2B 0.83&nbsp;s (99%); Modal 0.81&nbsp;s; Vercel 0.74&nbsp;s median but <strong>P99 = 31&nbsp;s</strong>; Cloudflare 4.84&nbsp;s; Daytona 0.22&nbsp;s median and <strong>37% success</strong>. A fast median that fails is slower than 800&nbsp;ms that always returns.</li>
+  </ul>
+  <aside class="note warn"><strong>P99 is the agent metric.</strong> A 50-step loop hitting a 31&nbsp;s stall ~40% of the time will feel broken even if the median is faster than E2B. Prefer providers that publish success rate and tail latency, or measure them yourself from the region you will actually call.</aside>
+</section>
+
+<section id="exec">
+  <h2>Execution speed once it is up</h2>
+  <p>Start time dominates short code-interpreter bursts. For a coding agent that execs hundreds of times in one sandbox, command latency and filesystem performance take over.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Provider</th><th class="num">Cmd exec</th><th class="num">File I/O</th><th class="num">Python snippet</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>E2B</td><td class="num">0.539s</td><td class="num">0.512s</td><td class="num">0.288s</td><td>Best all-round in the Jan 2026 five-way.</td></tr>
+        <tr><td>Daytona</td><td class="num">0.975s</td><td class="num">0.386s</td><td class="num">0.220s</td><td>Best file I/O and Python in that run.</td></tr>
+        <tr><td>Blaxel</td><td class="num">0.539s</td><td class="num">0.992s</td><td class="num">—</td><td>Exec matches E2B; create is the expensive part.</td></tr>
+        <tr><td>Sprites</td><td class="num">0.970s</td><td class="num">0.957s</td><td class="num">0.543s</td><td>Wake ~1s; then a real Linux box. Checkpoints ~300&nbsp;ms (vendor).</td></tr>
+        <tr><td>Modal</td><td class="num">1.913s</td><td class="num">2.278s</td><td class="num">0.222s</td><td>Python in-process is fine; FS round-trips are not.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="source">Source: sandbox-comparison.pages.dev, 17 Jan 2026, real API calls. Not re-run for this page. Treat as a snapshot of that week, not a 2026 average.</p>
+</section>
+
+<section id="cost">
+  <h2>What it costs</h2>
+  <p>Published compute rates, then three workload shapes. The calculator uses list prices and the meter each vendor actually applies. It does not include data transfer, snapshot storage, plan floors, or reserved-instance discounts.</p>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>Provider</th><th class="num">CPU</th><th class="num">Memory</th><th>Idle compute</th><th>Floor / credits</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Northflank</td><td class="num">$0.01667/vCPU-hr</td><td class="num">$0.00833/GB-hr</td><td>Per-second running</td><td>PaaS; BYOC mgmt $0.01389/vCPU-hr</td></tr>
+        <tr><td>E2B</td><td class="num">$0.0504/vCPU-hr</td><td class="num">$0.0162/GiB-hr</td><td>$0 while paused</td><td>$100 one-time · Pro $150/mo</td></tr>
+        <tr><td>Daytona</td><td class="num">$0.0504/vCPU-hr</td><td class="num">$0.0162/GiB-hr</td><td>Per-second running</td><td>$200 compute credit, no floor</td></tr>
+        <tr><td>Cloudflare Sandbox</td><td class="num">$0.072/vCPU-hr <em>active</em></td><td class="num">$0.009/GiB-hr</td><td>Sleeps; Workers/DO extra</td><td>Workers Paid $5/mo</td></tr>
+        <tr><td>Fly Sprites</td><td class="num">$0.07/CPU-hr <em>used</em></td><td class="num">$0.04375/GB-hr used</td><td>$0 warm/cold</td><td>$20 Adventurer = 20 concurrent</td></tr>
+        <tr><td>Railway Sandboxes</td><td class="num">~$0.069/vCPU-hr</td><td class="num">~$0.069/GB-hr</td><td>Billed until destroy</td><td>Hobby $5 / Pro $20 + usage</td></tr>
+        <tr><td>Modal Sandbox</td><td class="num">~$0.071/vCPU-hr</td><td class="num">$0.0242/GiB-hr</td><td>Scale to zero</td><td>~$30/mo credits; 3× vs Modal functions</td></tr>
+        <tr><td>Runloop</td><td class="num">$0.108/CPU-hr</td><td class="num">$0.0252/GB-hr</td><td>Zero idle (vendor)</td><td>Pro $250/mo</td></tr>
+        <tr><td>Vercel Sandbox</td><td class="num">$0.128/vCPU-hr <em>active</em></td><td class="num">$0.0212/GB-hr provisioned</td><td>CPU $0 when waiting</td><td>Hobby allotment · Pro $20</td></tr>
+        <tr><td>Blaxel</td><td class="num" colspan="2">XS $0.0828/hr · S $0.1656 · M $0.3312 (CPU bundled in RAM tier)</td><td>$0 standby</td><td>Free credits, no floor</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Sprites storage is split: hot NVMe cache $0.000683/GB-hr (≈ $0.50/GB-month) plus always-on object storage $0.000027/GB-hr (≈ $0.02/GB-month). Vercel snapshots $0.08/GB-month (docs also list $0.023 in one table — confirm on the invoice). Daytona disk $0.000108/GiB-hr after 5&nbsp;GiB free.</p>
+
+  <div class="lab">
+    <div class="labtitle"><span>CALCULATOR</span><b>Estimate one month</b></div>
+    <p>Shape the workload. “Active CPU fraction” only changes Vercel, Cloudflare, and Sprites (cgroup). E2B/Daytona/Railway/Northflank/Runloop charge the sandbox being alive.</p>
+    <div class="controls">
+      <label>Shape
+        <select id="shape">
+          <option value="burst">Code interpreter burst</option>
+          <option value="agent">Coding-agent session</option>
+          <option value="fleet">Always-on fleet</option>
+          <option value="custom">Custom</option>
+        </select>
+      </label>
+      <label>Sandboxes / month <input id="n" type="number" min="1" value="100000"></label>
+      <label>Wall clock (minutes) <input id="mins" type="number" min="0.01" step="0.01" value="0.5"></label>
+      <label>vCPU <input id="vcpu" type="number" min="0.25" step="0.25" value="2"></label>
+      <label>RAM (GB) <input id="ram" type="number" min="0.25" step="0.25" value="2"></label>
+      <label>Active CPU fraction <input id="util" type="number" min="0.01" max="1" step="0.05" value="0.33"></label>
+      <label>Concurrent (fleet) <input id="conc" type="number" min="1" value="200"></label>
+      <label>Hours / month (fleet) <input id="hrs" type="number" min="1" value="730"></label>
+    </div>
+    <div class="tablewrap" style="margin-top:8px">
+      <table>
+        <thead><tr><th>Provider</th><th class="num">Compute</th><th class="num">+ typical floor</th><th>Why</th></tr></thead>
+        <tbody id="cost-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <h3>Northflank’s 200-concurrent PaaS ranking (May 2026)</h3>
+  <p>Same shape, vendor’s own comparison. Useful as an ordering, not as your invoice.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Provider</th><th class="num">Quoted PaaS cost</th></tr></thead>
+      <tbody>
+        <tr><td>Northflank PaaS</td><td class="num">$7,200</td></tr>
+        <tr><td>Northflank BYOC (their 0.2 overcommit example)</td><td class="num">$2,060</td></tr>
+        <tr><td>E2B / Daytona</td><td class="num">$16,819</td></tr>
+        <tr><td>Modal</td><td class="num">$24,492</td></tr>
+        <tr><td>Runloop</td><td class="num">$30,485</td></tr>
+        <tr><td>Vercel Sandbox</td><td class="num">$31,069</td></tr>
+        <tr><td>Fly Sprites</td><td class="num">$35,770</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="source">Sprites looks expensive in a 100%-on fleet because the comparison assumes provisioned-like occupancy. Sprites’ whole pitch is that agents are <em>not</em> 100% on — a sleeping sprite is storage. If your fleet is actually idle most of the time, invert this ranking.</p>
+</section>
+
+<section id="persist">
+  <h2>Persistence, checkpoints, forks</h2>
+  <p>The ephemeral-vs-persistent argument is over. Everyone now has some way to keep a filesystem. The mechanisms are not equivalent.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Mechanism</th><th>What survives</th><th>Who</th><th>Resume feel</th></tr></thead>
+      <tbody>
+        <tr><td>Pause / resume in place</td><td>FS + RAM + processes</td><td>E2B (<code>beta_pause</code>), Daytona VM pause</td><td>E2B pause ~4&nbsp;s/GiB RAM, resume ~1&nbsp;s (vendor). LogRocket resume 662&nbsp;ms.</td></tr>
+        <tr><td>Hibernate / standby</td><td>Full state, $0 compute</td><td>Sprites (warm→cold), Blaxel (~15&nbsp;s idle → standby)</td><td>Sprites warm 100–500&nbsp;ms, cold 1–2&nbsp;s (vendor). Blaxel claims <25&nbsp;ms; measured wake 1.9&nbsp;s.</td></tr>
+        <tr><td>Filesystem snapshot</td><td>Disk, not RAM</td><td>Modal, Vercel (auto on stop), Railway checkpoints, Daytona snapshots</td><td>Boot a new sandbox from the image. Vercel measured resume 3.3&nbsp;s.</td></tr>
+        <tr><td>Fork / clone live</td><td>Disk clone, new VM</td><td>Daytona, Railway, CodeSandbox live clone, E2B templates</td><td>The parallel-eval primitive: one prepared baseline, N attempts.</td></tr>
+        <tr><td>Live volume</td><td>Real disk, no snapshot step</td><td>Northflank attached volumes, Nirvana block storage</td><td>No restore tax; processes still restart.</td></tr>
+        <tr><td>Object mount (R2/S3)</td><td>Files you put on the bucket</td><td>Cloudflare R2 FUSE, E2B rclone mounts</td><td>Not a POSIX disk. Fine for artifacts, bad for node_modules.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Sprites checkpoints are the distinctive product: vendor ~300&nbsp;ms, git-like, last N kept under <code>/.sprite/checkpoints</code>, and the guest can checkpoint itself before a risky install. Railway checkpoints are named disk snapshots stored server-side; fork clones filesystem but not processes. Vercel persistence is default — you opt out, not in.</p>
+</section>
+
+<section id="gpu">
+  <h2>GPUs inside the sandbox</h2>
+  <p>Most of the category is CPU-only. If the agent fine-tunes, runs a local model, or does GPU numerics, the list collapses.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Provider</th><th>GPUs</th><th class="num">H100</th><th class="num">H200</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Modal</td><td>T4 → B200, per-second, no reservation</td><td class="num">$3.95/hr</td><td class="num">$4.54/hr</td><td>The default GPU answer. Sandbox CPU is ~3× Modal function CPU.</td></tr>
+        <tr><td>Northflank</td><td>L4, A100, H100, H200, bundled CPU/RAM</td><td class="num">$2.74/hr</td><td class="num">$3.14/hr</td><td>Cheapest published H100 in this set. BYOC onto CoreWeave etc.</td></tr>
+        <tr><td>Daytona</td><td>H100, H200, B200, RTX PRO 6000, 5090, 4090</td><td class="num">$2.27/hr</td><td class="num">$2.61/hr</td><td>Also Windows guests at $0.0858/vCPU-hr. Computer Use (desktop/VNC).</td></tr>
+        <tr><td>Fly</td><td>Not in Sprites</td><td class="num">—</td><td class="num">—</td><td>GPUs are Fly Machines, a different product.</td></tr>
+        <tr><td>Everyone else here</td><td>No public GPU sandbox</td><td class="num">—</td><td class="num">—</td><td>E2B, Vercel, Cloudflare, Sprites, Blaxel, Runloop, Railway Sandboxes.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="dossiers">
+  <h2>Provider dossiers</h2>
+
+  <details open>
+    <summary>E2B — the category default</summary>
+    <p>Firecracker microVMs, Python-first SDK that every agent framework already has a connector for, 1B+ sandboxes started, claimed 94% of Fortune 100. Hobby: $100 one-time credit, 20 concurrent, 1&nbsp;h max session. Pro: $150/mo, 24&nbsp;h sessions, 100 concurrent (to 1,100). Compute $0.000014/vCPU-s and $0.0000045/GiB-s. Pause now keeps memory; paused boxes persist until you kill them. BYOC on AWS/GCP is enterprise (figures of $50/sandbox/month on top of cloud have circulated; confirm with sales). Open-source control plane is Apache 2.0.</p>
+    <p><strong>Use when</strong> you need a known-quantity code interpreter and Firecracker. <strong>Skip when</strong> you need GPUs, hate the $150 floor, or want idle-free perpetual VMs — that is Sprites/Blaxel.</p>
+  </details>
+
+  <details>
+    <summary>Daytona — speed pitch, Computer Use, messy OSS story</summary>
+    <p>Pivoted from cloud-dev-env to agent infra in 2025. $24M Series A, ~$1M run rate in under three months (Ry Walker, June 2026). Advertises ~90&nbsp;ms creates, unlimited session length, snapshots, fork, VNC/Computer Use across Linux/Windows/macOS/Android, GPU SKUs, SDKs in Python/TS/Go/Ruby/Java. List compute matches E2B exactly ($0.0504 / $0.0162). $200 free compute, no subscription floor, Windows guests extra. Default isolation is Docker; Kata/Sysbox are opt-in — read the security page before you put stranger code in the default runtime.</p>
+    <p>The public GitHub repo stopped getting core updates in June 2026 (last OSS v0.190.0, AGPL). ~72K stars measure what it was. Hosted product is what you buy. CreateOS’s 37% launch success rate is the number to re-measure before you bet a latency SLO on Daytona.</p>
+  </details>
+
+  <details>
+    <summary>Vercel Sandbox — Firecracker for the Next.js agent</summary>
+    <p>GA January 2026. Firecracker microVM, TypeScript SDK <code>@vercel/sandbox</code>, Python secondary. Persistence is default; snapshots on stop. Active CPU $0.128/vCPU-hr, provisioned memory $0.0212/GB-hr, creations $0.60/1M, transfer $0.15/GB. Hobby: 5&nbsp;h active CPU/mo, 10 concurrent, 45&nbsp;min max. Pro: 5&nbsp;h max runtime, 2,000 concurrent. Region: iad1. No GPU, no BYOC.</p>
+    <p>Vercel’s own comparison vs E2B is honest about the shape: a 10&nbsp;min wall / 2&nbsp;min CPU eval is ~$0.02 vs E2B ~$0.03; at 1,000 sandboxes/day of 30&nbsp;s wall / 10&nbsp;s CPU, ~$63/mo including the $20 Pro plan vs E2B ~$191 including the $150 floor. The catch is measured resume (3.3&nbsp;s) and a 31&nbsp;s P99 in the ComputeSDK run. Great if you already deploy on Vercel and the agent is bursty. Poor if you need multi-region, GPU, or tight tail latency.</p>
+  </details>
+
+  <details>
+    <summary>Cloudflare Sandbox SDK — containers at the edge, isolates if you can</summary>
+    <p>Two products that get flattened in roundups. The <strong>Sandbox SDK</strong> (<code>@cloudflare/sandbox</code>) is a Linux container on Cloudflare Containers: exec, files, background processes, exposed services, R2/S3/GCS mounts. The <strong>Dynamic Worker Loader</strong> is a V8 isolate that Cloudflare calls “100× faster than containers” — Code Mode, not a general Linux box. Container start is seconds in independent runs (CreateOS 4.84&nbsp;s median). Isolates start in milliseconds and cannot apt-get.</p>
+    <p>Billing is Containers: ~$0.072/vCPU-hr active, ~$0.009/GiB-hr, 10&nbsp;ms increments, plus Workers requests, Durable Objects, and the $5/mo Paid plan. No GPU in the sandbox (Workers AI is next door). Persistence of the container dies on sleep unless you mounted a bucket; R2 backups have a short restore TTL. Pick this because you already live on Workers, not because it wins a cold-start table.</p>
+  </details>
+
+  <details>
+    <summary>Fly.io Sprites — a small computer that sleeps</summary>
+    <p>Firecracker microVM, persistent ext4 (NVMe cache + object store), hardware isolation, network policies the guest cannot edit even as root. Create 1–2&nbsp;s; warm wake 100–500&nbsp;ms; cold 1–2&nbsp;s; checkpoints ~300&nbsp;ms (vendor). CPU $0.07/CPU-hour of <em>used</em> time (6.25% minimum per second awake), RAM $0.04375/GB-hour (250&nbsp;MB minimum), hot storage $0.000683/GB-hr, cold/object $0.000027/GB-hr. Running is billed; warm and cold are not. A 4-hour Claude Code session at 30% of 2 CPUs / 1.5&nbsp;GB is ~$0.44 in their worked example.</p>
+    <p>Concurrency is gated by plans: Adventurer $20/mo (20 active), up through Mythic $2,000 (2,000). SDKs in JS and Go (<code>@fly/sprites</code>), REST, CLI. Prebaked Claude Code image, <code>/.sprite/llm.txt</code> so the agent understands the box. No GPU in Sprites. No BYOC. This is the product to study if you think “sandbox” should mean “stateful computer,” not “function with a filesystem.”</p>
+  </details>
+
+  <details>
+    <summary>Modal — Python, GPUs, scale, gVisor</summary>
+    <p>$355M raise at $4.65B, ~$300M annualized (Ry Walker). Sandboxes are gVisor containers with optional GPU, volumes, filesystem and memory snapshots, 5&nbsp;min default lifetime, 24&nbsp;h max, then snapshot/restore. Python-native; JS/Go SDKs still beta. Sandbox CPU is priced at a premium to Modal functions (~3×). 50,000+ concurrent is the scale claim. No BYOC. Measured create ~2.4&nbsp;s. The right tool when the code in the box needs a GPU or you already run Modal functions; an awkward code-interpreter if you wanted Firecracker and a one-liner <code>create()</code>.</p>
+  </details>
+
+  <details>
+    <summary>Railway Sandboxes — the VM next to the app</summary>
+    <p>Railway (Priority Boarding / VM primitive) exposes sandboxes as programmable Debian VMs scoped to an environment. Isolation is the VM, not a shared-kernel container. CLI + TypeScript SDK (<code>Sandbox.create / exec / checkpoint / fork / destroy</code>). Default network is ISOLATED (egress only); <code>PRIVATE</code> joins the project’s private DNS so the agent can talk to the same Postgres and Redis it will deploy against — that is the distinctive move, and also the way you accidentally hand untrusted code a production database. Don’t.</p>
+    <p>Billed while the VM exists: $50/vCPU-month and $50/GB-month ($0.00000001929012 per MB·s and per vCPU·s) plus $0.05/GB egress. Idle still meters until the timeout fires (Hobby/Pro default 30&nbsp;min, max 120; Free max 5). Caps: Hobby 50 sandboxes/environment, Pro 100. Checkpoints are named disk snapshots (count against the cap). Fork copies filesystem, not RAM. As of 26 Jun 2026 the default image ships Claude Code, Codex, Cursor, Droid, OpenCode, and Pi. No public GPU SKU, no Firecracker-on-the-tin, no idle-free hibernate. If the agent’s job is “work on <em>this</em> project,” this is the least fictional environment.</p>
+  </details>
+
+  <details>
+    <summary>Northflank — price and BYOC</summary>
+    <p>Lowest published PaaS CPU in the set ($0.01667/vCPU-hr, $0.00833/GB-hr), Kata microVM or gVisor per workload, GPU SKUs cheaper than Modal, self-serve BYOC onto AWS/GCP/Azure/Oracle/CoreWeave/Civo/bare metal with a management fee ($0.01389/vCPU-hr + $0.00139/GB-hr). CreateOS TTI 0.38&nbsp;s median, 100% success. SDK/REST rather than a famous one-liner. If cost at hundreds of concurrent sandboxes is the constraint, start here and only leave for ecosystem reasons.</p>
+  </details>
+
+  <details>
+    <summary>Blaxel and Runloop — resume-first specialists</summary>
+    <p><strong>Blaxel</strong> built the product around perpetual hibernation: ~15&nbsp;s of idle → standby snapshot including processes, claimed <25&nbsp;ms resume, memory-tier SKUs (XS 2&nbsp;GB $0.0828/hr through XL 32&nbsp;GB $1.32/hr), SOC 2 + ISO 27001 + HIPAA BAA. LogRocket measured 2.8&nbsp;s create and 1.9&nbsp;s wake — the 25&nbsp;ms number is not what a cold client sees. Zero idle compute is still the point.</p>
+    <p><strong>Runloop</strong> is dual-layer (microVM + container), snapshot/branch, claimed ~25&nbsp;ms resume, $0.108/CPU-hr + $0.0252/GB-hr, $250/mo Pro, enterprise VPC. Aimed at coding agents that want a durable VM with a sales motion. No public GPU.</p>
+  </details>
+</section>
+
+<section id="tail">
+  <h2>The rest of the field</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Provider</th><th>One-line</th><th>Status, mid-2026</th></tr></thead>
+      <tbody>
+        <tr><td>AWS Bedrock AgentCore</td><td>Managed Firecracker sessions ≤8&nbsp;h, AWS-native code interpreter</td><td>GA-ish; first public sandbox security write-up (DNS exfil)</td></tr>
+        <tr><td>Google Agent Sandbox / GKE</td><td>gVisor, sub-second, TTL ≤14&nbsp;days, billed from 1 Jul 2026, 300 starts/s claim</td><td>Preview → billing. The GKE-native pick.</td></tr>
+        <tr><td>NVIDIA OpenShell</td><td>Policy runtime (Landlock/seccomp/OPA), not a VM product</td><td>GTC 2026, ~7K stars. Complementary, not a substitute.</td></tr>
+        <tr><td>CodeSandbox SDK → Together</td><td>Firecracker, live VM clone, TS-only, 2.7&nbsp;s P95</td><td>Mid-rebrand to Together Code Sandbox. $170/mo Scale tier in older cards.</td></tr>
+        <tr><td>Upstash Box</td><td>Managed sandbox, WebSocket session (real pid/stdin/signals), snapshots, preview URLs</td><td>TanStack AI provider. Cheap Redis company adjacent.</td></tr>
+        <tr><td>OpenSandbox</td><td>Self-host, pluggable gVisor/Kata/Firecracker, CNCF landscape, ~11.5K stars</td><td>The K8s-native OSS primitive.</td></tr>
+        <tr><td>Microsandbox</td><td>Local-first libkrun microVMs, ~200–320&nbsp;ms, fork/restore, MCP</td><td>Laptop / self-host, not a cloud bill.</td></tr>
+        <tr><td>Docker Sandboxes (<code>sbx</code>)</td><td>Native Docker microVMs on a hypervisor, same DX as <code>docker run</code></td><td>The “don’t leave the laptop” path. Free + your machine.</td></tr>
+        <tr><td>Freestyle</td><td>Full Linux VM, root, nested virt, ~800&nbsp;ms, ~$0.04/vCPU-hr</td><td>When you actually need a VM, not a jail.</td></tr>
+        <tr><td>Beam</td><td>Python serverless, GPU, 2–3&nbsp;s starts, ~$0.19/core-hr</td><td>Modal-shaped, slower and pricier in 2026 roundups.</td></tr>
+        <tr><td>Novita Agent Sandbox</td><td>Firecracker, BYOC AWS/GCP, no subscription, 24&nbsp;h sessions</td><td>Challenger on “no floor + BYOC.”</td></tr>
+        <tr><td>CreateOS / Arker</td><td>Fast TTI in ComputeSDK’s own ranking</td><td>Treat first-party benches as marketing until replicated.</td></tr>
+        <tr><td>Nirvana Labs</td><td>Live block volume, 20k IOPS, dedicated cluster</td><td>Persistence maximalist. Boot 2.5–7&nbsp;s.</td></tr>
+        <tr><td>ComputeSDK</td><td>Abstraction over many backends</td><td>The “don’t pick yet” adapter. You still pay a backend.</td></tr>
+        <tr><td>AIO Sandbox</td><td>All-in-one Docker: browser + shell + Jupyter + VS Code + MCP</td><td>Self-host agent desktop, not multi-tenant infra.</td></tr>
+        <tr><td>Quilt / Zeroboot</td><td>Namespace / Firecracker CoW (0.79&nbsp;ms claim)</td><td>Quilt site offline. Zeroboot stalled after Show HN.</td></tr>
+        <tr><td>WebContainers (StackBlitz)</td><td>In-browser Node, no server VM</td><td>Wrong layer for untrusted multi-language agents; right for in-tab IDEs.</td></tr>
+        <tr><td>GitHub Codespaces / Gitpod (Ona) / Replit</td><td>Dev environments that can be driven by agents</td><td>Heavy, slow-provision, human-shaped. Not the code-interpreter primitive.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="security">
+  <h2>Security notes that survive the brochure</h2>
+  <ul class="plain">
+    <li><strong>MicroVM ≠ safe network.</strong> AWS AgentCore’s 2026 write-up is the canonical reminder: DNS tunnelling and credential harvest work if the policy allows them. Sprites’ allowlist-not-denylist, enforced outside the guest, is the pattern to copy even if you do not buy Sprites.</li>
+    <li><strong>Default Daytona is a container.</strong> If the threat model is “model-generated code from a stranger,” turn on Kata/Sysbox or pick a Firecracker host. Do not assume the homepage isolation paragraph is the default runtime.</li>
+    <li><strong>Private networking is a feature and a foot-gun.</strong> Railway’s <code>PRIVATE</code> mode is excellent for “agent vs staging Postgres” and catastrophic for “agent vs prod.” Isolate by default; join a <em>dev</em> environment explicitly.</li>
+    <li><strong>Computer Use expands the blast radius.</strong> A VNC desktop with a browser is why Daytona (and Google’s browser sandbox) exist, and also why network + clipboard + file exfil need their own policy, not just “it’s a VM.”</li>
+    <li><strong>Self-hosting shifts the CVE, not the work.</strong> OpenSandbox, Microsandbox, Daytona’s frozen AGPL tree, E2B’s Apache plane — you still patch Firecracker, gVisor, and the control plane. Budget for that or don’t pretend you did.</li>
+  </ul>
+</section>
+
+<section id="sources">
+  <h2>Sources</h2>
+  <p>Primary vendor pages, then the independent benches. Dates are when the cited numbers were published, not when this page was written (11 Sep 2026).</p>
+  <ul class="plain">
+    <li><a href="https://e2b.dev/pricing">E2B pricing</a> · <a href="https://e2b.dev/docs/billing">E2B billing limits</a></li>
+    <li><a href="https://www.daytona.io/pricing">Daytona pricing</a></li>
+    <li><a href="https://vercel.com/docs/vercel-sandbox/pricing">Vercel Sandbox pricing</a> · <a href="https://vercel.com/kb/guide/vercel-sandbox-vs-e2b">Vercel vs E2B</a> · <a href="https://vercel.com/docs/sandbox">Vercel Sandbox docs</a></li>
+    <li><a href="https://developers.cloudflare.com/sandbox/">Cloudflare Sandbox SDK</a></li>
+    <li><a href="https://sprites.dev/">Sprites</a> · <a href="https://docs.sprites.dev/">Sprites docs</a> · <a href="https://fly.io/sprites/">Fly.io Sprites</a></li>
+    <li><a href="https://docs.railway.com/sandboxes">Railway Sandboxes</a> · <a href="https://docs.railway.com/guides/code-execution-sandboxes">Railway sandbox guide</a> · <a href="https://railway.com/changelog/2026-06-26-railway-over-ssh">26 Jun 2026 changelog</a></li>
+    <li><a href="https://modal.com/docs/guide/sandboxes">Modal Sandboxes</a></li>
+    <li><a href="https://northflank.com/blog/ai-sandbox-pricing">Northflank pricing comparison (May 2026)</a> · <a href="https://northflank.com/blog/best-agent-cloud-platforms">Northflank agent platforms</a></li>
+    <li><a href="https://blog.logrocket.com/comparing-ai-agent-sandbox-platforms-e2b-modal-daytona-and-more/">LogRocket measured comparison (4 Aug 2026)</a></li>
+    <li><a href="https://rywalker.com/research/ai-agent-sandboxes">Ry Walker, 19 platforms (updated 11 Jun 2026)</a></li>
+    <li><a href="https://sandbox-comparison.pages.dev/">sandbox-comparison.pages.dev (17 Jan 2026)</a></li>
+    <li><a href="https://createos.sh/blogs/ai-agent-sandbox-platforms">CreateOS / ComputeSDK 26-provider TTI (14 Aug 2026)</a></li>
+    <li><a href="https://www.superagent.sh/blog/ai-code-sandbox-benchmark-2026">Superagent benchmark (16 Jan 2026)</a></li>
+    <li><a href="https://tanstack.com/ai/latest/docs/sandbox/providers">TanStack AI sandbox providers</a></li>
+  </ul>
+  <div class="footer">
+    Written for <a href="https://sites.arnavg.in/">sites.arnavg.in</a>. Self-contained page, no tracker, no build step. If a vendor page disagrees with a cell, the vendor page wins — this is a map, not a contract.
+  </div>
+</section>
+
+</main>
+</div>
+</div>
+<script>
+const PROVIDERS = [
+  {name:"E2B", iso:"Firecracker", claim:150, meas:717, cpu:0.0504, meter:"Wall-clock", persist:"Pause/resume + snapshots", gpu:"No", sdk:"Py, TS", tags:"microvm oss byoc"},
+  {name:"Daytona", iso:"Docker (Kata opt.)", claim:90, meas:742, cpu:0.0504, meter:"Wall-clock", persist:"Snapshots, fork", gpu:"H100–B200", sdk:"Py, TS, Go, Ruby, Java", tags:"gpu byoc oss"},
+  {name:"Vercel Sandbox", iso:"Firecracker", claim:50, meas:1852, cpu:0.128, meter:"Active CPU", persist:"Default + snapshots", gpu:"No", sdk:"TS, Py", tags:"microvm"},
+  {name:"Cloudflare", iso:"Container / V8", claim:null, meas:4840, cpu:0.072, meter:"Active CPU", persist:"Mounts; sleep wipes", gpu:"No", sdk:"TS", tags:""},
+  {name:"Fly Sprites", iso:"Firecracker", claim:1500, meas:1000, cpu:0.07, meter:"cgroup / $0 idle", persist:"ext4 + checkpoints", gpu:"No (Machines)", sdk:"JS, Go", tags:"microvm idlefree"},
+  {name:"Modal", iso:"gVisor", claim:400, meas:2437, cpu:0.071, meter:"Per-sec, scale to 0", persist:"FS/memory snapshots", gpu:"T4–B200", sdk:"Py (JS/Go β)", tags:"gpu"},
+  {name:"Railway", iso:"VM", claim:null, meas:null, cpu:0.069, meter:"Running VM", persist:"Checkpoint + fork", gpu:"No", sdk:"TS, CLI", tags:""},
+  {name:"Northflank", iso:"Kata / gVisor", claim:200, meas:380, cpu:0.01667, meter:"Per-sec", persist:"Volumes", gpu:"L4–H200", sdk:"REST/SDK", tags:"gpu byoc"},
+  {name:"Blaxel", iso:"microVM", claim:25, meas:2824, cpu:0.041, meter:"RAM tier / $0 idle", persist:"Hibernate", gpu:"No", sdk:"Py, TS", tags:"microvm idlefree"},
+  {name:"Runloop", iso:"microVM + container", claim:25, meas:null, cpu:0.108, meter:"Per-sec / $0 idle", persist:"Snapshot, branch", gpu:"No", sdk:"Py, TS", tags:"microvm idlefree byoc"},
+  {name:"CodeSandbox / Together", iso:"Firecracker", claim:2700, meas:null, cpu:0.075, meter:"Credits", persist:"Live clone", gpu:"No", sdk:"TS", tags:"microvm"},
+  {name:"AWS AgentCore", iso:"Firecracker", claim:null, meas:null, cpu:null, meter:"AWS vCPU+RAM", persist:"Session ≤8h", gpu:"No", sdk:"AWS", tags:"microvm"},
+  {name:"Google Agent Sandbox", iso:"gVisor", claim:500, meas:null, cpu:null, meter:"GKE", persist:"TTL ≤14d", gpu:"Via GKE", sdk:"GKE/SDK", tags:"gpu byoc oss"},
+  {name:"OpenSandbox", iso:"Pluggable", claim:null, meas:null, cpu:0, meter:"Your cluster", persist:"PVC / pause", gpu:"Your GPUs", sdk:"Py, TS, Go, Java", tags:"oss byoc gpu"},
+  {name:"Freestyle", iso:"Full VM", claim:800, meas:null, cpu:0.04, meter:"Per-sec", persist:"Hibernate to disk", gpu:"No", sdk:"SDK", tags:""},
+  {name:"Upstash Box", iso:"Managed", claim:null, meas:null, cpu:null, meter:"Upstash", persist:"Native snapshots", gpu:"No", sdk:"TS", tags:""}
+];
+
+const tbody = document.getElementById("grid-body");
+function fmtMs(v){return v==null?"—":(v>=1000?(v/1000).toFixed(2)+"s":v+"ms")}
+function fmtCpu(v){return v==null?"—":(v===0?"self-host":"$"+v.toFixed(v<0.1?3:2))}
+function render(list){
+  tbody.innerHTML = list.map(p=>`<tr data-tags="${p.tags}">
+    <td><strong>${p.name}</strong></td>
+    <td>${p.iso}</td>
+    <td class="num">${fmtMs(p.claim)}</td>
+    <td class="num">${fmtMs(p.meas)}</td>
+    <td class="num">${fmtCpu(p.cpu)}</td>
+    <td>${p.meter}</td>
+    <td>${p.persist}</td>
+    <td>${p.gpu}</td>
+    <td>${p.sdk}</td>
+  </tr>`).join("");
+}
+render(PROVIDERS);
+
+let filter="all", sortKey=null, sortDir=1;
+document.getElementById("filters").addEventListener("click", e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  document.querySelectorAll("#filters button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");
+  filter=b.dataset.f;
+  apply();
+});
+function apply(){
+  let list=PROVIDERS.filter(p=>filter==="all"||p.tags.split(" ").includes(filter));
+  if(sortKey){
+    list=[...list].sort((a,b)=>{
+      const av=a[sortKey], bv=b[sortKey];
+      if(av==null) return 1; if(bv==null) return -1;
+      return (av-bv)*sortDir;
+    });
+  }
+  render(list);
+}
+document.querySelectorAll("th.sort").forEach(th=>{
+  th.addEventListener("click", ()=>{
+    const k=th.dataset.k;
+    if(sortKey===k) sortDir*=-1; else {sortKey=k; sortDir=1;}
+    apply();
+  });
+});
+
+const SHAPES={
+  burst:{n:100000,mins:0.5,vcpu:2,ram:2,util:0.33,conc:200,hrs:730},
+  agent:{n:200,mins:240,vcpu:2,ram:1.5,util:0.3,conc:20,hrs:730},
+  fleet:{n:200,mins:43800,vcpu:1,ram:1,util:1,conc:200,hrs:730}
+};
+const $ = id=>document.getElementById(id);
+function loadShape(){
+  const s=SHAPES[$("shape").value];
+  if(!s) return;
+  $("n").value=s.n; $("mins").value=s.mins; $("vcpu").value=s.vcpu; $("ram").value=s.ram;
+  $("util").value=s.util; $("conc").value=s.conc; $("hrs").value=s.hrs;
+}
+$("shape").addEventListener("change", ()=>{loadShape(); costs();});
+["n","mins","vcpu","ram","util","conc","hrs"].forEach(id=>$ (id).addEventListener("input", costs));
+
+function money(x){
+  if(!isFinite(x)) return "—";
+  if(x>=1000) return "$"+x.toLocaleString("en-US",{maximumFractionDigits:0});
+  if(x>=10) return "$"+x.toFixed(0);
+  if(x>=1) return "$"+x.toFixed(2);
+  return "$"+x.toFixed(3);
+}
+function costs(){
+  const shape=$("shape").value;
+  const n=+ $("n").value, mins=+ $("mins").value, vcpu=+$("vcpu").value, ram=+$("ram").value, util=Math.min(1,Math.max(0.01,+$("util").value));
+  const conc=+$("conc").value, hrs=+$("hrs").value;
+  const hours = shape==="fleet" ? conc*hrs : n*(mins/60);
+  const cpuHours = hours*vcpu;
+  const ramHours = hours*ram;
+  const activeCpuHours = hours*vcpu*util;
+  const rows=[
+    {n:"E2B", c: cpuHours*0.0504 + ramHours*0.0162, f:150, why:"Wall-clock + $150 Pro floor (Hobby $0 + credits). Pause would cut this if you pause."},
+    {n:"Daytona", c: cpuHours*0.0504 + ramHours*0.0162, f:0, why:"Same list rate as E2B, no floor. $200 credit first."},
+    {n:"Vercel", c: activeCpuHours*0.128 + ramHours*0.0212, f:20, why:"Active CPU only; memory for the whole wall clock. $20 Pro."},
+    {n:"Cloudflare", c: activeCpuHours*0.072 + ramHours*0.009, f:5, why:"Active CPU + $5 Workers Paid. Ignores DO/request add-ons."},
+    {n:"Sprites", c: activeCpuHours*0.07 + ramHours*0.04375, f:20, why:"cgroup usage, $0 when sleeping. $20 plan assumed for concurrency."},
+    {n:"Railway", c: cpuHours*0.0694 + ramHours*0.0694, f:5, why:"VM rates ($50/vCPU-mo, $50/GB-mo) for every minute until destroy. $5 Hobby."},
+    {n:"Modal", c: cpuHours*0.071 + ramHours*0.0242, f:0, why:"Sandbox premium CPU. Credits ~$30/mo not subtracted."},
+    {n:"Northflank", c: cpuHours*0.01667 + ramHours*0.00833, f:0, why:"Lowest published PaaS CPU. BYOC is cheaper still at scale."},
+    {n:"Runloop", c: cpuHours*0.108 + ramHours*0.0252, f:250, why:"$250 Pro floor dominates small workloads."},
+    {n:"Blaxel XS", c: (ram<=2?0.0828:ram<=4?0.1656:ram<=8?0.3312:0.6624)*hours, f:0, why:"Memory-tier SKU, $0 on standby. This line assumes awake the whole wall clock."}
+  ].sort((a,b)=>(a.c+a.f)-(b.c+b.f));
+  $("cost-body").innerHTML = rows.map(r=>`<tr><td>${r.n}</td><td class="num">${money(r.c)}</td><td class="num">${money(r.c+r.f)}</td><td>${r.why}</td></tr>`).join("");
+}
+loadShape(); costs();
+
+const nav=document.querySelectorAll(".sidebar .navitem");
+const map=[...nav].map(a=>document.querySelector(a.getAttribute("href")));
+const io=new IntersectionObserver(entries=>{
+  const vis=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
+  if(!vis) return;
+  nav.forEach(n=>n.classList.toggle("active", n.getAttribute("href")==="#"+vis.target.id));
+},{rootMargin:"-20% 0px -60% 0px", threshold:[0,0.2,0.6]});
+map.forEach(s=>s&&io.observe(s));
+document.getElementById("mobile-nav").addEventListener("change", e=>{
+  const el=document.querySelector(e.target.value);
+  if(el) el.scrollIntoView({behavior:"smooth"});
+});
+</script>
+</body>
+</html>
