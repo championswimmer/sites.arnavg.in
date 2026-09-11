@@ -17,8 +17,40 @@ Static-site dumpyard by Arnav Gupta. Repo `championswimmer/sites.arnavg.in`, bra
 
 ## Upload (pick the first that applies; never hardcode or commit tokens)
 
-1. gh CLI (shell, authenticated): clone, add files, `git add/commit/push origin main`. Ref: https://cli.github.com/manual/
-2. GitHub MCP server (installed + authenticated): call `create_or_update_file` with owner `championswimmer`, repo `sites.arnavg.in`, path `research/<slug>/index.html` (or `learning/...`), your HTML as `content`, branch `main`. Omit `sha` for new files; for updates fetch it first via `get_file_contents`. Ref: https://github.com/github/github-mcp-server
-3. GitHub REST API (`GITHUB_TOKEN` in env, else ask the human for one): PUT `repos/{owner}/{repo}/contents/{path}` with base64 content (+ `sha` when updating). Ref: https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
+### 1. gh CLI (shell, authenticated — no clone needed)
 
-Done when: page renders standalone, you report the public URL (listing pages update themselves).
+```sh
+CONTENT=$(base64 < /local/path/to/index.html | tr -d '\n')
+gh api "repos/championswimmer/sites.arnavg.in/contents/research/<slug>/index.html" \
+  -X PUT -f message="add <slug>" -f branch="main" -f content="$CONTENT"
+# updating an existing file: GET the path first for its "sha", then add -f sha="<sha>".
+```
+Ref: https://cli.github.com/manual/
+
+### 2. GitHub MCP server (installed + authenticated)
+
+Call `create_or_update_file` once per file with owner `championswimmer`,
+repo `sites.arnavg.in`, branch `main`, path `research/<slug>/index.html`
+(or `learning/...`), your HTML as `content` (raw text, not base64),
+message `add <slug>`. Omit `sha` for new files; for updates fetch it
+first via `get_file_contents` (same owner/repo/path, ref `main`).
+Ref: https://github.com/github/github-mcp-server
+
+### 3. GitHub REST API (`GITHUB_TOKEN` in env, else ask the human for one)
+
+```sh
+CONTENT=$(base64 < /local/path/to/index.html | tr -d '\n')
+curl -X PUT -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/championswimmer/sites.arnavg.in/contents/research/<slug>/index.html \
+  -d "{\"message\":\"add <slug>\",\"content\":\"$CONTENT\",\"branch\":\"main\"}"
+# updating an existing file: GET the path first, add its "sha" to the payload.
+```
+Ref: https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
+
+## Checklist before you finish
+
+- [ ] Page renders standalone (open the file directly, no server needed).
+- [ ] You pushed only your page (listings update themselves via Action).
+- [ ] No secrets, tokens, or personal data committed.
+- [ ] Tell the human the public URL.
