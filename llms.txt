@@ -1,0 +1,102 @@
+# sites.arnavg.in — instructions for LLMs
+
+You are an LLM agent. This file tells you how to publish a static site
+to this repo. Read it fully before writing anything.
+
+## What this repo is
+
+A dumpyard for LLM-agent-generated static sites by Arnav Gupta,
+served via GitHub Pages at https://sites.arnavg.in.
+
+- Repository: `championswimmer/sites.arnavg.in`
+- Branch: `main` (site is served from the repo root)
+- Reports live at `/research/<report-name>/index.html`
+- Guides live at `/learning/<guide-name>/index.html`
+
+## Where your page goes
+
+1. Pick a slug: lowercase kebab-case, e.g. `indian-railways-history`.
+   A report goes in `/research/<slug>/`, a guide in `/learning/<slug>/`.
+2. Your deliverable is `index.html` inside that directory, so it is served
+   at `https://sites.arnavg.in/research/<slug>/` (or `/learning/<slug>/`).
+3. Keep every page self-contained: one HTML file with inline `<style>` and
+   `<script>`. No build step, no frameworks, no external assets unless the
+   task strictly requires them (and if so, use a subdirectory of your slug
+   directory — never the repo root).
+4. Match the house style: spartan, minimalist, stoic. Black on white,
+   serif, narrow column, no trackers. Look at `/index.html` before writing.
+
+## Registering your page
+
+After adding your directory, update the listing pages:
+
+- Append `<li><a href="/research/<slug>/">Title</a></li>` (or the
+  `/learning/` equivalent) to `research/index.html` / `learning/index.html`,
+  replacing the "Nothing here yet." placeholder when it is the first entry.
+
+Do NOT touch `CNAME`, `.nojekyll`, or this file (`llms.txt`) unless the
+human explicitly asks.
+
+## How to upload (GitHub API, authenticated)
+
+Only people with write access to this repo can publish — that means the
+human (e.g. Arnav), never you on your own authority. You upload *as* them,
+using a token they provide. Never invent, hardcode, or commit a token.
+
+### Option A — gh CLI (preferred, if available and authenticated)
+
+```sh
+git clone https://github.com/championswimmer/sites.arnavg.in.git
+cd sites.arnavg.in
+# add your files under research/<slug>/ or learning/<slug>/,
+# update the listing page, then:
+git add <paths>
+git commit -m "add <slug>"
+git push origin main
+```
+
+If `gh` is present but not authenticated, ask the human to run
+`gh auth login` first — do not attempt to authenticate yourself.
+
+### Option B — GitHub REST API (single file, contents endpoint)
+
+Upload one file per request (base64-encoded). Requires a personal access
+token (classic, `repo` scope, or fine-grained with Contents read/write on
+this repo) belonging to someone with write access:
+
+```sh
+TOKEN="<token-the-human-gave-you>"
+REPO="championswimmer/sites.arnavg.in"
+FILE="research/<slug>/index.html"   # path in repo
+BRANCH="main"
+
+CONTENT=$(base64 -i /local/path/to/index.html)  # Linux: base64 -w0
+
+# create the file (omit `sha`); to update an existing file, first GET the
+# file to obtain its `sha`, then include `"sha": "<sha>"` in the payload
+curl -X PUT \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/repos/$REPO/contents/$FILE" \
+  -d "{\"message\":\"add <slug>\",\"content\":\"$CONTENT\",\"branch\":\"$BRANCH\"}"
+```
+
+Repeat per file, then update the listing page (`research/index.html` or
+`learning/index.html`) the same way. Verify with a GET afterwards.
+
+### Option C — gh api (same endpoint, uses gh's auth)
+
+```sh
+gh api "repos/championswimmer/sites.arnavg.in/contents/research/<slug>/index.html" \
+  -X PUT \
+  -f message="add <slug>" \
+  -f branch="main" \
+  -f content="$(base64 -i /local/path/to/index.html)"
+```
+
+## Checklist before you finish
+
+- [ ] Page renders standalone (open the file directly, no server needed).
+- [ ] Listing page links to it.
+- [ ] No secrets, tokens, or personal data committed.
+- [ ] Tell the human the public URL.
