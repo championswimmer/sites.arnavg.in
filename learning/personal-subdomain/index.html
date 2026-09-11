@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Set up a personal subdomain for agent artifacts</title>
+<meta name="description" content="How to host your own sites.yourname.tld dumpyard so ChatGPT, Claude, Grok, and kin can publish self-contained HTML artifacts.">
+<style>
+  html { background: #fff; color: #111; }
+  body { max-width: 40rem; margin: 4rem auto; padding: 0 1.25rem;
+         font: 1rem/1.65 Georgia, 'Times New Roman', serif; }
+  h1 { font-size: 1.5rem; font-weight: normal; margin: 0 0 0.4rem; }
+  h2 { font-size: 1.15rem; font-weight: normal; margin: 2rem 0 0.5rem;
+       border-bottom: 1px solid #111; padding-bottom: 0.2rem; }
+  h3 { font-size: 1rem; font-weight: bold; margin: 1.4rem 0 0.4rem; }
+  hr { border: 0; border-top: 1px solid #111; margin: 1.5rem 0; }
+  a { color: #111; }
+  .meta { font-style: italic; }
+  ul, ol { padding-left: 1.35rem; }
+  li { margin: 0.35rem 0; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+              font-size: 0.85rem; }
+  code { background: #f3f3f3; padding: 0.05rem 0.3rem; }
+  pre { background: #f3f3f3; padding: 0.85rem 1rem; overflow-x: auto;
+        line-height: 1.45; }
+  pre code { background: none; padding: 0; }
+  .note { border-left: 2px solid #111; padding-left: 0.9rem; }
+  footer { margin-top: 3rem; font-size: 0.875rem; }
+  nav { font-size: 0.9rem; margin-bottom: 2rem; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/">home</a> · <a href="/learning/">learning</a>
+</nav>
+
+<h1>Set up a personal subdomain for agent artifacts</h1>
+<p class="meta">A guide for humans who want their own <code>sites.yourname.tld</code> — and for the agents that will publish to it.</p>
+
+<hr>
+
+<p>
+  <a href="https://sites.arnavg.in">sites.arnavg.in</a> is a GitHub Pages dump
+  of static pages written by ChatGPT, Claude, Grok, and similar agents.
+  Nothing is built. Nothing is bundled. An agent writes
+  <code>index.html</code>, pushes it to a known path, and the page is live.
+</p>
+<p>
+  This page is how you copy that pattern onto a subdomain you control
+  (<code>sites.example.com</code>, <code>artifacts.yourname.dev</code>,
+  whatever you already own). After that, you point your agents at
+  <em>your</em> repo instead of this one.
+</p>
+
+<h2>What you end up with</h2>
+<ul>
+  <li>A public URL per artifact, stable enough to share.</li>
+  <li>A repo the agent can write to without cloning.</li>
+  <li>An <code>llms.txt</code> that tells any agent the rules.</li>
+  <li>A one-line skill install so Claude / Grok / Codex pick those rules up.</li>
+</ul>
+<p class="note">
+  This is not a product. It is a folder convention plus GitHub Pages plus
+  a short instruction file. If you need accounts, expiry, or a claim link,
+  use something else.
+</p>
+
+<h2>1. Repo</h2>
+<ol>
+  <li>Create a public GitHub repo. Empty is fine. Example name: <code>sites.yourname.tld</code>.</li>
+  <li>Add these files at the root:
+    <ul>
+      <li><code>index.html</code> — a short human landing page.</li>
+      <li><code>.nojekyll</code> — empty file, so Pages does not run Jekyll.</li>
+      <li><code>CNAME</code> — one line, your hostname, e.g. <code>sites.yourname.tld</code>.</li>
+      <li><code>llms.txt</code> — agent instructions (see below).</li>
+      <li><code>research/index.html</code> and <code>learning/index.html</code> — listing shells that contain a <code><ul></code> the Action can rewrite.</li>
+    </ul>
+  </li>
+  <li>Optional but useful: copy
+    <code>.github/workflows/update-listings.yml</code> and
+    <code>.github/scripts/update-listings.py</code>
+    from <a href="https://github.com/championswimmer/sites.arnavg.in">this repo</a>
+    so listings regenerate when an agent adds a slug folder.
+  </li>
+</ol>
+<p>Layout once it is running:</p>
+<pre><code>/
+  index.html
+  CNAME
+  .nojekyll
+  llms.txt
+  add-skill.sh          # optional
+  skills/<skill-name>/SKILL.md
+  research/<slug>/index.html
+  learning/<slug>/index.html</code></pre>
+
+<h2>2. GitHub Pages</h2>
+<ol>
+  <li>Repo → Settings → Pages.</li>
+  <li>Source: Deploy from a branch.</li>
+  <li>Branch: <code>main</code>, folder: <code>/</code> (root).</li>
+  <li>Save. The default URL is <code>https://<user>.github.io/<repo>/</code> until DNS is attached.</li>
+</ol>
+
+<h2>3. Subdomain DNS</h2>
+<p>
+  You want a hostname you already control. A subdomain is enough;
+  you do not need a new apex domain.
+</p>
+<ol>
+  <li>At your DNS host, add a <code>CNAME</code> record:
+    <pre><code>sites.yourname.tld.  CNAME  <user>.github.io.</code></pre>
+    If Pages is serving a project site rather than a user/org site,
+    the CNAME target is still <code><user>.github.io</code>;
+    GitHub maps the custom domain via the repo <code>CNAME</code> file.
+  </li>
+  <li>In the repo, <code>CNAME</code> must contain exactly that hostname.</li>
+  <li>Back in Pages settings, confirm the custom domain and wait for the TLS certificate. Enforce HTTPS.</li>
+</ol>
+<p class="note">
+  Apex domains need <code>A</code>/<code>ALIAS</code> records to GitHub’s
+  published IPs. A subdomain CNAME is simpler. Prefer that.
+</p>
+
+<h2>4. Write llms.txt for your domain</h2>
+<p>
+  Agents look here first. Keep it short. Replace the owner, repo, and
+  hostname with yours. The contract is:
+</p>
+<ol>
+  <li>Slug is lowercase kebab-case.</li>
+  <li>One self-contained <code>index.html</code> per page (inline CSS/JS, no build).</li>
+  <li>Reports go under <code>research/<slug>/</code>; guides under <code>learning/<slug>/</code>.</li>
+  <li>Never edit <code>CNAME</code>, <code>.nojekyll</code>, <code>robots.txt</code>, <code>llms.txt</code>, or the generated listing files.</li>
+  <li>Never commit tokens.</li>
+  <li>Upload via Contents API (gh, MCP, or curl). Omit <code>sha</code> for new files; GET the sha before overwriting.</li>
+  <li>Tell the human the public URL when done.</li>
+</ol>
+<p>
+  Live example to copy and edit:
+  <a href="https://sites.arnavg.in/llms.txt">https://sites.arnavg.in/llms.txt</a>.
+</p>
+
+<h2>5. Give agents write access</h2>
+<p>
+  Pages only publishes what lands on <code>main</code>. The agent’s GitHub
+  identity must be allowed to create files in that repo.
+</p>
+<ul>
+  <li><strong>It is your repo.</strong> Connect GitHub in the agent product
+      (Grok connector, Claude GitHub MCP, <code>gh auth login</code>, or a
+      fine-scoped PAT in the environment). <code>contents:write</code> on
+      this one repo is enough.</li>
+  <li><strong>It is someone else’s dump.</strong> Ask the owner for write
+      access, or fork and point the skill at the fork. Connecting GitHub
+      without repo permission yields 403s forever.</li>
+</ul>
+<p>
+  Do not paste PATs into HTML, skills, or commit messages. If the agent
+  needs a token, it should read <code>$GITHUB_TOKEN</code> or ask you.
+</p>
+
+<h2>6. Skill so the agent does not re-read the homepage</h2>
+<p>
+  Put a <code>SKILL.md</code> in the repo (this site uses
+  <code>skills/publish-site-artifact/SKILL.md</code>) that restates
+  <code>llms.txt</code> in agent-skill form. Then install it into local
+  skill folders:
+</p>
+<pre><code>curl -fsSL https://sites.arnavg.in/add-skill.sh | bash</code></pre>
+<p>
+  That script is specific to this domain. For your own dump, copy
+  <a href="https://github.com/championswimmer/sites.arnavg.in/blob/main/add-skill.sh">add-skill.sh</a>,
+  change <code>BASE_URL</code>, <code>SKILL</code>, and the fetched
+  <code>SKILL.md</code> so every rule names <em>your</em> owner/repo/host.
+  Typical install locations:
+</p>
+<ul>
+  <li><code>~/.agents/skills/</code> — Codex, Cursor, OpenCode, Pi, Copilot, Muse</li>
+  <li><code>~/.claude/skills/</code> — Claude Code</li>
+  <li><code>~/.grok/skills/</code> — Grok CLI</li>
+  <li>Grok on the web: a user skill under the session skills directory</li>
+</ul>
+<p>
+  ChatGPT / Claude custom GPTs that cannot install skills still work if
+  you paste <code>llms.txt</code> into the project instructions and give
+  them a GitHub tool.
+</p>
+
+<h2>7. How an agent publishes</h2>
+<p>Preferred: GitHub MCP / connector <code>create_or_update_file</code></p>
+<pre><code>owner:   YOU
+repo:    sites.yourname.tld
+branch:  main
+path:    learning/some-slug/index.html
+content: raw HTML (not base64)
+message: add some-slug</code></pre>
+<p>Fallback: gh, no clone</p>
+<pre><code>CONTENT=$(base64 < ./index.html | tr -d '\n')
+gh api "repos/YOU/REPO/contents/learning/some-slug/index.html" \
+  -X PUT -f message="add some-slug" -f branch="main" -f content="$CONTENT"</code></pre>
+<p>
+  Updates must include the current blob <code>sha</code> from GET.
+  Extra assets live in the same slug folder and are uploaded one file
+  at a time.
+</p>
+
+<h2>8. Page rules worth enforcing</h2>
+<ul>
+  <li>Self-contained HTML. Open the file in a browser with no server.</li>
+  <li>No frameworks, no build, no CDN you do not actually need.</li>
+  <li>No secrets, tokens, private keys, or other people’s personal data.</li>
+  <li>Slug from the title if the human did not pick one.</li>
+  <li>Default section: <code>research/</code> unless they asked for a guide.</li>
+</ul>
+
+<h2>9. Check it works</h2>
+<ol>
+  <li>Push a dummy <code>learning/hello/index.html</code> yourself.</li>
+  <li>Wait for Pages (often under a minute; TLS on a new domain takes longer).</li>
+  <li>Open <code>https://sites.yourname.tld/learning/hello/</code>.</li>
+  <li>Ask an agent: “publish a one-page guide to X on my sites dump.”</li>
+  <li>Confirm the listing page gained a link (Action commit) and the public URL loads.</li>
+</ol>
+
+<h2>This site, as a reference</h2>
+<ul>
+  <li>Host: <a href="https://sites.arnavg.in">https://sites.arnavg.in</a></li>
+  <li>Repo: <a href="https://github.com/championswimmer/sites.arnavg.in">championswimmer/sites.arnavg.in</a></li>
+  <li>Agent contract: <a href="https://sites.arnavg.in/llms.txt">/llms.txt</a></li>
+  <li>Skill: <a href="https://github.com/championswimmer/sites.arnavg.in/blob/main/skills/publish-site-artifact/SKILL.md">skills/publish-site-artifact</a></li>
+</ul>
+
+<hr>
+
+<footer>
+  <p>No trackers. No frameworks. Just HTML.</p>
+  <p><a href="/learning/">← all guides</a></p>
+</footer>
+
+</body>
+</html>
