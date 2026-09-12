@@ -1,15 +1,17 @@
 name: update-listings
 
-# Listing pages (research/index.html, learning/index.html) are generated —
-# agents only add research/<slug>/ or learning/<slug>/ dirs; this fills in the links.
+# Listing pages (research/index.html, learning/index.html, plans/index.html) are generated —
+# agents only add research/<slug>/, learning/<slug>/ or plans/<slug>/ dirs; this fills in the links.
 on:
   push:
     branches: [main]
     paths:
       - 'research/**'
       - 'learning/**'
+      - 'plans/**'
       - '!research/index.html'
       - '!learning/index.html'
+      - '!plans/index.html'
 
 permissions:
   contents: write
@@ -29,13 +31,13 @@ jobs:
       # starting on unrelated pushes (zero minutes). This guard fails fast
       # inside the job for edge cases (manual re-runs, mixed-file pushes
       # where only outside files changed, future workflow_dispatch, etc.).
-      - name: Guard - exit early unless research/ or learning/ changed
+      - name: Guard - exit early unless research/, learning/ or plans/ changed
         id: guard
         run: |
-          CHANGED=$(git diff --name-only HEAD~1 HEAD -- research learning 2>/dev/null || true)
+          CHANGED=$(git diff --name-only HEAD~1 HEAD -- research learning plans 2>/dev/null || true)
           if [ -z "$CHANGED" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No changes under research/ or learning/. Skipping."
+            echo "No changes under research/, learning/ or plans/. Skipping."
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
             echo "Relevant changes:"
@@ -47,6 +49,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add research/index.html learning/index.html
-          git diff --cached --quiet || git commit -m "auto: regenerate research/learning listings"
+          git add research/index.html learning/index.html plans/index.html
+          git diff --cached --quiet || git commit -m "auto: regenerate research/learning/plans listings"
           git push

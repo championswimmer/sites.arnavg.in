@@ -8,7 +8,8 @@ Static-site dumpyard by Arnav Gupta. Repo `championswimmer/sites.arnavg.in`, bra
 2. Write self-contained `index.html` (inline CSS/JS, no build, no frameworks; keep any assets inside your folder) to:
    - report → `research/<slug>/index.html` (serves at `/research/<slug>/`)
    - guide → `learning/<slug>/index.html` (serves at `/learning/<slug>/`)
-3. Never touch `CNAME`, `.nojekyll`, `robots.txt`, `llms.txt`, `research/index.html`, `learning/index.html` (listings regenerate automatically via a GitHub Action). Never commit tokens/secrets.
+   - plan → `plans/<slug>/index.html` (serves at `/plans/<slug>/`)
+3. Never touch `CNAME`, `.nojekyll`, `robots.txt`, `llms.txt`, `research/index.html`, `learning/index.html`, `plans/index.html` (listings regenerate automatically via a GitHub Action). Never commit tokens/secrets.
 
 ## Upload (pick the first that applies; never hardcode or commit tokens)
 
