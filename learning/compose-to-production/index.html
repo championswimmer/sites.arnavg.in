@@ -1,0 +1,2728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>From docker compose to production — Terraform, Ansible, Helm, Argo CD</title>
+<meta name="description" content="A one-hour interactive course that takes one url shortener from a docker-compose file to a production deployment, and shows exactly which of Terraform, Ansible, Helm and Argo CD owns which part.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F1F3F6; --card:#FFFFFF; --ink:#0E141B; --ink2:#3A4552; --muted:#6C7885;
+  --rule:#D5DBE3; --rule-soft:#E5E9EF;
+  --panel:#141A22; --panel2:#1B222C; --panel3:#232C38;
+  --panel-rule:#2C3643; --panel-ink:#DAE0E8; --panel-muted:#8C98A7;
+  --tf:#6E56E8; --ans:#C63744; --helm:#1E6FD9; --argo:#C97C1E;
+  --tf-lit:#A78BFF; --ans-lit:#FF7A85; --helm-lit:#62A8FF; --argo-lit:#FFBE63;
+  --add:#2F9E68; --chg:#C68A16; --del:#CF4B45;
+  --add-lit:#5FD39B; --chg-lit:#EFC15C; --del-lit:#FF8A82;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --disp:"Space Grotesk","IBM Plex Sans",-apple-system,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--sans); font-size:17px; line-height:1.62;
+  font-feature-settings:"kern" 1;
+}
+::selection{background:#C9D6FF;color:var(--ink)}
+
+h1,h2,h3,h4{font-family:var(--disp); font-weight:600; line-height:1.18; letter-spacing:-0.018em; margin:0}
+p{margin:0 0 1.05em}
+a{color:#1B54B8;text-decoration:none;border-bottom:1px solid #B6C7E8}
+a:hover{border-bottom-color:#1B54B8}
+strong{font-weight:600}
+em{font-style:italic}
+code{font-family:var(--mono);font-size:0.87em;background:#E3E8EF;padding:0.1em 0.34em;border-radius:3px;color:#1E2A38}
+:focus-visible{outline:2px solid #2B6CF6;outline-offset:2px;border-radius:3px}
+
+/* ---------- layout ---------- */
+.col{max-width:70ch;margin:0 auto;padding:0 22px}
+.lab{max-width:1060px;margin:30px auto;padding:0 22px}
+.wide{max-width:1200px;margin:0 auto;padding:0 22px}
+
+/* ---------- rail ---------- */
+.railbar{
+  position:sticky;top:0;z-index:60;background:rgba(241,243,246,0.93);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--rule);
+}
+.railbar .inner{max-width:1200px;margin:0 auto;padding:9px 22px;display:flex;align-items:center;gap:14px}
+.brandmark{font-family:var(--disp);font-weight:700;font-size:14px;letter-spacing:-0.02em;white-space:nowrap}
+.brandmark span{color:var(--muted);font-weight:500}
+.navlinks{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1}
+.navlinks::-webkit-scrollbar{display:none}
+.navlinks a{
+  font-family:var(--disp);font-size:13px;font-weight:500;color:var(--ink2);
+  padding:5px 9px;border-radius:5px;border-bottom:0;white-space:nowrap
+}
+.navlinks a:hover{background:#E3E8EF;border-bottom:0}
+.navlinks a.on{background:var(--ink);color:#fff}
+.progwrap{width:100%;height:2px;background:var(--rule-soft)}
+#prog{height:2px;width:0;background:var(--ink);transition:width .35s ease}
+
+/* ---------- hero ---------- */
+.hero{padding:62px 0 20px;border-bottom:1px solid var(--rule)}
+.hero h1{font-size:clamp(34px,5.4vw,58px);font-weight:700;letter-spacing:-0.035em;max-width:16ch}
+.hero .sub{font-size:clamp(18px,2.2vw,21px);color:var(--ink2);max-width:60ch;margin-top:20px;line-height:1.5}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}
+.meta b{
+  font-family:var(--mono);font-size:12px;font-weight:500;color:var(--ink2);
+  background:var(--card);border:1px solid var(--rule);padding:4px 9px;border-radius:4px
+}
+
+/* ---------- sections ---------- */
+.module{padding:56px 0 12px;border-top:1px solid var(--rule);margin-top:40px}
+.module:first-of-type{border-top:0}
+.modhead{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+.modnum{
+  font-family:var(--mono);font-size:13px;font-weight:600;color:#fff;background:var(--ink);
+  width:26px;height:26px;display:grid;place-items:center;border-radius:5px;flex:none;
+  position:relative;top:-3px
+}
+.module h2{font-size:clamp(27px,3.6vw,37px);font-weight:700;letter-spacing:-0.03em}
+.mins{font-family:var(--mono);font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap}
+.lede{font-size:19px;color:var(--ink2);line-height:1.55;margin-bottom:26px}
+h3{font-size:21px;margin:34px 0 12px}
+h4{font-size:16.5px;margin:24px 0 8px;font-weight:600}
+
+ul,ol{margin:0 0 1.1em;padding-left:1.25em}
+li{margin-bottom:.42em}
+li::marker{color:var(--muted)}
+
+.note{
+  border-left:3px solid var(--ink);background:var(--card);
+  padding:14px 18px;margin:22px 0;font-size:15.5px;line-height:1.55;border-radius:0 5px 5px 0
+}
+.note p:last-child{margin-bottom:0}
+.note.tf{border-left-color:var(--tf)} .note.ans{border-left-color:var(--ans)}
+.note.helm{border-left-color:var(--helm)} .note.argo{border-left-color:var(--argo)}
+.note.warn{border-left-color:var(--del)}
+.note b.tag{font-family:var(--disp);font-size:13px;display:block;margin-bottom:3px;letter-spacing:.01em}
+
+/* ---------- tables ---------- */
+table{width:100%;border-collapse:collapse;margin:22px 0;font-size:15.5px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:var(--disp);font-size:13.5px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--ink)}
+td:first-child{width:44%}
+.toolcell{font-family:var(--disp);font-weight:600;white-space:nowrap}
+.toolcell.tf{color:var(--tf)} .toolcell.ans{color:var(--ans)}
+.toolcell.helm{color:var(--helm)} .toolcell.argo{color:var(--argo)}
+
+/* ---------- dark panels ---------- */
+.panel{background:var(--panel);border:1px solid var(--panel-rule);border-radius:7px;overflow:hidden;color:var(--panel-ink)}
+.panel-head{
+  display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--panel2);
+  border-bottom:1px solid var(--panel-rule);
+  font-family:var(--mono);font-size:12.5px;color:var(--panel-muted)
+}
+.panel-head .ttl{color:var(--panel-ink);font-weight:500}
+.panel-head .right{margin-left:auto;display:flex;gap:7px;align-items:center}
+.panel-body{padding:16px}
+.labcap{font-size:14px;color:var(--muted);margin:10px 2px 0;line-height:1.5}
+.labcap b{color:var(--ink2);font-weight:600}
+
+/* code */
+pre{margin:0;font-family:var(--mono);font-size:13.2px;line-height:1.62;overflow-x:auto;white-space:pre;tab-size:2}
+.code{background:var(--panel);border:1px solid var(--panel-rule);border-radius:7px;overflow:hidden;margin:22px 0}
+.code>.fn{
+  font-family:var(--mono);font-size:12px;color:var(--panel-muted);padding:8px 14px;
+  background:var(--panel2);border-bottom:1px solid var(--panel-rule);display:flex;gap:8px;align-items:center
+}
+.code>.fn .dot{width:7px;height:7px;border-radius:50%;background:var(--panel-muted);flex:none}
+.code.tf>.fn .dot{background:var(--tf-lit)} .code.ans>.fn .dot{background:var(--ans-lit)}
+.code.helm>.fn .dot{background:var(--helm-lit)} .code.argo>.fn .dot{background:var(--argo-lit)}
+.code pre{padding:15px 16px;color:#CBD3DD}
+.tk-c{color:#66748A;font-style:italic}
+.tk-s{color:#96D8B0}
+.tk-k{color:#A78BFF}
+.tk-key{color:#7FB6F2}
+.tk-n{color:#F0B86E}
+.tk-b{color:#FF9E9E}
+.tk-t{color:#FFC46B;font-weight:500}
+.tk-p{color:#6E7B8C}
+.tk-f{color:#9BE0D2}
+
+/* ---------- generic controls ---------- */
+.btn{
+  font-family:var(--disp);font-size:13.5px;font-weight:500;cursor:pointer;
+  background:var(--ink);color:#fff;border:1px solid var(--ink);padding:7px 14px;border-radius:5px;
+  transition:background .14s ease,opacity .14s
+}
+.btn:hover{background:#26313E}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--panel-ink);border-color:var(--panel-rule)}
+.btn.ghost:hover{background:var(--panel3)}
+.btn.lite{background:transparent;color:var(--ink2);border-color:var(--rule)}
+.btn.lite:hover{background:#E4E9EF}
+.chiprow{display:flex;flex-wrap:wrap;gap:7px}
+.chip{
+  font-family:var(--disp);font-size:13px;font-weight:500;cursor:pointer;background:var(--card);
+  border:1px solid var(--rule);color:var(--ink2);padding:6px 12px;border-radius:20px;transition:all .14s ease
+}
+.chip:hover{border-color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.tf[aria-pressed="true"]{background:var(--tf);border-color:var(--tf)}
+.chip.ans[aria-pressed="true"]{background:var(--ans);border-color:var(--ans)}
+.chip.helm[aria-pressed="true"]{background:var(--helm);border-color:var(--helm)}
+.chip.argo[aria-pressed="true"]{background:var(--argo);border-color:var(--argo)}
+.swatch{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:1px}
+.chip .swatch{background:currentColor}
+.chip.tf .swatch{background:var(--tf)} .chip.ans .swatch{background:var(--ans)}
+.chip.helm .swatch{background:var(--helm)} .chip.argo .swatch{background:var(--argo)}
+.chip[aria-pressed="true"] .swatch{background:#fff}
+
+.ctl{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field>span{font-family:var(--mono);font-size:11.5px;color:var(--panel-muted)}
+.field select,.field input[type=text]{
+  font-family:var(--mono);font-size:13px;background:var(--panel3);color:var(--panel-ink);
+  border:1px solid var(--panel-rule);border-radius:5px;padding:6px 9px;min-width:130px
+}
+.field input[type=range]{accent-color:var(--helm-lit);width:150px}
+.togg{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12.5px;color:var(--panel-ink);cursor:pointer;padding-bottom:6px}
+.togg input{accent-color:var(--argo-lit);width:15px;height:15px}
+
+/* ---------- hero compose→prod ---------- */
+.split{display:grid;gap:18px;grid-template-columns:1fr}
+@media(min-width:860px){.split{grid-template-columns:1fr 1fr}}
+.svc{
+  display:block;width:100%;text-align:left;cursor:pointer;background:transparent;border:0;
+  font-family:var(--mono);font-size:13.2px;color:#CBD3DD;padding:2px 8px;border-left:2px solid transparent;
+  border-radius:0 3px 3px 0;white-space:pre;overflow-x:auto
+}
+.svc:hover{background:var(--panel2)}
+.svc.on{background:var(--panel3);border-left-color:var(--argo-lit)}
+.prodcard{padding:2px}
+.prodcard .ttl{font-family:var(--disp);font-size:19px;font-weight:600;color:#fff;margin-bottom:2px}
+.prodcard .was{font-family:var(--mono);font-size:12px;color:var(--panel-muted);margin-bottom:14px}
+.prodcard p{font-size:14.5px;color:#B8C2CE;line-height:1.55;margin:0 0 12px}
+.ownrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.own{
+  font-family:var(--disp);font-size:12px;font-weight:600;padding:4px 10px;border-radius:4px;
+  border:1px solid;background:transparent
+}
+.own.tf{color:var(--tf-lit);border-color:#4A3D8C}
+.own.ans{color:var(--ans-lit);border-color:#803038}
+.own.helm{color:var(--helm-lit);border-color:#2A5388}
+.own.argo{color:var(--argo-lit);border-color:#86662C}
+
+/* ---------- topology svg ---------- */
+.mapwrap{overflow-x:auto;padding:4px}
+.mapwrap svg{display:block;min-width:760px;width:100%;height:auto}
+.n rect{transition:opacity .22s ease,stroke .22s ease,fill .22s ease}
+.n text{transition:opacity .22s ease,fill .22s ease}
+.n{cursor:default}
+.nbox{fill:var(--panel3);stroke:#3A4653;stroke-width:1}
+.nlbl{fill:#E2E8F0;font-family:var(--disp);font-size:13px;font-weight:500}
+.nsub{fill:#8C98A7;font-family:var(--mono);font-size:10.5px}
+.grp{fill:none;stroke:#39434F;stroke-width:1;stroke-dasharray:5 4}
+.grplbl{fill:#7D8998;font-family:var(--mono);font-size:11px}
+.edge{stroke:#48525F;stroke-width:1.4;fill:none}
+.edge.dash{stroke-dasharray:4 4}
+.edgelbl{fill:#6E7B8C;font-family:var(--mono);font-size:10px}
+.n.dim rect{opacity:.17} .n.dim text{opacity:.2}
+.n.hit rect{stroke-width:2}
+.n.hit .nlbl{fill:#fff}
+
+/* ---------- terminal ---------- */
+.term{font-family:var(--mono);font-size:12.8px;line-height:1.6;white-space:pre-wrap;
+  min-height:150px;max-height:400px;overflow-y:auto;color:#B9C2CD}
+.term .ok{color:var(--add-lit)} .term .chg{color:var(--chg-lit)} .term .rm{color:var(--del-lit)}
+.term .skip{color:#6E7B8C} .term .hdr{color:#fff;font-weight:600} .term .dim{color:#6E7B8C}
+.term .tfa{color:var(--tf-lit)} .term .arg{color:var(--argo-lit)}
+.cursor{display:inline-block;width:7px;height:14px;background:#B9C2CD;vertical-align:-2px;animation:bl 1s steps(2) infinite}
+@keyframes bl{50%{opacity:0}}
+
+/* ---------- helm render ---------- */
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--panel-rule);background:var(--panel2);padding:0 8px}
+.tabs button{
+  font-family:var(--mono);font-size:12.5px;background:transparent;border:0;color:var(--panel-muted);
+  padding:9px 12px;cursor:pointer;border-bottom:2px solid transparent
+}
+.tabs button.on{color:#fff;border-bottom-color:var(--helm-lit)}
+.tabs button:hover{color:var(--panel-ink)}
+.pane{display:none;padding:14px 16px;max-height:460px;overflow:auto}
+.pane.on{display:block}
+mark.hl{background:#33507A;color:#EAF1FA;border-radius:2px;padding:0 1px;animation:fade 1.4s ease forwards}
+@keyframes fade{from{background:#3F6699}to{background:transparent;color:#CBD3DD}}
+
+/* ---------- argo sim ---------- */
+.argogrid{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:800px){.argogrid{grid-template-columns:1fr 62px 1fr}}
+.box{background:var(--panel2);border:1px solid var(--panel-rule);border-radius:6px;padding:13px}
+.box h5{font-family:var(--disp);font-size:14px;font-weight:600;color:#fff;margin:0 0 10px}
+.commit{font-family:var(--mono);font-size:11.5px;color:var(--panel-muted);padding:4px 0;border-bottom:1px solid #242D39}
+.commit:first-of-type{color:var(--panel-ink)}
+.commit b{color:var(--argo-lit);font-weight:500}
+.loop{display:grid;place-items:center;gap:6px}
+.gear{width:40px;height:40px;border-radius:50%;border:2px dashed #4A5666;display:grid;place-items:center;
+  font-size:15px;color:var(--argo-lit)}
+.gear.spin{animation:sp 2.4s linear infinite;border-color:var(--argo-lit)}
+@keyframes sp{to{transform:rotate(360deg)}}
+.kv{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:12px;padding:5px 0;border-bottom:1px solid #242D39}
+.kv:last-child{border-bottom:0}
+.kv span:first-child{color:var(--panel-muted)}
+.stat{font-family:var(--disp);font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:3px;border:1px solid}
+.stat.sync{color:var(--add-lit);border-color:#2C6B4E;background:#16281F}
+.stat.out{color:var(--chg-lit);border-color:#6E5A22;background:#2A2415}
+.stat.prog{color:var(--helm-lit);border-color:#2A5388;background:#16222F}
+.stat.deg{color:var(--del-lit);border-color:#7A2F2C;background:#2A1717}
+.pods{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.pod{width:19px;height:19px;border-radius:3px;background:#2C5C44;border:1px solid #3F7C5D;transition:all .3s}
+.pod.new{background:#1E3A5C;border-color:#3A6698}
+.pod.pend{background:#4A3F1C;border-color:#6E5A22}
+.pod.ghost{background:transparent;border:1px dashed #3F4A58}
+
+/* ---------- quiz ---------- */
+.quiz{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:20px 22px;margin:24px 0}
+.qn{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:6px}
+.qq{font-family:var(--disp);font-size:19px;font-weight:600;line-height:1.35;margin-bottom:16px}
+.opts{display:grid;gap:8px;grid-template-columns:1fr}
+@media(min-width:620px){.opts{grid-template-columns:1fr 1fr}}
+.opt{
+  font-family:var(--disp);font-size:14.5px;font-weight:500;text-align:left;cursor:pointer;
+  background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:11px 14px;color:var(--ink);
+  transition:all .14s ease
+}
+.opt:hover:not(:disabled){border-color:var(--ink);background:#E7ECF2}
+.opt:disabled{cursor:default}
+.opt.right{background:#E4F5EC;border-color:var(--add);color:#14603F}
+.opt.wrong{background:#FBE9E8;border-color:var(--del);color:#8A2B27}
+.verdict{margin-top:14px;font-size:15px;line-height:1.55;color:var(--ink2);border-top:1px solid var(--rule-soft);padding-top:13px;display:none}
+.verdict.show{display:block}
+.verdict b{font-family:var(--disp)}
+.qfoot{display:flex;align-items:center;gap:12px;margin-top:16px}
+.score{font-family:var(--mono);font-size:12.5px;color:var(--muted);margin-left:auto}
+
+/* ---------- layer stack ---------- */
+.stack{display:grid;gap:5px;margin:24px 0}
+.layer{
+  display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;
+  background:var(--card);border:1px solid var(--rule);border-left:4px solid var(--rule);
+  padding:12px 15px;border-radius:0 6px 6px 0
+}
+.layer.tf{border-left-color:var(--tf)} .layer.ans{border-left-color:var(--ans)}
+.layer.helm{border-left-color:var(--helm)} .layer.argo{border-left-color:var(--argo)}
+.layer b{font-family:var(--disp);font-size:15.5px;font-weight:600;display:block}
+.layer i{font-style:normal;font-size:14px;color:var(--muted);display:block;line-height:1.45}
+.layer .who{font-family:var(--disp);font-size:12.5px;font-weight:600;white-space:nowrap}
+.layer.tf .who{color:var(--tf)} .layer.ans .who{color:var(--ans)}
+.layer.helm .who{color:var(--helm)} .layer.argo .who{color:var(--argo)}
+
+/* ---------- timeline ---------- */
+.tl{border-left:2px solid var(--rule);margin:24px 0 24px 10px;padding-left:0}
+.tlstep{position:relative;padding:0 0 4px 26px}
+.tlstep::before{
+  content:"";position:absolute;left:-7px;top:11px;width:12px;height:12px;border-radius:50%;
+  background:var(--paper);border:2px solid var(--muted)
+}
+.tlstep.tf::before{border-color:var(--tf)} .tlstep.ans::before{border-color:var(--ans)}
+.tlstep.helm::before{border-color:var(--helm)} .tlstep.argo::before{border-color:var(--argo)}
+.tlstep>button{
+  width:100%;text-align:left;background:transparent;border:0;cursor:pointer;padding:8px 0;
+  font-family:var(--disp);font-size:16px;font-weight:600;color:var(--ink);display:flex;gap:10px;align-items:baseline
+}
+.tlstep>button:hover{color:#2B4A7D}
+.tlstep .tag{font-family:var(--disp);font-size:11.5px;font-weight:600;padding:2px 7px;border-radius:3px;border:1px solid}
+.tag.tf{color:var(--tf);border-color:#C3B7F5;background:#F1EDFE}
+.tag.ans{color:var(--ans);border-color:#F0BCC0;background:#FCEEEF}
+.tag.helm{color:var(--helm);border-color:#B4CFF0;background:#EAF2FC}
+.tag.argo{color:var(--argo);border-color:#EBCF9E;background:#FBF3E4}
+.tag.ci{color:#4A5563;border-color:var(--rule);background:var(--card)}
+.tlbody{display:none;padding:0 0 14px}
+.tlbody.on{display:block}
+.tlbody p{font-size:15px;color:var(--ink2);margin:0 0 10px}
+.tlbody .code{margin:10px 0 0}
+
+/* ---------- misc ---------- */
+.grid2{display:grid;gap:14px;grid-template-columns:1fr;margin:22px 0}
+@media(min-width:760px){.grid2{grid-template-columns:1fr 1fr}}
+.mini{background:var(--card);border:1px solid var(--rule);border-radius:7px;padding:15px 17px}
+.mini h4{margin:0 0 6px;font-size:15.5px}
+.mini p{font-size:14.5px;color:var(--ink2);margin:0;line-height:1.5}
+.mini.bad{border-color:#EBC9C7;background:#FDF4F3}
+.mini.good{border-color:#C4E3D2;background:#F2FAF6}
+.mini.bad h4{color:#9A3430} .mini.good h4{color:#1B6844}
+
+footer{border-top:1px solid var(--rule);margin-top:70px;padding:34px 0 60px;color:var(--muted);font-size:14.5px}
+footer p{margin:0 0 8px}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:0.001ms !important;animation-iteration-count:1 !important;transition-duration:0.001ms !important}
+}
+@media(max-width:620px){
+  .brandmark{display:none}
+}
+@media(max-width:700px){
+  body{font-size:16px}
+  code{overflow-wrap:anywhere}
+  .lede{font-size:17.5px}
+  pre{font-size:12.2px}
+  .hero{padding:40px 0 16px}
+  .module{padding:42px 0 10px}
+}
+</style>
+</head>
+<body>
+<div class="railbar">
+  <div class="inner">
+    <div class="brandmark">compose &rarr; production <span>/ urlshort</span></div>
+    <nav class="navlinks" id="nav">
+      <a href="#m0">The gap</a>
+      <a href="#m1">Terraform</a>
+      <a href="#m2">Ansible</a>
+      <a href="#m3">Helm</a>
+      <a href="#m4">Argo CD</a>
+      <a href="#m5">Together</a>
+    </nav>
+  </div>
+  <div class="progwrap"><div id="prog"></div></div>
+</div>
+
+<header class="hero">
+  <div class="col">
+    <h1>Everything <code style="font-size:.72em;background:#E0E6EE">docker&nbsp;compose&nbsp;up</code> quietly assumes</h1>
+    <p class="sub">One URL shortener, taken from a compose file you already understand to a real production deployment &mdash; with a straight answer about which of Terraform, Ansible, Helm and Argo&nbsp;CD owns each piece, and why.</p>
+    <div class="meta">
+      <b>~60 minutes</b><b>8 things to click</b><b>assumes: docker, compose</b><b>assumes: no kubernetes</b>
+    </div>
+  </div>
+</header>
+
+<div class="lab">
+  <div class="panel">
+    <div class="panel-head">
+      <span class="ttl">docker-compose.yml</span>
+      <span>&mdash; click any service to see what it becomes in production</span>
+    </div>
+    <div class="panel-body">
+      <div class="split">
+        <div id="composeList"></div>
+        <div class="box" style="align-self:start"><div class="prodcard" id="prodCard"></div></div>
+      </div>
+    </div>
+  </div>
+  <p class="labcap">Same eight services. In production nothing runs on one box, and every service needs an owner &mdash; something that decides it exists, decides how it is configured, and puts it back when it drifts.</p>
+</div>
+
+<main>
+
+<section class="module" id="m0">
+  <div class="col">
+    <div class="modhead">
+      <div class="modnum">0</div>
+      <h2>The gap</h2>
+      <span class="mins">5 min</span>
+    </div>
+    <p class="lede">Compose answers exactly one question: given a machine that already has Docker on it, which containers run and how do they reach each other. Every other question in production belongs to somebody else.</p>
+
+    <p>When you run <code>docker compose up -d</code> on a VPS, you are silently relying on a long list of things having already happened. The machine exists. It has a public IP and a disk. A firewall lets 443 in. DNS points at it. Docker is installed and starts on boot. And when you ship new code, a human SSHes in and runs <code>git pull &amp;&amp; docker compose up -d</code>.</p>
+
+    <p>In production each of those becomes a job with an owner. The four tools in this course are four different owners, and the cleanest way to keep them straight is to ask which question each one answers.</p>
+
+    <table>
+      <thead><tr><th>The question</th><th>The owner</th></tr></thead>
+      <tbody>
+        <tr><td>Does this machine, network, database, cluster or DNS record exist at all?</td><td class="toolcell tf">Terraform</td></tr>
+        <tr><td>Given a machine that exists, is the software on it installed and configured the way we want?</td><td class="toolcell ans">Ansible</td></tr>
+        <tr><td>What does one deployable unit of our app look like, expressed once and parameterised per environment?</td><td class="toolcell helm">Helm</td></tr>
+        <tr><td>Does the live cluster currently match what is in Git &mdash; and if not, make it match.</td><td class="toolcell argo">Argo CD</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Two of these are infrastructure, two are applications</h3>
+
+    <p>The single most useful split. Terraform and Ansible are concerned with the substrate: the cloud account, the machines, the managed services, the operating systems. They run before your app exists, and they run again only when the substrate changes &mdash; which might be once a month.</p>
+
+    <p>Helm and Argo CD are concerned with the application: the containers, their config, their versions, their rollouts. They run every time an engineer merges a pull request &mdash; which might be forty times a day.</p>
+
+    <p>That difference in <em>cadence</em> is why the tools are separate. Anything that changes forty times a day should not be described in the same place as your VPC.</p>
+
+    <div class="stack">
+      <div class="layer tf"><div><b>Cloud account &amp; network</b><i>VPC, subnets, security groups, IAM roles, TLS certs, DNS records, load balancer</i></div><div class="who">Terraform</div></div>
+      <div class="layer tf"><div><b>Managed services &amp; machines</b><i>RDS Postgres, ElastiCache Redis, MSK Kafka, S3 buckets, the EKS cluster itself, bare EC2 instances</i></div><div class="who">Terraform</div></div>
+      <div class="layer ans"><div><b>Inside a machine that isn&rsquo;t a container</b><i>packages, users, disk mounts, sysctls, ClickHouse config files, kernel upgrades</i></div><div class="who">Ansible</div></div>
+      <div class="layer helm"><div><b>The shape of the app</b><i>Deployments, Services, Ingress, HPA, ConfigMaps &mdash; templated once, valued per environment</i></div><div class="who">Helm</div></div>
+      <div class="layer argo"><div><b>Getting that shape into the cluster, continuously</b><i>watching Git, syncing, detecting drift, healing, rolling back</i></div><div class="who">Argo CD</div></div>
+    </div>
+
+    <div class="note">
+      <b class="tag">Helm and Argo CD are not alternatives</b>
+      <p>This trips almost everybody up. Helm is a <em>packaging and templating</em> format &mdash; it turns values into Kubernetes YAML. Argo CD is a <em>delivery</em> mechanism &mdash; it takes Kubernetes YAML and keeps it applied to a cluster. Argo CD renders your Helm chart itself and then applies the result. They are a pipeline, not a choice.</p>
+    </div>
+
+    <div class="note warn">
+      <b class="tag">You probably don&rsquo;t need all four</b>
+      <p>A small team on EKS with fully managed data services can run Terraform plus Argo CD and never install Ansible, because there are no machines to configure &mdash; the nodes are cattle from an AMI. Ansible earns its place the moment you own a pet VM. In this course the ClickHouse cluster is that pet, deliberately, so you can see where the line falls.</p>
+    </div>
+  </div>
+</section>
+<div class="lab" id="maplab">
+  <div class="panel">
+    <div class="panel-head">
+      <span class="ttl">urlshort &mdash; production topology</span>
+      <span class="right" style="font-size:12px">one AWS account, one region</span>
+    </div>
+    <div class="panel-body">
+      <div class="chiprow" style="margin-bottom:14px" id="mapChips">
+        <button class="chip" data-tool="all" aria-pressed="true">Show everything</button>
+        <button class="chip tf" data-tool="tf" aria-pressed="false"><span class="swatch"></span>Terraform</button>
+        <button class="chip ans" data-tool="ans" aria-pressed="false"><span class="swatch"></span>Ansible</button>
+        <button class="chip helm" data-tool="helm" aria-pressed="false"><span class="swatch"></span>Helm</button>
+        <button class="chip argo" data-tool="argo" aria-pressed="false"><span class="swatch"></span>Argo CD</button>
+      </div>
+      <div class="mapwrap">
+<svg viewBox="0 0 940 500" role="img" aria-label="Production topology of the urlshort service on AWS" id="topo">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5A6675"/>
+    </marker>
+  </defs>
+
+  <!-- groups -->
+  <g class="n" data-own="tf">
+    <rect class="grp" x="16" y="74" width="908" height="404" rx="9"/>
+    <text class="grplbl" x="30" y="94">VPC 10.0.0.0/16 &middot; 3 AZs &middot; public + private subnets</text>
+  </g>
+  <g class="n" data-own="tf helm argo">
+    <rect class="grp" x="32" y="160" width="440" height="300" rx="8"/>
+    <text class="grplbl" x="44" y="180">EKS cluster</text>
+  </g>
+  <g class="n" data-own="tf ans">
+    <rect class="grp" x="724" y="160" width="186" height="290" rx="8"/>
+    <text class="grplbl" x="736" y="180">EC2 &middot; analytics</text>
+  </g>
+
+  <!-- edges -->
+  <path class="edge" d="M114,33 L128,33" marker-end="url(#ar)"/>
+  <path class="edge" d="M244,33 L258,33" marker-end="url(#ar)"/>
+  <path class="edge" d="M388,33 L402,33" marker-end="url(#ar)"/>
+  <path class="edge" d="M188,50 L188,84 L134,84 L134,100" marker-end="url(#ar)"/>
+  <path class="edge" d="M134,144 L134,170 L358,170 L358,186" marker-end="url(#ar)"/>
+  <path class="edge" d="M358,232 L358,248" marker-end="url(#ar)"/>
+  <path class="edge" d="M460,262 L478,262 L478,211 L496,211" marker-end="url(#ar)"/>
+  <path class="edge" d="M460,274 L496,274" marker-end="url(#ar)"/>
+  <path class="edge" d="M460,288 L494,288 L494,335 L496,335" marker-end="url(#ar)"/>
+  <path class="edge" d="M500,346 L464,346" marker-end="url(#ar)"/>
+  <path class="edge" d="M358,362 L358,370 L710,370 L710,265 L732,265" marker-end="url(#ar)"/>
+  <path class="edge dash" d="M230,215 L244,215 L244,211 L252,211" marker-end="url(#ar)"/>
+  <path class="edge dash" d="M230,245 L250,245 L250,275 L252,275" marker-end="url(#ar)"/>
+  <path class="edge dash" d="M230,278 L244,278 L244,339 L252,339" marker-end="url(#ar)"/>
+  <text class="edgelbl" x="252" y="196">applies</text>
+  <text class="edgelbl" x="503" y="205">read/write</text>
+  <text class="edgelbl" x="503" y="268">cache</text>
+  <text class="edgelbl" x="503" y="329">produce</text>
+  <text class="edgelbl" x="466" y="341">consume</text>
+  <text class="edgelbl" x="560" y="366">insert events</text>
+
+  <!-- edge nodes -->
+  <g class="n" data-own="">
+    <rect class="nbox" x="22" y="16" width="92" height="34" rx="5"/>
+    <text class="nlbl" x="38" y="38">Browser</text>
+  </g>
+  <g class="n" data-own="tf">
+    <rect class="nbox" x="132" y="16" width="112" height="34" rx="5"/>
+    <text class="nlbl" x="150" y="38">Route 53</text>
+  </g>
+  <g class="n" data-own="tf">
+    <rect class="nbox" x="262" y="16" width="126" height="34" rx="5"/>
+    <text class="nlbl" x="277" y="38">CloudFront</text>
+  </g>
+  <g class="n" data-own="tf">
+    <rect class="nbox" x="406" y="16" width="150" height="34" rx="5"/>
+    <text class="nlbl" x="420" y="32">S3 bucket</text>
+    <text class="nsub" x="420" y="45">dashboard SPA build</text>
+  </g>
+  <g class="n" data-own="tf">
+    <rect class="nbox" x="576" y="16" width="120" height="34" rx="5"/>
+    <text class="nlbl" x="590" y="32">ECR</text>
+    <text class="nsub" x="590" y="45">container images</text>
+  </g>
+  <g class="n" data-own="tf">
+    <rect class="nbox" x="714" y="16" width="150" height="34" rx="5"/>
+    <text class="nlbl" x="728" y="32">Secrets Manager</text>
+    <text class="nsub" x="728" y="45">db password, api keys</text>
+  </g>
+
+  <!-- alb -->
+  <g class="n" data-own="tf helm">
+    <rect class="nbox" x="44" y="100" width="180" height="44" rx="5"/>
+    <text class="nlbl" x="58" y="119">Application Load Balancer</text>
+    <text class="nsub" x="58" y="134">TLS terminated, ACM cert</text>
+  </g>
+
+  <!-- eks internals: platform column -->
+  <g class="n" data-own="argo">
+    <rect class="nbox" x="44" y="190" width="186" height="110" rx="5"/>
+    <text class="nlbl" x="58" y="214">argo-cd</text>
+    <text class="nsub" x="58" y="230">namespace: argocd</text>
+    <text class="nsub" x="58" y="248">application-controller</text>
+    <text class="nsub" x="58" y="264">repo-server (renders Helm)</text>
+    <text class="nsub" x="58" y="280">redis, dex, server UI</text>
+  </g>
+  <g class="n" data-own="tf">
+    <rect class="nbox" x="44" y="316" width="186" height="46" rx="5"/>
+    <text class="nlbl" x="58" y="336">managed node group</text>
+    <text class="nsub" x="58" y="351">6 &times; m6i.large, autoscaled</text>
+  </g>
+  <g class="n" data-own="helm argo">
+    <rect class="nbox" x="44" y="380" width="186" height="60" rx="5"/>
+    <text class="nlbl" x="58" y="402">External Secrets</text>
+    <text class="nsub" x="58" y="418">Secrets Manager entry</text>
+    <text class="nsub" x="58" y="432">&rarr; kubernetes Secret</text>
+  </g>
+
+  <!-- eks internals: app column -->
+  <g class="n" data-own="helm argo">
+    <rect class="nbox" x="252" y="190" width="208" height="42" rx="5"/>
+    <text class="nlbl" x="266" y="209">Ingress</text>
+    <text class="nsub" x="266" y="223">urlsh.rt &middot; /api &middot; /r/{code}</text>
+  </g>
+  <g class="n" data-own="helm argo">
+    <rect class="nbox" x="252" y="248" width="208" height="50" rx="5"/>
+    <text class="nlbl" x="266" y="269">api &times; 3</text>
+    <text class="nsub" x="266" y="284">Deployment &middot; rolling update</text>
+  </g>
+  <g class="n" data-own="helm argo">
+    <rect class="nbox" x="252" y="316" width="208" height="46" rx="5"/>
+    <text class="nlbl" x="266" y="336">click-consumer &times; 2</text>
+    <text class="nsub" x="266" y="351">Deployment &middot; kafka &rarr; clickhouse</text>
+  </g>
+  <g class="n" data-own="helm argo">
+    <rect class="nbox" x="252" y="380" width="208" height="60" rx="5"/>
+    <text class="nlbl" x="266" y="402">Service &middot; ConfigMap</text>
+    <text class="nsub" x="266" y="418">HPA &middot; PodDisruptionBudget</text>
+    <text class="nsub" x="266" y="432">ServiceAccount &middot; IRSA role</text>
+  </g>
+
+  <!-- data column -->
+  <g class="n" data-own="tf">
+    <rect class="nbox" x="496" y="186" width="202" height="50" rx="5"/>
+    <text class="nlbl" x="510" y="207">RDS PostgreSQL</text>
+    <text class="nsub" x="510" y="222">canonical urls &middot; multi-AZ</text>
+  </g>
+  <g class="n" data-own="tf">
+    <rect class="nbox" x="496" y="248" width="202" height="50" rx="5"/>
+    <text class="nlbl" x="510" y="269">ElastiCache Redis</text>
+    <text class="nsub" x="510" y="284">hot codes &middot; 24h TTL</text>
+  </g>
+  <g class="n" data-own="tf">
+    <rect class="nbox" x="496" y="310" width="202" height="50" rx="5"/>
+    <text class="nlbl" x="510" y="331">MSK &middot; Kafka</text>
+    <text class="nsub" x="510" y="346">topic: link.clicks</text>
+  </g>
+  <g class="n" data-own="tf ans">
+    <rect class="nbox" x="496" y="380" width="202" height="50" rx="5"/>
+    <text class="nlbl" x="510" y="401">Bastion host</text>
+    <text class="nsub" x="510" y="416">ansible reaches the VMs here</text>
+  </g>
+
+  <!-- clickhouse -->
+  <g class="n" data-own="tf ans">
+    <rect class="nbox" x="732" y="190" width="164" height="42" rx="5"/>
+    <text class="nlbl" x="744" y="209">clickhouse-01</text>
+    <text class="nsub" x="744" y="223">shard 1</text>
+  </g>
+  <g class="n" data-own="tf ans">
+    <rect class="nbox" x="732" y="244" width="164" height="42" rx="5"/>
+    <text class="nlbl" x="744" y="263">clickhouse-02</text>
+    <text class="nsub" x="744" y="277">shard 2</text>
+  </g>
+  <g class="n" data-own="tf ans">
+    <rect class="nbox" x="732" y="298" width="164" height="42" rx="5"/>
+    <text class="nlbl" x="744" y="317">clickhouse-03</text>
+    <text class="nsub" x="744" y="331">shard 3</text>
+  </g>
+  <g class="n" data-own="tf">
+    <rect class="nbox" x="732" y="352" width="164" height="42" rx="5"/>
+    <text class="nlbl" x="744" y="371">EBS gp3 &times; 3</text>
+    <text class="nsub" x="744" y="385">2 TB each</text>
+  </g>
+  <g class="n" data-own="ans">
+    <text class="nsub" x="732" y="416">Terraform makes the boxes.</text>
+    <text class="nsub" x="732" y="430">Ansible makes them ClickHouse.</text>
+  </g>
+</svg>
+      </div>
+      <p id="mapNote" style="font-family:var(--mono);font-size:12.5px;color:var(--panel-muted);margin:12px 2px 0;min-height:34px;line-height:1.5"></p>
+    </div>
+  </div>
+  <p class="labcap"><b>One box has two owners.</b> The ClickHouse instances are created by Terraform and made into a ClickHouse cluster by Ansible. The load balancer is subtler still: Terraform sets up the controller and tags the subnets, but the actual ALB is created on demand from the Ingress object your chart defines. Shared ownership is normal &mdash; what matters is that only one tool <em>writes</em> each specific attribute.</p>
+</div>
+<section class="module" id="m1">
+  <div class="col">
+    <div class="modhead">
+      <div class="modnum">1</div>
+      <h2>Terraform</h2>
+      <span class="mins">13 min</span>
+    </div>
+    <p class="lede">Terraform&rsquo;s job is to make things exist. You describe the cloud resources you want in a file; it works out the difference between that file and reality, and calls the cloud&rsquo;s API until they match.</p>
+
+    <p>You could do all of this with the AWS console, or with a long shell script full of <code>aws rds create-db-instance</code> calls. Terraform is different from the script in four specific ways, and all four are worth understanding before you write a line of it.</p>
+
+    <h3>1. It is declarative, and it has a memory</h3>
+
+    <p>A shell script says <em>create a database</em>. Run it twice, get two databases. Terraform config says <em>a database with these properties exists</em>. Run it twice, the second run does nothing.</p>
+
+    <p>That only works because Terraform keeps a <strong>state file</strong>: a JSON map from the addresses in your config (<code>aws_db_instance.canonical</code>) to real resource IDs in the cloud (<code>db-XKPQ2N&hellip;</code>), plus a snapshot of every attribute as it was at the last apply. State is what lets it tell &ldquo;this is new&rdquo; from &ldquo;this exists and changed&rdquo; from &ldquo;this exists and is fine&rdquo;.</p>
+
+    <div class="note warn">
+      <b class="tag">The state file is the whole game</b>
+      <p>Almost every Terraform horror story is a state story. If the state is lost, Terraform thinks nothing exists and tries to create a duplicate of your production database. If two engineers apply at once, they write conflicting states and one set of changes silently vanishes. So the state never lives on a laptop: it lives in an S3 bucket (or Terraform Cloud, or GCS) with versioning on and locking enabled, from the very first commit.</p>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="code tf">
+      <div class="fn"><span class="dot"></span>infra/prod/versions.tf</div>
+<pre data-lang="hcl">terraform {
+  required_version = "~&gt; 1.10"
+
+  required_providers {
+    aws = { source = "hashicorp/aws", version = "~&gt; 5.60" }
+  }
+
+  # Remote state, encrypted, versioned, locked. Do this on day one --
+  # migrating a local state file later is the worst afternoon of your quarter.
+  backend "s3" {
+    bucket       = "urlshort-tfstate"
+    key          = "prod/infra.tfstate"
+    region       = "ap-south-1"
+    encrypt      = true
+    use_lockfile = true   # native S3 locking; the old way was a DynamoDB table
+  }
+}
+
+provider "aws" {
+  region = "ap-south-1"
+  default_tags {
+    tags = { service = "urlshort", env = "prod", managed_by = "terraform" }
+  }
+}</pre>
+    </div>
+
+    <h3>2. It plans before it touches anything</h3>
+
+    <p><code>terraform plan</code> reads your config, refreshes the real state of each tracked resource, and prints the exact set of API calls it intends to make. Four symbols carry all the meaning:</p>
+
+    <ul>
+      <li><code>+</code> create &mdash; the resource is in your config but not in state.</li>
+      <li><code>~</code> update in place &mdash; an attribute changed and the API can change it live.</li>
+      <li><code>-</code> destroy &mdash; the resource is in state but no longer in your config.</li>
+      <li><code>-/+</code> <strong>replace</strong> &mdash; an attribute changed that the API cannot change live, so Terraform will delete the resource and create a new one. On a database, this is a production incident wearing a plus sign.</li>
+    </ul>
+
+    <p>Reading plans carefully is the actual skill. Try it below: change something, plan it, and watch for the line that says <em>forces replacement</em>.</p>
+  </div>
+
+  <div class="lab" id="tflab">
+    <div class="panel">
+      <div class="panel-head">
+        <span class="ttl">terraform plan</span>
+        <span class="right"><span id="tfStateCount" style="font-family:var(--mono);font-size:11.5px"></span></span>
+      </div>
+      <div class="panel-body">
+        <div class="ctl" style="margin-bottom:16px">
+          <label class="field"><span>var.pg_instance_class</span>
+            <select id="tfPg">
+              <option>db.t4g.medium</option>
+              <option selected>db.m6g.large</option>
+              <option>db.r6g.xlarge</option>
+            </select>
+          </label>
+          <label class="field"><span>var.redis_node_type</span>
+            <select id="tfRedis">
+              <option selected>cache.t4g.small</option>
+              <option>cache.m7g.large</option>
+              <option>cache.r7g.xlarge</option>
+            </select>
+          </label>
+          <label class="field"><span>var.clickhouse_node_count</span>
+            <select id="tfCh">
+              <option selected>1</option>
+              <option>3</option>
+              <option>6</option>
+            </select>
+          </label>
+          <label class="togg"><input type="checkbox" id="tfMaz"> multi_az</label>
+          <label class="togg"><input type="checkbox" id="tfRename"> rename db identifier</label>
+        </div>
+        <div class="chiprow" style="margin-bottom:14px">
+          <button class="btn" id="tfPlan">terraform plan</button>
+          <button class="btn ghost" id="tfApply" disabled>terraform apply</button>
+          <button class="btn ghost" id="tfReset">reset state</button>
+        </div>
+        <div class="term" id="tfTerm"></div>
+      </div>
+    </div>
+    <p class="labcap"><b>Try the rename toggle.</b> Changing an RDS instance&rsquo;s <code>identifier</code> is not an in&#8209;place operation, so Terraform proposes deleting your database and building an empty one. Nothing warns you louder than that <code>-/+</code>, and nothing is easier to scroll past at 6pm.</p>
+  </div>
+
+  <div class="col">
+    <h3>3. The order of operations is derived, not written</h3>
+
+    <p>Notice that you never told Terraform to create the subnet group before the database. It builds a dependency graph from the references in your code: the moment <code>aws_db_instance.canonical</code> mentions <code>aws_db_subnet_group.private.name</code>, an edge exists. Everything unrelated is created in parallel, which is why the apply above finished the EBS volumes while RDS was still churning.</p>
+
+    <p>You only reach for <code>depends_on</code> when the dependency is real but invisible to the code &mdash; an IAM policy that must be attached before a service can assume the role, for instance.</p>
+
+    <h3>4. One language, many APIs</h3>
+
+    <p>Providers are plugins that translate Terraform resources into API calls. AWS, Cloudflare, GitHub, Datadog, PagerDuty, your DNS registrar. The useful consequence: the DNS record pointing at the load balancer, the Datadog monitor watching it, and the GitHub repo secret holding the deploy role ARN can all be described in the same file as the load balancer, and they can all reference each other.</p>
+
+    <h3>The parts of urlshort that Terraform owns</h3>
+  </div>
+
+  <div class="col">
+    <div class="code tf">
+      <div class="fn"><span class="dot"></span>infra/prod/data.tf &mdash; the stateful services</div>
+<pre data-lang="hcl">resource "aws_db_instance" "canonical" {
+  identifier     = "urlshort-prod-pg"
+  engine         = "postgres"
+  engine_version = "16.4"
+  instance_class = var.pg_instance_class
+
+  allocated_storage     = 200
+  storage_encrypted     = true
+  multi_az              = true
+  db_name               = "urlshort"
+  username              = "urlshort"
+
+  # AWS generates the password and writes it to Secrets Manager itself,
+  # so it never appears in the plan, the state file, or your terminal.
+  manage_master_user_password = true
+
+  db_subnet_group_name   = aws_db_subnet_group.private.name
+  vpc_security_group_ids = [aws_security_group.pg.id]
+
+  backup_retention_period = 14
+  deletion_protection     = true
+  skip_final_snapshot     = false
+}
+
+resource "aws_elasticache_replication_group" "cache" {
+  replication_group_id = "urlshort-prod-redis"
+  description          = "hot short codes, 24h ttl"
+  engine               = "redis"
+  engine_version       = "7.1"
+  node_type            = var.redis_node_type
+  num_cache_clusters   = 2
+
+  automatic_failover_enabled = true
+  transit_encryption_enabled = true
+
+  subnet_group_name  = aws_elasticache_subnet_group.private.name
+  security_group_ids = [aws_security_group.redis.id]
+}</pre>
+    </div>
+
+    <div class="code tf">
+      <div class="fn"><span class="dot"></span>infra/prod/clickhouse.tf &mdash; machines, deliberately left empty</div>
+<pre data-lang="hcl">resource "aws_instance" "clickhouse" {
+  count         = var.clickhouse_node_count
+  ami           = data.aws_ami.ubuntu_2404.id
+  instance_type = "r6i.2xlarge"
+  subnet_id     = module.vpc.private_subnets[count.index % 3]
+
+  vpc_security_group_ids = [aws_security_group.clickhouse.id]
+  iam_instance_profile   = aws_iam_instance_profile.clickhouse.name
+
+  root_block_device {
+    volume_size = 40
+    volume_type = "gp3"
+  }
+
+  tags = {
+    Name          = format("clickhouse-%02d", count.index + 1)
+    Shard         = count.index + 1
+    # This tag is the entire handoff to Ansible. Nothing else is needed.
+    AnsibleGroup  = "clickhouse"
+  }
+}
+
+resource "aws_ebs_volume" "clickhouse_data" {
+  count             = var.clickhouse_node_count
+  availability_zone = aws_instance.clickhouse[count.index].availability_zone
+  size              = 2000
+  type              = "gp3"
+  throughput        = 500
+  encrypted         = true
+}
+
+resource "aws_volume_attachment" "clickhouse_data" {
+  count       = var.clickhouse_node_count
+  device_name = "/dev/xvdf"
+  volume_id   = aws_ebs_volume.clickhouse_data[count.index].id
+  instance_id = aws_instance.clickhouse[count.index].id
+}</pre>
+    </div>
+
+    <div class="note tf">
+      <b class="tag">Note what is missing</b>
+      <p>Terraform attaches a 2&nbsp;TB disk to each box and stops. It does not format it, mount it, install ClickHouse, or write <code>config.d/cluster.xml</code>. There is no <code>user_data</code> bash script either &mdash; that would run exactly once, at first boot, with no way to converge the box later. Everything from &ldquo;an Ubuntu machine exists&rdquo; to &ldquo;a ClickHouse shard is serving&rdquo; is the next module&rsquo;s job.</p>
+    </div>
+
+    <h3>Getting values out of Terraform</h3>
+
+    <p>Outputs are the published interface of your infrastructure. Everything downstream &mdash; Ansible, Helm, your CI &mdash; reads these rather than hardcoding endpoints.</p>
+
+    <div class="code tf">
+      <div class="fn"><span class="dot"></span>infra/prod/outputs.tf</div>
+<pre data-lang="hcl">output "redis_endpoint" {
+  value = aws_elasticache_replication_group.cache.primary_endpoint_address
+}
+
+output "kafka_brokers" {
+  value = aws_msk_cluster.events.bootstrap_brokers_sasl_iam
+}
+
+output "pg_secret_arn" {
+  # the ARN, not the password. External Secrets will resolve it in-cluster.
+  value = aws_db_instance.canonical.master_user_secret[0].secret_arn
+}
+
+output "eks_cluster_name" {
+  value = module.eks.cluster_name
+}</pre>
+    </div>
+
+    <p>Endpoints are not secrets, so they can be committed straight into your Helm values for that environment. Credentials are, so only the ARN travels &mdash; the actual password is fetched inside the cluster at runtime. We will close that loop in module&nbsp;4.</p>
+
+    <h3>How to lay it out</h3>
+
+    <p>Two conventions carry most teams a long way:</p>
+
+    <ul>
+      <li><strong>A directory per environment</strong>, each with its own backend key: <code>infra/dev</code>, <code>infra/staging</code>, <code>infra/prod</code>. Shared logic lives in <code>modules/</code> and is called from all three. Terraform workspaces look like a neater answer but they share one config, so &ldquo;prod has an extra read replica&rdquo; turns into conditionals scattered through your code.</li>
+      <li><strong>Split state by blast radius and cadence.</strong> The VPC changes twice a year; the EKS node groups change monthly. Keeping them in separate state files means a mistake in one cannot propose destroying the other, and a plan takes twenty seconds instead of four minutes.</li>
+    </ul>
+
+    <div class="grid2">
+      <div class="mini bad">
+        <h4>Don&rsquo;t deploy your app with Terraform</h4>
+        <p>The <code>helm_release</code> resource exists and it is tempting. But then a release version lives in your infra state, every app deploy needs infra credentials, a failed rollout leaves state tainted, and you have no drift detection between deploys. Use it for cluster add&#8209;ons that must exist before anything else &mdash; a CNI, cert&#8209;manager, Argo CD itself &mdash; and nothing you ship weekly.</p>
+      </div>
+      <div class="mini good">
+        <h4>Do put the bootstrap in Terraform</h4>
+        <p>Something has to install Argo CD before Argo CD can install things. Terraform creating the cluster and then applying exactly one Helm release &mdash; Argo CD &mdash; plus one root <code>Application</code>, is the clean version of that chicken&#8209;and&#8209;egg. After that, Terraform never touches the cluster&rsquo;s contents again.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col"><div class="quiz" data-quiz="q1"></div></div>
+</section>
+<section class="module" id="m2">
+  <div class="col">
+    <div class="modhead">
+      <div class="modnum">2</div>
+      <h2>Ansible</h2>
+      <span class="mins">10 min</span>
+    </div>
+    <p class="lede">Terraform handed you three Ubuntu boxes with an unformatted 2&nbsp;TB disk bolted on. Ansible&rsquo;s job is to turn those into a ClickHouse cluster, and to be able to do it again next month without breaking anything.</p>
+
+    <p>Mechanically it is simple: Ansible opens an SSH connection to each host, copies small Python programs over, runs them, collects the results, moves to the next task. No agent, no daemon, no server. If you can SSH to a box you can Ansible it.</p>
+
+    <p>Three nouns and you have the whole model:</p>
+
+    <ul>
+      <li><strong>Inventory</strong> &mdash; which hosts exist and what groups they are in.</li>
+      <li><strong>Playbook</strong> &mdash; an ordered list of tasks to run against a group.</li>
+      <li><strong>Module</strong> &mdash; the verb a task uses: <code>apt</code>, <code>template</code>, <code>mount</code>, <code>systemd</code>, <code>user</code>. There are thousands.</li>
+    </ul>
+
+    <h3>The property that makes it not a shell script</h3>
+
+    <p>A task does not say &ldquo;run <code>apt install clickhouse-server</code>&rdquo;. It says &ldquo;the package <code>clickhouse-server</code> at version 24.8 is present&rdquo;. The module checks first, acts only if needed, and reports back one of three words:</p>
+
+    <ul>
+      <li><code>ok</code> &mdash; reality already matched. Nothing was done.</li>
+      <li><code>changed</code> &mdash; reality did not match, and the module fixed it.</li>
+      <li><code>failed</code> &mdash; it could not.</li>
+    </ul>
+
+    <p>That distinction is the entire point of Ansible, and it gives you a genuinely useful property: <strong>a second run of a correct playbook should report zero changes</strong>. A playbook that keeps reporting changes on every run is a playbook with a bug &mdash; usually a <code>shell:</code> task someone reached for instead of a module.</p>
+
+    <p>Run the playbook below twice and watch the recap line.</p>
+  </div>
+
+  <div class="lab" id="anslab">
+    <div class="panel">
+      <div class="panel-head">
+        <span class="ttl">ansible-playbook -i inventory/aws_ec2.yml site.yml</span>
+        <span class="right"><span id="ansState" style="font-family:var(--mono);font-size:11.5px"></span></span>
+      </div>
+      <div class="panel-body">
+        <div class="chiprow" style="margin-bottom:14px">
+          <button class="btn" id="ansRun">Run playbook</button>
+          <button class="btn ghost" id="ansCheck">Run with --check --diff</button>
+          <button class="btn ghost" id="ansDrift">Someone edits a config by hand</button>
+          <button class="btn ghost" id="ansWipe">Rebuild the boxes</button>
+        </div>
+        <div class="term" id="ansTerm"></div>
+      </div>
+    </div>
+    <p class="labcap"><b>The third button is the interesting one.</b> An engineer SSHes into <code>clickhouse-02</code> at 3am to bump a setting and never writes it down. Run the playbook again: exactly one task reports <code>changed</code> on exactly one host, the file goes back to what the repo says, and the restart handler fires only there. Convergence, not a rerun of everything.</p>
+  </div>
+
+  <div class="col">
+    <h3>Handlers: restart only when something actually changed</h3>
+
+    <p>Restarting ClickHouse on every run would be an outage generator. Handlers solve this: a task <em>notifies</em> a handler, and the handler runs once, at the end of the play, only if at least one notifying task reported <code>changed</code>.</p>
+
+    <div class="code ans">
+      <div class="fn"><span class="dot"></span>roles/clickhouse/tasks/main.yml</div>
+<pre data-lang="yaml">- name: Install clickhouse-server
+  ansible.builtin.apt:
+    name: "clickhouse-server={{ clickhouse_version }}*"
+    state: present
+    update_cache: true
+  notify: restart clickhouse
+
+- name: Create filesystem on the data volume
+  community.general.filesystem:
+    fstype: ext4
+    dev: /dev/xvdf
+
+- name: Mount the data volume
+  ansible.posix.mount:
+    path: /var/lib/clickhouse
+    src: /dev/xvdf
+    fstype: ext4
+    opts: noatime
+    state: mounted
+
+- name: Render cluster topology
+  ansible.builtin.template:
+    src: cluster.xml.j2
+    dest: /etc/clickhouse-server/config.d/cluster.xml
+    owner: clickhouse
+    group: clickhouse
+    mode: "0640"
+  notify: restart clickhouse
+
+- name: Ensure clickhouse-server is running and enabled
+  ansible.builtin.systemd_service:
+    name: clickhouse-server
+    state: started
+    enabled: true
+
+- name: Create the analytics database
+  ansible.builtin.command:
+    cmd: clickhouse-client --query "CREATE DATABASE IF NOT EXISTS analytics"
+  register: db_create
+  changed_when: false   # the IF NOT EXISTS makes this safe, so don't lie about it
+  run_once: true</pre>
+    </div>
+
+    <div class="code ans">
+      <div class="fn"><span class="dot"></span>roles/clickhouse/handlers/main.yml</div>
+<pre data-lang="yaml">- name: restart clickhouse
+  ansible.builtin.systemd_service:
+    name: clickhouse-server
+    state: restarted
+  # one host at a time, so the cluster never loses quorum mid-play
+  throttle: 1</pre>
+    </div>
+
+    <h3>Variables and templates</h3>
+
+    <p>The config file each host gets is generated from a Jinja2 template, with values that come from group variables and from facts Ansible gathered about the machine itself. This is how one role serves three shards and a laptop-sized dev box.</p>
+
+    <div class="code ans">
+      <div class="fn"><span class="dot"></span>roles/clickhouse/templates/cluster.xml.j2</div>
+<pre data-lang="yaml">&lt;clickhouse&gt;
+  &lt;remote_servers&gt;
+    &lt;analytics&gt;
+      {% for host in groups['clickhouse'] %}
+      &lt;shard&gt;
+        &lt;replica&gt;
+          &lt;host&gt;{{ hostvars[host].private_ip_address }}&lt;/host&gt;
+          &lt;port&gt;9000&lt;/port&gt;
+        &lt;/replica&gt;
+      &lt;/shard&gt;
+      {% endfor %}
+    &lt;/analytics&gt;
+  &lt;/remote_servers&gt;
+
+  &lt;!-- derived from the machine, not hardcoded: 60% of real RAM --&gt;
+  &lt;max_server_memory_usage&gt;
+    {{ (ansible_memtotal_mb * 0.6 * 1024 * 1024) | int }}
+  &lt;/max_server_memory_usage&gt;
+&lt;/clickhouse&gt;</pre>
+    </div>
+
+    <h3>The handoff from Terraform</h3>
+
+    <p>Nobody maintains a list of IP addresses. Ansible reads the inventory straight from the AWS API, and the <code>AnsibleGroup</code> tag you saw Terraform set in the last module is what puts each instance into the right group. Add a fourth ClickHouse node in Terraform and it appears in Ansible&rsquo;s inventory on the next run, with no file to edit.</p>
+
+    <div class="code ans">
+      <div class="fn"><span class="dot"></span>inventory/aws_ec2.yml</div>
+<pre data-lang="yaml">plugin: amazon.aws.aws_ec2
+regions: [ap-south-1]
+
+filters:
+  tag:service: urlshort
+  tag:env: prod
+  instance-state-name: running
+
+# every distinct value of the AnsibleGroup tag becomes a host group
+keyed_groups:
+  - key: tags.AnsibleGroup
+    separator: ""
+
+hostnames: [tag:Name]
+
+compose:
+  ansible_host: private_ip_address
+  clickhouse_shard: tags.Shard</pre>
+    </div>
+
+    <div class="code ans">
+      <div class="fn"><span class="dot"></span>site.yml</div>
+<pre data-lang="yaml">- name: Analytics nodes
+  hosts: clickhouse
+  become: true
+  serial: 1          # one box at a time; never take the whole cluster down
+  roles:
+    - role: baseline       # users, ssh hardening, node_exporter, log shipping
+    - role: clickhouse
+      vars:
+        clickhouse_version: "24.8"
+        clickhouse_keeper_hosts: "{{ groups['clickhouse'] }}"</pre>
+    </div>
+
+    <div class="note ans">
+      <b class="tag">Dry runs are free</b>
+      <p><code>ansible-playbook --check --diff</code> is Ansible&rsquo;s answer to <code>terraform plan</code>: it reports what <em>would</em> change and prints a unified diff of every file it would rewrite, without touching the hosts. It is less complete than a Terraform plan &mdash; tasks that depend on the result of an earlier task can&rsquo;t be simulated &mdash; but for config file changes it is exactly what you want before a Friday deploy.</p>
+    </div>
+
+    <h3>Where the line falls</h3>
+
+    <p>Terraform and Ansible overlap enough to start arguments. The boundary that holds up in practice:</p>
+
+    <table>
+      <thead><tr><th>Signal</th><th>Owner</th></tr></thead>
+      <tbody>
+        <tr><td>It has a cloud API, and an ID you could look up in the console</td><td class="toolcell tf">Terraform</td></tr>
+        <tr><td>It can be created and destroyed as a unit, and has a bill attached</td><td class="toolcell tf">Terraform</td></tr>
+        <tr><td>It lives inside a filesystem on a machine that already exists</td><td class="toolcell ans">Ansible</td></tr>
+        <tr><td>It is a package, service, mount, sysctl, user, cron or config file</td><td class="toolcell ans">Ansible</td></tr>
+      </tbody>
+    </table>
+
+    <div class="grid2">
+      <div class="mini bad">
+        <h4>Don&rsquo;t create cloud resources with Ansible</h4>
+        <p>The <code>amazon.aws</code> collection can make an RDS instance. It has no state file, so it cannot tell &ldquo;this needs creating&rdquo; from &ldquo;this drifted&rdquo;; it has no plan, so you cannot review the change; and it will not notice when someone deletes something. You would be reimplementing Terraform, badly.</p>
+      </div>
+      <div class="mini bad">
+        <h4>Don&rsquo;t deploy Kubernetes apps with Ansible</h4>
+        <p>A task that runs <code>kubectl apply</code> works on Tuesday and betrays you in March. It only converges when a human runs it, so a hand-edited Deployment stays hand-edited; there is no record of what is currently live; and your rollback plan is &ldquo;find the old playbook run&rdquo;. That is precisely the gap Argo CD exists to fill.</p>
+      </div>
+    </div>
+
+    <div class="note warn">
+      <b class="tag">In a fully managed setup, Ansible may have nothing to do</b>
+      <p>If every data service is managed and every workload is a container on cattle nodes built from a golden AMI, there is no machine for Ansible to configure and no reason to adopt it. Its territory is the long tail: analytics clusters you run yourself, on-prem hardware, network appliances, CI runners, bastions, and the twelve-year-old box nobody will let you delete.</p>
+    </div>
+  </div>
+
+  <div class="col"><div class="quiz" data-quiz="q2"></div></div>
+</section>
+<section class="module" id="m3">
+  <div class="col">
+    <div class="modhead">
+      <div class="modnum">3</div>
+      <h2>Helm</h2>
+      <span class="mins">13 min</span>
+    </div>
+    <p class="lede">Kubernetes wants YAML. Not one file &mdash; for the <code>api</code> service alone you need a Deployment, a Service, an Ingress rule, an HPA, a ConfigMap, a ServiceAccount and a PodDisruptionBudget. Then you want all of that again for staging, with different numbers.</p>
+
+    <p>The naive approach is a <code>k8s/prod/</code> directory and a <code>k8s/staging/</code> directory, copied from each other. It works for about six weeks. Then staging has a readiness probe prod doesn&rsquo;t, nobody knows whether that was deliberate, and the two directories have quietly become two different applications.</p>
+
+    <p>Helm fixes one specific thing: it separates the <em>shape</em> of your application from the <em>numbers</em> in it. Shape goes in templates, written once. Numbers go in values files, one per environment. Helm renders them together into plain Kubernetes YAML.</p>
+
+    <h3>Three words</h3>
+
+    <ul>
+      <li>A <strong>chart</strong> is a directory: metadata, templates, and default values. It is versioned and can be published to a registry like any other package.</li>
+      <li><strong>Values</strong> are the inputs. They layer: the chart&rsquo;s own <code>values.yaml</code> at the bottom, then each <code>-f</code> file in order, then any <code>--set</code> on the command line. Later wins, and merging is deep, so a prod file only needs to state what differs.</li>
+      <li>A <strong>release</strong> is one installed instance of a chart, with a name and a namespace. It has a revision history, which is what makes <code>helm rollback</code> possible.</li>
+    </ul>
+
+    <p>The live renderer below is the part worth spending time on. On the left are the inputs; the middle tab is the template that never changes; the right is what actually gets sent to Kubernetes.</p>
+  </div>
+
+  <div class="lab" id="helmlab">
+    <div class="panel">
+      <div class="panel-head">
+        <span class="ttl">helm template urlshort ./charts/urlshort</span>
+        <span class="right" id="helmCmd" style="font-family:var(--mono);font-size:11.5px"></span>
+      </div>
+      <div class="panel-body" style="padding-bottom:6px">
+        <div class="ctl" style="margin-bottom:14px">
+          <label class="field"><span>values file</span>
+            <select id="hEnv">
+              <option value="dev">values.yaml (dev)</option>
+              <option value="prod" selected>+ values-prod.yaml</option>
+            </select>
+          </label>
+          <label class="field"><span>image tag</span>
+            <input type="text" id="hTag" value="v1.8.3" size="10">
+          </label>
+          <label class="field"><span>api.replicas &mdash; <b id="hRepVal">3</b></span>
+            <input type="range" id="hRep" min="1" max="10" value="3">
+          </label>
+          <label class="field"><span>api.resources</span>
+            <select id="hRes">
+              <option value="s">small</option>
+              <option value="m" selected>medium</option>
+              <option value="l">large</option>
+            </select>
+          </label>
+          <label class="togg"><input type="checkbox" id="hHpa" checked> autoscaling</label>
+          <label class="togg"><input type="checkbox" id="hIng" checked> ingress</label>
+        </div>
+      </div>
+      <div class="tabs" id="helmTabs">
+        <button data-pane="hv" class="on">values</button>
+        <button data-pane="ht">templates/deployment-api.yaml</button>
+        <button data-pane="hr">rendered output</button>
+      </div>
+      <div class="pane on" id="hv"><pre data-lang="yaml" id="hvPre"></pre></div>
+      <div class="pane" id="ht"><pre data-lang="yaml" id="htPre"></pre></div>
+      <div class="pane" id="hr"><pre data-lang="yaml" id="hrPre"></pre></div>
+    </div>
+    <p class="labcap"><b>Turn autoscaling off and watch two things.</b> The <code>replicas:</code> line reappears in the Deployment &mdash; because leaving a fixed replica count in a Deployment that an HPA also manages makes the two fight every sync. And the entire HPA document vanishes from the output, because a <code>{{ if }}</code> wrapping a whole file is how you make an object optional.</p>
+  </div>
+
+  <div class="col">
+    <h3>What a real chart looks like</h3>
+
+    <div class="code helm">
+      <div class="fn"><span class="dot"></span>charts/urlshort/</div>
+<pre data-lang="yaml">charts/urlshort/
+├── Chart.yaml                  # name, chart version, app version, dependencies
+├── values.yaml                 # defaults = a working dev install
+├── values-staging.yaml         # only the deltas
+├── values-prod.yaml            # only the deltas
+└── templates/
+    ├── _helpers.tpl            # naming and label functions, no objects
+    ├── deployment-api.yaml
+    ├── deployment-consumer.yaml
+    ├── service.yaml
+    ├── ingress.yaml            # wrapped in {{ if .Values.ingress.enabled }}
+    ├── hpa.yaml                # wrapped in {{ if .Values.api.autoscaling.enabled }}
+    ├── pdb.yaml
+    ├── configmap.yaml
+    ├── serviceaccount.yaml
+    ├── externalsecret.yaml     # pulls the RDS password out of Secrets Manager
+    └── migration-job.yaml      # runs before the rollout; see module 4</pre>
+    </div>
+
+    <h3>Where your compose Postgres went</h3>
+
+    <p>This is the question that makes Helm click. In compose, <code>db</code> and <code>cache</code> were containers in the same file as your app. In production they are RDS and ElastiCache, made by Terraform, and not part of the chart at all. But you still want <code>helm install</code> on a laptop cluster to give you a working stack.</p>
+
+    <p>Charts can depend on other charts, and a dependency can be switched off by a value. So the same chart carries a real Postgres and Redis for dev, and points at Terraform&rsquo;s endpoints in prod &mdash; the difference is two booleans.</p>
+
+    <div class="code helm">
+      <div class="fn"><span class="dot"></span>charts/urlshort/Chart.yaml</div>
+<pre data-lang="yaml">apiVersion: v2
+name: urlshort
+version: 2.4.0          # the chart's own version -- bump when templates change
+appVersion: "1.8.3"     # default app version -- the image tag
+
+dependencies:
+  - name: postgresql
+    version: 15.5.20
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.embedded     # true in dev, false in prod
+
+  - name: redis
+    version: 19.6.2
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.embedded
+
+  - name: kafka
+    version: 29.3.4
+    repository: https://charts.bitnami.com/bitnami
+    condition: kafka.embedded</pre>
+    </div>
+
+    <div class="code helm">
+      <div class="fn"><span class="dot"></span>values.yaml (dev) vs values-prod.yaml</div>
+<pre data-lang="yaml"># values.yaml -- a laptop cluster, self-contained, like your compose file
+postgresql: { embedded: true }
+redis:      { embedded: true, url: redis://urlshort-redis-master:6379 }
+kafka:      { embedded: true, brokers: urlshort-kafka:9092 }
+
+# values-prod.yaml -- the same chart, pointed at what Terraform built
+postgresql:
+  embedded: false
+  secretRef: arn:aws:secretsmanager:ap-south-1:4711:secret:rds!db-9f2a
+redis:
+  embedded: false
+  url: rediss://urlshort-prod-redis.k3x8vq.ng.0001.aps1.cache.amazonaws.com:6379
+kafka:
+  embedded: false
+  brokers: b-1.urlshortprod.9lm4.c2.kafka.ap-south-1.amazonaws.com:9098</pre>
+    </div>
+
+    <div class="note helm">
+      <b class="tag">Endpoints yes, passwords no</b>
+      <p>The Redis and Kafka addresses above are committed to Git, and that is fine &mdash; they are unreachable outside the VPC and they are not credentials. The Postgres password is not in that file and never will be. The chart carries only the Secrets Manager ARN that Terraform output, and an <code>ExternalSecret</code> object resolves it into a real Kubernetes Secret inside the cluster at runtime.</p>
+    </div>
+
+    <h3>The commands you will actually type</h3>
+
+    <div class="code helm">
+      <div class="fn"><span class="dot"></span>terminal</div>
+<pre data-lang="bash"># pull the subcharts listed in Chart.yaml into charts/
+helm dependency update charts/urlshort
+
+# render locally and read it. do this before every non-trivial change.
+helm template urlshort charts/urlshort -f charts/urlshort/values-prod.yaml
+
+# what would change against what is actually running right now?
+helm diff upgrade urlshort charts/urlshort -f values-prod.yaml   # plugin, worth installing
+
+# install or upgrade. --atomic rolls back automatically if the rollout fails.
+helm upgrade --install urlshort charts/urlshort \
+  --namespace urlshort --create-namespace \
+  -f charts/urlshort/values-prod.yaml \
+  --set image.tag=v1.8.4 \
+  --atomic --timeout 5m
+
+helm history urlshort -n urlshort
+helm rollback urlshort 7 -n urlshort</pre>
+    </div>
+
+    <div class="note warn">
+      <b class="tag">You will stop typing most of these</b>
+      <p>Once Argo CD is in the picture, nobody runs <code>helm upgrade</code> against production &mdash; Argo renders the chart itself and applies the result. <code>helm template</code> stays essential for local review. <code>helm history</code> and <code>helm rollback</code> mostly stop being meaningful, because Argo does not create Helm release secrets; <code>helm list</code> against that namespace will look empty. Your rollback becomes a Git revert instead. This surprises people, so it is worth knowing before the first incident.</p>
+    </div>
+
+    <h3>Two failure modes</h3>
+
+    <div class="grid2">
+      <div class="mini bad">
+        <h4>Over-templating</h4>
+        <p>Every field becomes <code>{{ .Values.something }}</code>, the templates turn unreadable, and the values file grows to four hundred lines that nobody can reason about. Template what actually differs between environments. If no environment has ever set it differently, hardcode it &mdash; you can always template it later, in one commit.</p>
+      </div>
+      <div class="mini bad">
+        <h4>Copying a public chart into your repo</h4>
+        <p>Vendoring <code>bitnami/postgresql</code> so you can tweak two lines means you own its upgrades forever. Prefer values overrides; if you truly need to change the shape, put your own thin chart on top and keep the upstream as a dependency.</p>
+      </div>
+    </div>
+
+    <div class="note helm">
+      <b class="tag">One genuinely great trick</b>
+      <p>The <code>checksum/config</code> annotation in the rendered Deployment above is a hash of the ConfigMap. Kubernetes will not restart pods when a ConfigMap changes &mdash; they keep the old values until something else triggers a rollout. Hashing the ConfigMap into the pod template means editing your config changes the pod spec, which triggers a normal rolling update. Nearly every mature chart does this.</p>
+    </div>
+  </div>
+
+  <div class="col"><div class="quiz" data-quiz="q3"></div></div>
+</section>
+<section class="module" id="m4">
+  <div class="col">
+    <div class="modhead">
+      <div class="modnum">4</div>
+      <h2>Argo CD</h2>
+      <span class="mins">12 min</span>
+    </div>
+    <p class="lede">You have a chart that renders correct manifests. Something has to get them into the cluster, every time they change, and notice when the cluster stops matching. That is the whole of Argo CD.</p>
+
+    <h3>Why not just run helm upgrade from CI?</h3>
+
+    <p>You can, and plenty of teams do. It breaks down in three predictable places.</p>
+
+    <ul>
+      <li><strong>Credentials point the wrong way.</strong> Push-based CD means your CI system holds admin credentials to production Kubernetes. Every build, every fork of a pull request, every compromised action in your workflow is now adjacent to your cluster.</li>
+      <li><strong>It only converges when a pipeline runs.</strong> Someone runs <code>kubectl edit deploy/api</code> during an incident and bumps a memory limit. That edit survives until the next deploy silently reverts it &mdash; possibly weeks later, possibly at 2am, and nobody connects the two events.</li>
+      <li><strong>Nothing describes the current state.</strong> To answer &ldquo;what is running in prod right now?&rdquo; you read CI logs and hope the last green build was the last thing applied.</li>
+    </ul>
+
+    <p>Argo CD inverts it. An agent runs <em>inside</em> the cluster, holding no external credentials. It watches a Git repository, compares it against live objects, and reconciles the difference. Git becomes the description of the system, and the cluster becomes a cache of Git.</p>
+
+    <h3>The loop</h3>
+
+    <p>Every few minutes &mdash; or instantly on a webhook &mdash; the controller renders your chart, diffs the result against what is live, and records two <em>independent</em> statuses. People conflate these constantly:</p>
+
+    <ul>
+      <li><strong>Sync status</strong> answers &ldquo;does the cluster match Git?&rdquo; &mdash; <code>Synced</code> or <code>OutOfSync</code>.</li>
+      <li><strong>Health status</strong> answers &ldquo;are those objects actually happy?&rdquo; &mdash; <code>Healthy</code>, <code>Progressing</code>, <code>Degraded</code>.</li>
+    </ul>
+
+    <p>An app can be perfectly <code>Synced</code> and completely <code>Degraded</code>: you committed a broken image tag, Argo applied it faithfully, and every pod is in CrashLoopBackOff. Argo did its job. Your image is broken.</p>
+
+    <p>Break things in the panel below and watch both fields.</p>
+  </div>
+
+  <div class="lab" id="argolab">
+    <div class="panel">
+      <div class="panel-head">
+        <span class="ttl">Application / urlshort-prod</span>
+        <span class="right"><span id="argoTick" style="font-family:var(--mono);font-size:11.5px"></span></span>
+      </div>
+      <div class="panel-body">
+        <div class="argogrid">
+          <div class="box">
+            <h5>Git &mdash; acme/urlshort-deploy</h5>
+            <div class="kv"><span>image.tag</span><span id="gTag">v1.8.3</span></div>
+            <div class="kv"><span>api.replicas</span><span id="gRep">3</span></div>
+            <div style="margin-top:10px" id="gLog"></div>
+          </div>
+
+          <div class="loop">
+            <div class="gear" id="gear">&#8635;</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--panel-muted);text-align:center;line-height:1.4" id="loopLbl">compare</div>
+          </div>
+
+          <div class="box">
+            <h5>Cluster &mdash; namespace urlshort</h5>
+            <div class="kv"><span>sync status</span><span><span class="stat sync" id="aSync">Synced</span></span></div>
+            <div class="kv"><span>health</span><span><span class="stat sync" id="aHealth">Healthy</span></span></div>
+            <div class="kv"><span>live image.tag</span><span id="lTag">v1.8.3</span></div>
+            <div class="kv"><span>live replicas</span><span id="lRep">3</span></div>
+            <div class="pods" id="pods"></div>
+          </div>
+        </div>
+
+        <div class="chiprow" style="margin:16px 0 12px">
+          <button class="btn" id="aCommit">CI builds v1.8.4, commits the tag</button>
+          <button class="btn ghost" id="aScale">kubectl scale --replicas=9</button>
+          <button class="btn ghost" id="aBreak">Commit a broken image tag</button>
+          <button class="btn ghost" id="aRevert">git revert HEAD</button>
+          <button class="btn ghost" id="aSyncNow" style="display:none">Sync</button>
+        </div>
+        <div class="ctl" style="margin-bottom:14px">
+          <label class="togg"><input type="checkbox" id="aAuto" checked> syncPolicy.automated</label>
+          <label class="togg"><input type="checkbox" id="aHeal" checked> selfHeal</label>
+        </div>
+        <div class="term" id="argoTerm" style="min-height:120px;max-height:220px"></div>
+      </div>
+    </div>
+    <p class="labcap"><b>Turn off self-heal, then scale the deployment by hand.</b> Argo notices within seconds and reports <code>OutOfSync</code> forever, but leaves your change alone &mdash; which is exactly what you want during an incident, and exactly what you don&rsquo;t want the rest of the time. With self-heal on, the same manual scale is undone on the next comparison. Most teams run automated sync with self-heal on, and turn it off deliberately while firefighting.</p>
+  </div>
+
+  <div class="col">
+    <h3>The Application object</h3>
+
+    <p>Everything above is configured by a single Kubernetes resource. Note what it contains: where the chart is, which values files to layer, where to put the result, and how aggressive to be.</p>
+
+    <div class="code argo">
+      <div class="fn"><span class="dot"></span>argocd/applications/urlshort-prod.yaml</div>
+<pre data-lang="yaml">apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: urlshort-prod
+  namespace: argocd
+spec:
+  project: urlshort
+
+  source:
+    repoURL: https://github.com/acme/urlshort-deploy
+    targetRevision: main
+    path: charts/urlshort
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-prod.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: urlshort
+
+  syncPolicy:
+    automated:
+      prune: true      # objects deleted from Git get deleted from the cluster
+      selfHeal: true   # manual changes to live objects get reverted
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 3
+      backoff: { duration: 15s, factor: 2 }
+
+  # tolerate fields that other controllers legitimately own
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers: ["/spec/replicas"]   # only if an HPA manages this</pre>
+    </div>
+
+    <div class="note argo">
+      <b class="tag">prune is the one to think about</b>
+      <p><code>prune: false</code> means deleting a template from your chart leaves the object running in the cluster forever, accumulating orphans nobody dares remove. <code>prune: true</code> means a bad refactor that accidentally drops a template deletes that object from production. Turn it on, and rely on your chart being reviewed like code &mdash; which it now is, because it is a pull request.</p>
+    </div>
+
+    <h3>Two repos, not one</h3>
+
+    <p>The conventional split: application source in one repo, deployment config in another. CI builds the image, pushes it, and makes a one-line commit to the deploy repo. Argo sees the commit and rolls it out.</p>
+
+    <div class="code argo">
+      <div class="fn"><span class="dot"></span>.github/workflows/release.yml &mdash; the last step</div>
+<pre data-lang="yaml">- name: Build and push
+  run: |
+    docker build -t $ECR/urlshort-api:$GITHUB_SHA .
+    docker push $ECR/urlshort-api:$GITHUB_SHA
+
+- name: Point staging at the new image
+  run: |
+    git clone https://github.com/acme/urlshort-deploy deploy
+    cd deploy
+    yq -i '.image.tag = "'"$GITHUB_SHA"'"' charts/urlshort/values-staging.yaml
+    git commit -am "staging: urlshort-api $GITHUB_SHA"
+    git push
+# Nothing here has kubernetes credentials. The commit is the deploy.</pre>
+    </div>
+
+    <p>Promotion to production is then a pull request that copies one line from the staging values file to the production one. It is reviewable, it is revertable, and the diff is the deploy.</p>
+
+    <div class="note">
+      <b class="tag">Argo CD Image Updater</b>
+      <p>There is a component that watches your registry and bumps tags for you, so CI does not need to commit at all. It is convenient for staging and I would think hard before using it for production: an explicit commit gives you an author, a review, a timestamp and a revert. Automatic promotion gives you a deploy nobody decided to do.</p>
+    </div>
+
+    <h3>Ordering: database migrations</h3>
+
+    <p>Your migration must finish before the new pods start, and both must happen in one sync. Sync waves are how you say so &mdash; lower numbers go first, and Argo waits for each wave to become healthy before starting the next.</p>
+
+    <div class="code argo">
+      <div class="fn"><span class="dot"></span>charts/urlshort/templates/migration-job.yaml</div>
+<pre data-lang="yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "urlshort.fullname" . }}-migrate-{{ .Values.image.tag | replace "." "-" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"          # before everything else
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: "{{ .Values.image.registry }}/urlshort-api:{{ .Values.image.tag }}"
+          command: ["/app/urlshort", "migrate", "up"]</pre>
+    </div>
+
+    <h3>Closing the secrets loop</h3>
+
+    <p>Back in module 1, Terraform output a Secrets Manager ARN and deliberately did not output the password. Here is where that arrives in the cluster. No credential is ever in Git, and no human copies one.</p>
+
+    <div class="code argo">
+      <div class="fn"><span class="dot"></span>charts/urlshort/templates/externalsecret.yaml</div>
+<pre data-lang="yaml">apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: {{ include "urlshort.fullname" . }}-pg
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: aws-secretsmanager    # authenticates with an IRSA role Terraform made
+    kind: ClusterSecretStore
+  target:
+    name: urlshort-pg           # the k8s Secret the Deployment mounts
+  dataFrom:
+    - extract:
+        key: {{ .Values.postgresql.secretRef }}   # the ARN from terraform output</pre>
+    </div>
+
+    <h3>Many environments, one definition</h3>
+
+    <p>Writing an <code>Application</code> per environment by hand recreates the copy-paste problem Helm solved. <code>ApplicationSet</code> generates them.</p>
+
+    <div class="code argo">
+      <div class="fn"><span class="dot"></span>argocd/appsets/urlshort.yaml</div>
+<pre data-lang="yaml">apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: urlshort
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - list:
+        elements:
+          - env: dev
+          - env: staging
+          - env: prod
+  template:
+    metadata:
+      name: 'urlshort-{{.env}}'
+    spec:
+      project: urlshort
+      source:
+        repoURL: https://github.com/acme/urlshort-deploy
+        targetRevision: main
+        path: charts/urlshort
+        helm:
+          valueFiles:
+            - values.yaml
+            - 'values-{{.env}}.yaml'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: 'urlshort-{{.env}}'
+      syncPolicy:
+        automated: { prune: true, selfHeal: true }</pre>
+    </div>
+
+    <p>One list, three environments, three <code>Application</code> objects generated and kept in step. If production should not sync automatically &mdash; a common and reasonable choice &mdash; give it its own hand-written Application rather than bending the generator into knots over a single exception.</p>
+
+    <div class="note argo">
+      <b class="tag">Rollback is a revert</b>
+      <p>Argo CD has a rollback button, and it works, but using it puts the cluster deliberately out of sync with Git &mdash; the next automated sync will undo your rollback. The correct move during an incident is <code>git revert</code> and push: it fixes production in the same thirty seconds, leaves Git true, and leaves a record of what happened. Reach for the button only when Git itself is unreachable.</p>
+    </div>
+  </div>
+
+  <div class="col"><div class="quiz" data-quiz="q4"></div></div>
+</section>
+<section class="module" id="m5">
+  <div class="col">
+    <div class="modhead">
+      <div class="modnum">5</div>
+      <h2>Putting it together</h2>
+      <span class="mins">7 min</span>
+    </div>
+    <p class="lede">Four tools, one order of operations. Here is urlshort going from an empty AWS account to serving traffic, with every handoff visible. Open a step to see what actually runs.</p>
+
+    <div class="tl" id="timeline">
+      <div class="tlstep tf">
+        <button><span class="tag tf">Terraform</span> Bootstrap the state backend</button>
+        <div class="tlbody">
+          <p>The chicken and egg: Terraform needs somewhere to keep state, and that somewhere is itself a cloud resource. Create the bucket once, by hand or from a tiny throwaway config, then never think about it again.</p>
+          <div class="code tf"><div class="fn"><span class="dot"></span>terminal</div><pre data-lang="bash">aws s3api create-bucket --bucket urlshort-tfstate --region ap-south-1
+aws s3api put-bucket-versioning --bucket urlshort-tfstate \
+  --versioning-configuration Status=Enabled</pre></div>
+        </div>
+      </div>
+
+      <div class="tlstep tf">
+        <button><span class="tag tf">Terraform</span> Network and identity</button>
+        <div class="tlbody">
+          <p>VPC, three availability zones, public and private subnets, NAT, security groups, the IAM roles everything else will assume. Slow-changing, so it gets its own state file &mdash; a mistake in the app layer can never propose destroying your network.</p>
+          <div class="code tf"><div class="fn"><span class="dot"></span>terminal</div><pre data-lang="bash">cd infra/prod/network && terraform init && terraform apply</pre></div>
+        </div>
+      </div>
+
+      <div class="tlstep tf">
+        <button><span class="tag tf">Terraform</span> Data services and machines</button>
+        <div class="tlbody">
+          <p>RDS, ElastiCache, MSK, the S3 bucket for the SPA, the CloudFront distribution, ECR, and three bare EC2 instances tagged <code>AnsibleGroup=clickhouse</code>. RDS alone takes around ten minutes, so this is the coffee step.</p>
+        </div>
+      </div>
+
+      <div class="tlstep tf">
+        <button><span class="tag tf">Terraform</span> The EKS cluster</button>
+        <div class="tlbody">
+          <p>Control plane, managed node group, OIDC provider for IRSA. Note that Terraform creates the cluster but does not put anything meaningful inside it.</p>
+        </div>
+      </div>
+
+      <div class="tlstep tf">
+        <button><span class="tag tf">Terraform</span> Bootstrap add-ons, including Argo CD</button>
+        <div class="tlbody">
+          <p>The one place <code>helm_release</code> from Terraform is right: things that must exist before GitOps can work. The AWS Load Balancer Controller, External Secrets Operator, and Argo CD itself &mdash; plus a single root <code>Application</code> pointing at your deploy repo. From here on, Terraform never touches cluster contents again.</p>
+          <div class="code tf"><div class="fn"><span class="dot"></span>infra/prod/addons/argocd.tf</div><pre data-lang="hcl">resource "helm_release" "argocd" {
+  name             = "argocd"
+  namespace        = "argocd"
+  create_namespace = true
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart            = "argo-cd"
+  version          = "7.6.12"
+  values           = [file("${path.module}/argocd-values.yaml")]
+}
+
+# the single seed. everything else arrives through git from here.
+resource "kubectl_manifest" "root_app" {
+  yaml_body  = file("${path.module}/root-application.yaml")
+  depends_on = [helm_release.argocd]
+}</pre></div>
+        </div>
+      </div>
+
+      <div class="tlstep ans">
+        <button><span class="tag ans">Ansible</span> Make the EC2 boxes into ClickHouse</button>
+        <div class="tlbody">
+          <p>Dynamic inventory reads the tags Terraform set, so there is nothing to configure. Format and mount the data volume, install the server, render the cluster topology from the group, start it, create the database.</p>
+          <div class="code ans"><div class="fn"><span class="dot"></span>terminal</div><pre data-lang="bash">ansible-playbook -i inventory/aws_ec2.yml site.yml --check --diff  # read it first
+ansible-playbook -i inventory/aws_ec2.yml site.yml</pre></div>
+        </div>
+      </div>
+
+      <div class="tlstep helm">
+        <button><span class="tag helm">Helm</span> Write the chart, fill in the prod values</button>
+        <div class="tlbody">
+          <p>The endpoints Terraform printed go into <code>values-prod.yaml</code>; the Secrets Manager ARN goes in beside them; the password does not. Render it locally and read the output before anyone else sees it.</p>
+          <div class="code helm"><div class="fn"><span class="dot"></span>terminal</div><pre data-lang="bash">terraform -chdir=infra/prod output -json &gt; /tmp/out.json
+helm template urlshort charts/urlshort -f charts/urlshort/values-prod.yaml | less</pre></div>
+        </div>
+      </div>
+
+      <div class="tlstep argo">
+        <button><span class="tag argo">Argo CD</span> First sync</button>
+        <div class="tlbody">
+          <p>The root Application sees the deploy repo, renders the chart, and applies it. The migration Job runs in wave <code>-1</code>, the Deployments follow, the Ingress creates an ALB through the controller, External Secrets resolves the database password, and pods go Ready. The app is live and nobody ran <code>kubectl apply</code>.</p>
+        </div>
+      </div>
+
+      <div class="tlstep ci">
+        <button><span class="tag ci">CI</span> Day two, forever</button>
+        <div class="tlbody">
+          <p>A pull request merges. CI builds and pushes an image, then commits one line to the deploy repo. Argo notices within seconds and rolls it out. The infrastructure tools sleep until the infrastructure changes.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>The handoffs</h3>
+
+    <p>Each tool publishes something the next one consumes. None of them import each other&rsquo;s internals, and no human copies a value between two files.</p>
+
+    <table>
+      <thead><tr><th>From &rarr; to</th><th>What travels</th></tr></thead>
+      <tbody>
+        <tr><td class="toolcell tf">Terraform &rarr; <span class="toolcell ans" style="display:inline">Ansible</span></td><td>EC2 instance tags. Ansible&rsquo;s dynamic inventory queries the AWS API and groups hosts by <code>AnsibleGroup</code>.</td></tr>
+        <tr><td class="toolcell tf">Terraform &rarr; <span class="toolcell helm" style="display:inline">Helm</span></td><td>Outputs. Non-secret endpoints are committed into the environment&rsquo;s values file; secret material travels only as an ARN.</td></tr>
+        <tr><td class="toolcell tf">Terraform &rarr; <span class="toolcell argo" style="display:inline">Argo CD</span></td><td>One bootstrap: Argo CD installed, and a root Application pointing at the deploy repo.</td></tr>
+        <tr><td class="toolcell helm">Helm &rarr; <span class="toolcell argo" style="display:inline">Argo CD</span></td><td>The chart path and the list of value files, named in the Application spec. Argo runs the rendering itself.</td></tr>
+        <tr><td class="toolcell">CI &rarr; <span class="toolcell argo" style="display:inline">Argo CD</span></td><td>A one-line commit changing <code>image.tag</code>. No cluster credentials involved.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Where does this change go?</h3>
+
+    <p>The practical test of whether the model has landed. Every one of these is a real ticket.</p>
+
+    <table>
+      <thead><tr><th>The ticket</th><th>Goes to</th></tr></thead>
+      <tbody>
+        <tr><td>Redis is evicting hot keys; we need a bigger node</td><td class="toolcell tf">Terraform</td></tr>
+        <tr><td>The API needs a new <code>FEATURE_QR_CODES</code> environment variable</td><td class="toolcell helm">Helm values</td></tr>
+        <tr><td>Ship v1.9.0 of the API to production</td><td class="toolcell argo">Commit + Argo CD</td></tr>
+        <tr><td>ClickHouse merges are thrashing; raise <code>max_bytes_to_merge_at_max_space</code></td><td class="toolcell ans">Ansible</td></tr>
+        <tr><td>Add a fourth ClickHouse shard</td><td class="toolcell tf">Terraform, <span class="toolcell ans" style="display:inline">then Ansible</span></td></tr>
+        <tr><td>Run three API replicas in staging instead of one</td><td class="toolcell helm">Helm values</td></tr>
+        <tr><td>Give the API permission to write to a new S3 bucket</td><td class="toolcell tf">Terraform</td></tr>
+        <tr><td>Production is broken, get back to the previous version now</td><td class="toolcell argo">git revert</td></tr>
+        <tr><td>Add a whole new <code>preview-fetcher</code> service with no new cloud resources</td><td class="toolcell helm">Helm chart</td></tr>
+        <tr><td>Rotate the database password</td><td class="toolcell tf">Terraform rotation, picked up automatically</td></tr>
+      </tbody>
+    </table>
+
+    <p>Notice the shape of the last one. Terraform configures Secrets Manager to rotate on a schedule; External Secrets re-reads the secret every hour and updates the Kubernetes Secret; the pods pick it up on their next restart, or immediately if you use a reloader. Nobody touched a password, and nothing needed a deploy.</p>
+
+    <h3>The five mistakes worth naming</h3>
+
+    <div class="grid2">
+      <div class="mini bad">
+        <h4>Local Terraform state</h4>
+        <p>Fix it on day one. The second engineer to join is the incident.</p>
+      </div>
+      <div class="mini bad">
+        <h4>Deploying the app from Terraform</h4>
+        <p><code>helm_release</code> for the thing you ship weekly puts app releases in infrastructure state and gives your deploy pipeline admin on the cloud account.</p>
+      </div>
+      <div class="mini bad">
+        <h4>Ansible running kubectl apply</h4>
+        <p>All of the ceremony of GitOps with none of the convergence. If the target is Kubernetes, the answer is Argo CD.</p>
+      </div>
+      <div class="mini bad">
+        <h4>helm upgrade from a laptop</h4>
+        <p>The change is real, the Git history is fiction, and the next sync silently erases it. Whatever is true must be committed.</p>
+      </div>
+      <div class="mini bad">
+        <h4>Secrets in values files</h4>
+        <p>Private repositories are not a secrets management strategy. ARNs in Git, values in the cluster, resolved at runtime.</p>
+      </div>
+      <div class="mini good">
+        <h4>And one thing to keep doing</h4>
+        <p>Read the plan. <code>terraform plan</code>, <code>ansible-playbook --check --diff</code>, <code>helm template</code>, the Argo diff view. All four tools will show you exactly what they are about to do, and the discipline transfers between them.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <h3>Final exam</h3>
+    <p>Ten tickets. Route each one. The explanations are where the remaining nuance lives.</p>
+    <div class="quiz" data-quiz="exam"></div>
+  </div>
+
+  <div class="col">
+    <h3>Where to go from here</h3>
+    <p>The fastest way to make this stick is to build a smaller version of it. A single-node k3s or kind cluster on your laptop, a chart for one service, Argo CD installed and pointed at a GitHub repo you own. You can have the whole loop working in an evening, and the moment you watch Argo undo a <code>kubectl edit</code> you will never need to reread module&nbsp;4.</p>
+    <p>Terraform is harder to practise cheaply, but it does not need a cloud bill: point it at your own GitHub organisation or a Cloudflare zone and manage those as code. The state, plan and graph lessons are identical, and the mistakes cost nothing.</p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="col">
+    <p>Written as a single self-contained page. Every terminal, plan and reconciliation loop on it is simulated in the browser &mdash; the outputs are faithful in shape, not fetched from anywhere.</p>
+    <p>Examples target Terraform 1.10+, Ansible 2.17+, Helm 3, Argo CD 2.12+ on AWS.</p>
+  </div>
+</footer>
+<style>
+.pod.bad{background:#4A2020;border-color:#7A2F2C}
+.pod.old{background:#2C5C44;border-color:#3F7C5D}
+</style>
+<script>
+(function(){
+"use strict";
+var RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function $(s,r){return (r||document).querySelector(s);}
+function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+/* ============================ syntax highlighting ======================== */
+var RULES = {
+  yaml: [
+    [/\{\{[\s\S]*?\}\}/, 'tk-t'],
+    [/\{%[\s\S]*?%\}/, 'tk-t'],
+    [/#[^\n]*/, 'tk-c'],
+    [/"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/, 'tk-s'],
+    [/^[ \t]*(?:-[ \t]*)?[\w.\/\-]+(?=:)/, 'tk-key'],
+    [/\b\d+(?:\.\d+)*[a-zA-Z]*\b/, 'tk-n'],
+    [/\b(?:true|false|null)\b/, 'tk-b']
+  ],
+  hcl: [
+    [/#[^\n]*/, 'tk-c'],
+    [/"(?:[^"\\\n]|\\.)*"/, 'tk-s'],
+    [/\b(?:resource|module|variable|output|provider|terraform|data|locals|backend|required_providers|required_version|for_each|count|depends_on|dynamic|format|merge|file)\b/, 'tk-k'],
+    [/\b\d+(?:\.\d+)*\b/, 'tk-n'],
+    [/\b(?:true|false|null)\b/, 'tk-b']
+  ],
+  bash: [
+    [/#[^\n]*/, 'tk-c'],
+    [/"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/, 'tk-s'],
+    [/\$\{?[A-Za-z_][A-Za-z0-9_]*\}?/, 'tk-n'],
+    [/\b(?:helm|terraform|ansible-playbook|aws|kubectl|docker|git|yq|cd|less|curl)\b/, 'tk-k'],
+    [/\s--?[a-zA-Z][\w-]*/, 'tk-f']
+  ]
+};
+var RE_CACHE = {};
+function reFor(lang){
+  if(RE_CACHE[lang]) return RE_CACHE[lang];
+  var rules = RULES[lang] || RULES.yaml;
+  var src = rules.map(function(r){return '('+r[0].source+')';}).join('|');
+  RE_CACHE[lang] = new RegExp(src, 'gm');
+  return RE_CACHE[lang];
+}
+function hl(text, lang){
+  var rules = RULES[lang] || RULES.yaml, re = reFor(lang);
+  re.lastIndex = 0;
+  var out = '', last = 0, m;
+  while((m = re.exec(text)) !== null){
+    if(m[0].length === 0){ re.lastIndex++; continue; }
+    out += esc(text.slice(last, m.index));
+    var cls = null;
+    for(var i=1;i<=rules.length;i++){ if(m[i] !== undefined){ cls = rules[i-1][1]; break; } }
+    out += '<span class="'+cls+'">'+esc(m[0])+'</span>';
+    last = m.index + m[0].length;
+  }
+  return out + esc(text.slice(last));
+}
+$$('pre[data-lang]').forEach(function(p){
+  if(p.id) return;                    // dynamic panes render themselves
+  p.innerHTML = hl(p.textContent, p.getAttribute('data-lang'));
+});
+
+/* ============================ nav + progress ============================ */
+(function(){
+  var links = $$('#nav a'), prog = $('#prog');
+  var ids = links.map(function(a){ return a.getAttribute('href').slice(1); });
+  function onScroll(){
+    var h = document.documentElement;
+    var p = h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight);
+    prog.style.width = Math.min(100, p*100).toFixed(1) + '%';
+  }
+  window.addEventListener('scroll', onScroll, {passive:true}); onScroll();
+  if('IntersectionObserver' in window){
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(!e.isIntersecting) return;
+        var i = ids.indexOf(e.target.id);
+        if(i < 0) return;
+        links.forEach(function(a,j){ a.classList.toggle('on', j===i); });
+      });
+    }, {rootMargin:'-20% 0px -70% 0px'});
+    ids.forEach(function(id){ var el = document.getElementById(id); if(el) obs.observe(el); });
+  }
+})();
+
+/* ============================ hero: compose -> prod ===================== */
+(function(){
+  var SERVICES = [
+    { id:'web', yaml:'  web:\n    build: ./dashboard\n    ports: ["3000:80"]',
+      title:'An S3 bucket behind a CDN', was:'was: nginx container serving a built SPA',
+      body:'A single-page app is a folder of static files, so in production you do not run a web server for it at all. CI builds the bundle and uploads it to S3, CloudFront caches it at the edge, Route 53 points the apex domain at CloudFront. No container, no pod, nothing in the Helm chart.',
+      own:['tf'] },
+    { id:'api', yaml:'  api:\n    build: ./api\n    ports: ["8080:8080"]\n    environment:\n      PG_DSN: postgres://short:short@db:5432/short\n      REDIS_URL: redis://cache:6379\n      KAFKA_BROKERS: broker:9092\n    depends_on: [db, cache, broker]',
+      title:'A Deployment of 3 pods behind an Ingress', was:'was: one container listening on 8080',
+      body:'The image is the same image. What changes is that something must now decide how many copies run, how a rolling update behaves, how traffic reaches them, what happens when a node dies, and where the database password comes from. That description is a Helm chart. Argo CD is what puts it into the cluster and keeps it there.',
+      own:['helm','argo','tf'] },
+    { id:'consumer', yaml:'  consumer:\n    build: ./consumer\n    environment:\n      KAFKA_BROKERS: broker:9092\n      CLICKHOUSE_DSN: clickhouse://olap:9000/analytics',
+      title:'A Deployment with no inbound traffic', was:'was: a second worker container',
+      body:'Identical to the api in every respect except that it has no Service and no Ingress, and it scales on Kafka consumer lag rather than CPU. Same chart, a second Deployment template, a different block in the same values file.',
+      own:['helm','argo'] },
+    { id:'db', yaml:'  db:\n    image: postgres:16\n    volumes: ["pgdata:/var/lib/postgresql/data"]',
+      title:'RDS PostgreSQL, multi-AZ', was:'was: postgres:16 with a named volume',
+      body:'The biggest change from compose. Backups, failover, minor version patching and the disk all stop being yours, and the database stops being a container. Terraform creates it. The password is generated by AWS directly into Secrets Manager, so it never appears in the plan, the state file, or Git.',
+      own:['tf'] },
+    { id:'cache', yaml:'  cache:\n    image: redis:7-alpine',
+      title:'ElastiCache Redis, two nodes', was:'was: a single redis container',
+      body:'Same reasoning as the database, with lower stakes, because it is a cache. Terraform creates the replication group with automatic failover. The endpoint is not a secret and is unreachable outside the VPC, so it is committed straight into the production values file.',
+      own:['tf'] },
+    { id:'broker', yaml:'  broker:\n    image: bitnami/kafka:3.7',
+      title:'MSK, three brokers across AZs', was:'was: one kafka container, no replication',
+      body:'Running Kafka yourself is a full-time job. Managed Kafka is one Terraform resource plus an IAM policy that lets the api pod produce to exactly one topic, and the consumer read from it.',
+      own:['tf'] },
+    { id:'olap', yaml:'  olap:\n    image: clickhouse/clickhouse-server:24.8',
+      title:'Three EC2 machines running ClickHouse', was:'was: one clickhouse container',
+      body:'The one piece here that is neither managed nor in Kubernetes: a sharded analytics cluster with 2 TB of local disk per node. Terraform creates the machines and the volumes and stops there. Ansible formats, mounts, installs, configures and restarts. This is the only reason Ansible appears in this course, and it is a fair representation of why it appears in most companies.',
+      own:['tf','ans'] },
+    { id:'vol', yaml:'volumes:\n  pgdata:',
+      title:'Explicit, encrypted, backed-up storage', was:'was: a directory on your laptop',
+      body:'The compose volume survived a container restart and nothing else. In production every piece of durable storage is a resource with a size, a type, a throughput figure, an encryption key and a retention policy, and each one is written down.',
+      own:['tf'] }
+  ];
+  var OWN = {tf:'Terraform', ans:'Ansible', helm:'Helm', argo:'Argo CD'};
+  var list = $('#composeList'), card = $('#prodCard');
+  if(!list) return;
+  var html = '<div class="svc" style="color:#7FB6F2;cursor:default">services:</div>';
+  SERVICES.forEach(function(s,i){
+    if(s.id === 'vol') html += '<div style="height:8px"></div>';
+    html += '<button class="svc" data-i="'+i+'">'+hl(s.yaml,'yaml')+'</button>';
+  });
+  list.innerHTML = html;
+  function show(i){
+    var s = SERVICES[i];
+    $$('.svc[data-i]', list).forEach(function(b){ b.classList.toggle('on', +b.dataset.i === i); });
+    card.innerHTML = '<div class="ttl">'+esc(s.title)+'</div>'+
+      '<div class="was">'+esc(s.was)+'</div>'+
+      '<p>'+esc(s.body)+'</p>'+
+      '<div class="ownrow">'+ s.own.map(function(o){
+        return '<span class="own '+o+'">'+OWN[o]+'</span>';
+      }).join('') +'</div>';
+  }
+  list.addEventListener('click', function(e){
+    var b = e.target.closest('.svc[data-i]'); if(b) show(+b.dataset.i);
+  });
+  show(1);
+})();
+
+/* ============================ topology map ============================== */
+(function(){
+  var svg = $('#topo'); if(!svg) return;
+  var COL = {tf:'#A78BFF', ans:'#FF7A85', helm:'#62A8FF', argo:'#FFBE63'};
+  var FILL = {tf:'#2B2350', ans:'#3B1D22', helm:'#16293F', argo:'#392B15'};
+  var NOTE = {
+    all:'Every box below has exactly one tool responsible for creating it. Pick a tool to see its territory.',
+    tf:'Terraform owns anything with an ID you could look up in the AWS console. Note that this includes the EKS cluster and the machines the analytics cluster runs on \u2014 but nothing inside either of them.',
+    ans:'Ansible owns four machines. That is the entire footprint. It never touches a managed service and it never touches Kubernetes.',
+    helm:'Helm does not own anything at runtime; it describes these objects. Every highlighted box is a template in one chart, rendered with one values file per environment.',
+    argo:'Argo CD runs inside the cluster it manages, which is why it highlights itself. It owns the act of getting the rendered chart into the cluster and keeping it there \u2014 so its territory is Helm\u2019s territory, plus the controller doing the work.'
+  };
+  var nodes = $$('.n', svg), note = $('#mapNote');
+  function apply(tool){
+    nodes.forEach(function(n){
+      var own = (n.getAttribute('data-own')||'').split(' ');
+      var rect = n.querySelector('rect');
+      n.classList.remove('dim','hit');
+      if(rect){ rect.style.stroke=''; rect.style.fill=''; }
+      $$('.nlbl', n).forEach(function(t){ t.style.fill=''; });
+      if(tool === 'all') return;
+      if(own.indexOf(tool) >= 0){
+        n.classList.add('hit');
+        if(rect){
+          rect.style.stroke = COL[tool];
+          if(!rect.classList.contains('grp')) rect.style.fill = FILL[tool];
+        }
+        $$('.nlbl', n).forEach(function(t){ t.style.fill = '#fff'; });
+      } else { n.classList.add('dim'); }
+    });
+    note.textContent = NOTE[tool];
+  }
+  $('#mapChips').addEventListener('click', function(e){
+    var b = e.target.closest('.chip'); if(!b) return;
+    $$('.chip', e.currentTarget).forEach(function(c){ c.setAttribute('aria-pressed', String(c===b)); });
+    apply(b.dataset.tool);
+  });
+  apply('all');
+})();
+
+/* ============================ terraform sim ============================= */
+(function(){
+  var term = $('#tfTerm'); if(!term) return;
+  var base = {pg:'db.m6g.large', redis:'cache.t4g.small', ch:1, maz:false, rename:false};
+  var applied = Object.assign({}, base);
+  var pending = null, busy = false;
+  var el = {pg:$('#tfPg'), redis:$('#tfRedis'), ch:$('#tfCh'), maz:$('#tfMaz'), rename:$('#tfRename')};
+  var btnPlan = $('#tfPlan'), btnApply = $('#tfApply'), btnReset = $('#tfReset'), count = $('#tfStateCount');
+
+  function desired(){
+    return {pg:el.pg.value, redis:el.redis.value, ch:parseInt(el.ch.value,10),
+            maz:el.maz.checked, rename:el.rename.checked};
+  }
+  function stateLine(){
+    count.textContent = 'state: ' + (38 + applied.ch*3) + ' resources tracked';
+  }
+  function write(html){ term.innerHTML = html; term.scrollTop = 0; }
+  function append(html){ term.innerHTML += html; term.scrollTop = term.scrollHeight; }
+
+  function diff(){
+    var d = desired(), out = {add:[], chg:[], del:[], repl:[], blocks:[]};
+    var pgAttrs = [];
+    if(d.pg !== applied.pg) pgAttrs.push(['instance_class', applied.pg, d.pg, false]);
+    if(d.maz !== applied.maz) pgAttrs.push(['multi_az', String(applied.maz), String(d.maz), false]);
+    if(d.rename !== applied.rename){
+      pgAttrs.push(['identifier',
+        applied.rename ? 'urlshort-prod-pg-v2' : 'urlshort-prod-pg',
+        d.rename ? 'urlshort-prod-pg-v2' : 'urlshort-prod-pg', true]);
+    }
+    if(pgAttrs.length){
+      var forced = pgAttrs.some(function(a){ return a[3]; });
+      out.blocks.push({addr:'aws_db_instance.canonical', mode: forced ? 'repl' : 'chg', attrs: pgAttrs});
+      if(forced){ out.repl.push('aws_db_instance.canonical'); } else { out.chg.push('aws_db_instance.canonical'); }
+    }
+    if(d.redis !== applied.redis){
+      out.blocks.push({addr:'aws_elasticache_replication_group.cache', mode:'chg',
+        attrs:[['node_type', applied.redis, d.redis, false]]});
+      out.chg.push('aws_elasticache_replication_group.cache');
+    }
+    var i;
+    if(d.ch > applied.ch){
+      for(i = applied.ch; i < d.ch; i++){
+        out.blocks.push({addr:'aws_instance.clickhouse['+i+']', mode:'add', attrs:[
+          ['ami','','ami-0f5ee92e2d63afc18',false],
+          ['instance_type','','r6i.2xlarge',false],
+          ['tags.Name','','clickhouse-0'+(i+1),false],
+          ['tags.AnsibleGroup','','clickhouse',false]]});
+        out.blocks.push({addr:'aws_ebs_volume.clickhouse_data['+i+']', mode:'add', attrs:[
+          ['size','','2000',false],['type','','gp3',false],['encrypted','','true',false]]});
+        out.blocks.push({addr:'aws_volume_attachment.clickhouse_data['+i+']', mode:'add', attrs:[
+          ['device_name','','/dev/xvdf',false]]});
+        out.add.push('aws_instance.clickhouse['+i+']','aws_ebs_volume.clickhouse_data['+i+']','aws_volume_attachment.clickhouse_data['+i+']');
+      }
+    } else if(d.ch < applied.ch){
+      for(i = d.ch; i < applied.ch; i++){
+        out.blocks.push({addr:'aws_volume_attachment.clickhouse_data['+i+']', mode:'del', attrs:[]});
+        out.blocks.push({addr:'aws_ebs_volume.clickhouse_data['+i+']', mode:'del', attrs:[]});
+        out.blocks.push({addr:'aws_instance.clickhouse['+i+']', mode:'del', attrs:[]});
+        out.del.push('aws_volume_attachment.clickhouse_data['+i+']','aws_ebs_volume.clickhouse_data['+i+']','aws_instance.clickhouse['+i+']');
+      }
+    }
+    return out;
+  }
+
+  var SYM = {add:['+','ok','will be created'], chg:['~','chg','will be updated in-place'],
+             del:['-','rm','will be destroyed'], repl:['-/+','rm','must be replaced']};
+
+  function plan(){
+    var d = diff();
+    var total = d.add.length + d.chg.length + d.del.length + d.repl.length;
+    var s = '<span class="dim">$ terraform plan</span>\n\n';
+    if(!total){
+      s += '<span class="hdr">No changes. Your infrastructure matches the configuration.</span>\n\n';
+      s += '<span class="dim">Terraform has compared your real infrastructure against your\nconfiguration and found no differences, so no actions are needed.</span>';
+      write(s); btnApply.disabled = true; pending = null; return;
+    }
+    s += '<span class="dim">Terraform used the selected providers to generate the following execution\nplan. Resource actions are indicated with the following symbols:</span>\n';
+    s += '  <span class="ok">+</span> create\n  <span class="chg">~</span> update in-place\n  <span class="rm">-</span> destroy\n<span class="rm">-/+</span> destroy and then create replacement\n\n';
+    s += '<span class="hdr">Terraform will perform the following actions:</span>\n\n';
+    d.blocks.forEach(function(b){
+      var sym = SYM[b.mode];
+      var pad = b.mode === 'repl' ? '' : '  ';
+      s += '  <span class="dim"># '+b.addr+' '+sym[2]+'</span>\n';
+      s += pad + '<span class="'+sym[1]+'">'+sym[0]+'</span> resource "'+b.addr.split('.')[0]+'" "'+b.addr.split('.')[1].replace(/\[\d+\]/,'')+'" {\n';
+      b.attrs.forEach(function(a){
+        var name = a[0], from = a[1], to = a[2], force = a[3];
+        var w = Math.max(0, 14 - name.length), sp = new Array(w+1).join(' ');
+        if(b.mode === 'add'){
+          s += '      <span class="ok">+</span> '+name+sp+' = "'+to+'"\n';
+        } else {
+          s += '      <span class="'+(force?'rm':'chg')+'">~</span> '+name+sp+' = "'+from+'" -> "'+to+'"';
+          s += force ? ' <span class="rm"># forces replacement</span>\n' : '\n';
+        }
+      });
+      if(b.mode === 'del') s += '      <span class="dim">(all attributes removed)</span>\n';
+      if(b.mode === 'chg' || b.mode === 'repl') s += '        <span class="dim"># (38 unchanged attributes hidden)</span>\n';
+      s += '    }\n\n';
+    });
+    s += '<span class="hdr">Plan: '+(d.add.length)+' to add, '+(d.chg.length)+' to change, '+(d.del.length + d.repl.length)+' to destroy.</span>\n';
+    if(d.repl.length){
+      s += '\n<span class="rm">\u2577\n\u2502 Warning: Resource replacement\n\u2502\n\u2502   with aws_db_instance.canonical,\n\u2502\n\u2502 This resource will be destroyed and recreated. Every row in it will be\n\u2502 lost unless you restore from a snapshot afterwards. Read this line again\n\u2502 before you type yes.\n\u2575</span>\n';
+    }
+    write(s);
+    pending = d; btnApply.disabled = false;
+  }
+
+  function stream(lines, done){
+    if(RM){ lines.forEach(function(l){ append(l + '\n'); }); done && done(); return; }
+    busy = true; btnPlan.disabled = btnApply.disabled = btnReset.disabled = true;
+    var i = 0;
+    (function next(){
+      if(i >= lines.length){
+        busy = false; btnPlan.disabled = btnReset.disabled = false;
+        done && done(); return;
+      }
+      append(lines[i++] + '\n');
+      setTimeout(next, 130);
+    })();
+  }
+
+  function apply(){
+    if(!pending || busy) return;
+    var d = pending, lines = ['', '<span class="dim">$ terraform apply -auto-approve</span>', ''];
+    var creates = d.blocks.filter(function(b){ return b.mode === 'add'; });
+    var inst = creates.filter(function(b){ return b.addr.indexOf('aws_instance') === 0; });
+    var vols = creates.filter(function(b){ return b.addr.indexOf('aws_ebs_volume') === 0; });
+    var atts = creates.filter(function(b){ return b.addr.indexOf('aws_volume_attachment') === 0; });
+    var dels = d.blocks.filter(function(b){ return b.mode === 'del'; });
+
+    dels.forEach(function(b){ lines.push('<span class="rm">'+b.addr+': Destroying...</span>'); });
+    dels.forEach(function(b){ lines.push('<span class="rm">'+b.addr+': Destruction complete after 4s</span>'); });
+    inst.concat(vols).forEach(function(b){ lines.push('<span class="ok">'+b.addr+': Creating...</span>'); });
+    if(d.chg.length || d.repl.length){
+      var addr = d.repl.length ? d.repl[0] : d.chg[0];
+      if(d.repl.length) lines.push('<span class="rm">'+addr+': Destroying... [id=urlshort-prod-pg]</span>');
+      else lines.push('<span class="chg">'+addr+': Modifying... [id=urlshort-prod-pg]</span>');
+    }
+    vols.forEach(function(b,i){ lines.push('<span class="ok">'+b.addr+': Creation complete after 3s [id=vol-0'+(7412+i)+'ab9c]</span>'); });
+    inst.forEach(function(b,i){ lines.push('<span class="ok">'+b.addr+': Still creating... [10s elapsed]</span>'); });
+    inst.forEach(function(b,i){ lines.push('<span class="ok">'+b.addr+': Creation complete after 22s [id=i-0b7e3c9'+(1+i)+'a4f2d8e05]</span>'); });
+    if(atts.length){
+      lines.push('<span class="dim"># the attachments waited for both the instance and the volume.</span>');
+      lines.push('<span class="dim"># nobody wrote that ordering down; it came out of the graph.</span>');
+      atts.forEach(function(b){ lines.push('<span class="ok">'+b.addr+': Creating...</span>'); });
+      atts.forEach(function(b){ lines.push('<span class="ok">'+b.addr+': Creation complete after 9s</span>'); });
+    }
+    if(d.chg.length || d.repl.length){
+      var a2 = d.repl.length ? d.repl[0] : d.chg[0];
+      var verb = d.repl.length ? 'destroying' : 'modifying';
+      lines.push('<span class="'+(d.repl.length?'rm':'chg')+'">'+a2+': Still '+verb+'... [1m10s elapsed]</span>');
+      lines.push('<span class="'+(d.repl.length?'rm':'chg')+'">'+a2+': Still '+verb+'... [6m20s elapsed]</span>');
+      if(d.repl.length){
+        lines.push('<span class="rm">'+a2+': Destruction complete after 7m2s</span>');
+        lines.push('<span class="ok">'+a2+': Creating...</span>');
+        lines.push('<span class="ok">'+a2+': Creation complete after 11m48s [id=urlshort-prod-pg-v2]</span>');
+        lines.push('<span class="rm">\u26a0 you now have an empty database and 40 minutes of very quiet phone calls.</span>');
+      } else {
+        lines.push('<span class="chg">'+a2+': Modifications complete after 8m3s</span>');
+      }
+      d.chg.slice(1).forEach(function(a3){
+        lines.push('<span class="chg">'+a3+': Modifying...</span>');
+        lines.push('<span class="chg">'+a3+': Modifications complete after 2m41s</span>');
+      });
+    }
+    lines.push('');
+    lines.push('<span class="hdr">Apply complete! Resources: '+d.add.length+' added, '+d.chg.length+' changed, '+(d.del.length + d.repl.length)+' destroyed.</span>');
+    stream(lines, function(){
+      applied = desired(); pending = null; btnApply.disabled = true; stateLine();
+    });
+  }
+
+  btnPlan.addEventListener('click', plan);
+  btnApply.addEventListener('click', apply);
+  btnReset.addEventListener('click', function(){
+    if(busy) return;
+    applied = Object.assign({}, base);
+    el.pg.value = base.pg; el.redis.value = base.redis; el.ch.value = String(base.ch);
+    el.maz.checked = base.maz; el.rename.checked = base.rename;
+    pending = null; btnApply.disabled = true; stateLine();
+    write('<span class="dim">State reset. 41 resources, matching the configuration above.\nChange something, then run a plan.</span>');
+  });
+  Object.keys(el).forEach(function(k){
+    el[k].addEventListener('change', function(){ if(!busy){ btnApply.disabled = true; pending = null; } });
+  });
+  stateLine();
+  write('<span class="dim">$ terraform init\nInitializing the backend...\nInitializing provider plugins...\n- Installing hashicorp/aws v5.62.0...\n\n<span class="ok">Terraform has been successfully initialized!</span>\n\nChange a variable above, then run a plan.</span>');
+})();
+
+/* ============================ ansible runner ============================ */
+(function(){
+  var term = $('#ansTerm'); if(!term) return;
+  var HOSTS = ['clickhouse-01','clickhouse-02','clickhouse-03'];
+  var TASKS = [
+    {n:'Gathering Facts', fixed:'ok'},
+    {n:'baseline : Ensure operators group and ssh keys'},
+    {n:'baseline : Install node_exporter', notify:false},
+    {n:'clickhouse : Add ClickHouse apt repository'},
+    {n:'clickhouse : Install clickhouse-server=24.8*', notify:true},
+    {n:'clickhouse : Create ext4 filesystem on /dev/xvdf'},
+    {n:'clickhouse : Mount data volume at /var/lib/clickhouse'},
+    {n:'clickhouse : Tune sysctl for large merges', notify:true},
+    {n:'clickhouse : Render cluster topology', notify:true, drift:true},
+    {n:'clickhouse : Render storage policy', notify:true},
+    {n:'clickhouse : Ensure clickhouse-server started and enabled'},
+    {n:'clickhouse : Wait for port 9000 to accept connections', fixed:'ok'},
+    {n:'clickhouse : Create the analytics database', once:true}
+  ];
+  var applied = false, drift = null, busy = false;
+  var label = $('#ansState');
+  var btns = {run:$('#ansRun'), check:$('#ansCheck'), drift:$('#ansDrift'), wipe:$('#ansWipe')};
+
+  function setLabel(){
+    label.textContent = '3 hosts \u00b7 ' + (!applied ? 'never converged'
+      : drift ? '1 host edited by hand' : 'converged');
+  }
+  function pad(s,w){ return s + new Array(Math.max(1, w - s.length + 1)).join(' '); }
+  function header(text){
+    var line = text + ' ';
+    while(line.length < 68) line += '*';
+    return '<span class="hdr">' + esc(line) + '</span>';
+  }
+
+  function build(check){
+    var lines = [], recap = {};
+    HOSTS.forEach(function(h){ recap[h] = {ok:0, changed:0, skipped:0}; });
+    lines.push('<span class="dim">$ ansible-playbook -i inventory/aws_ec2.yml site.yml'+(check?' --check --diff':'')+'</span>');
+    lines.push('');
+    if(check) lines.push('<span class="chg">[WARNING]: check mode \u2014 nothing on the hosts will be modified.</span>');
+    lines.push(header('PLAY [Analytics nodes]'));
+    lines.push('');
+    var notified = {};
+    TASKS.forEach(function(t){
+      lines.push(header('TASK ['+t.n+']'));
+      HOSTS.forEach(function(h, hi){
+        if(t.once && hi > 0){ recap[h].skipped++; lines.push('<span class="skip">skipping: ['+h+']</span>'); return; }
+        var st;
+        if(t.fixed === 'ok') st = 'ok';
+        else if(!applied) st = 'changed';
+        else if(t.drift && drift === h) st = 'changed';
+        else st = 'ok';
+        recap[h].ok++;
+        if(st === 'changed'){
+          recap[h].changed++;
+          if(t.notify) notified[h] = true;
+          lines.push('<span class="chg">changed: ['+h+']</span>');
+          if(check && t.drift && drift === h){
+            lines.push('<span class="dim">--- before: /etc/clickhouse-server/config.d/cluster.xml</span>');
+            lines.push('<span class="dim">+++ after:  /etc/clickhouse-server/config.d/cluster.xml</span>');
+            lines.push('<span class="rm">-  &lt;max_server_memory_usage&gt;99857989632&lt;/max_server_memory_usage&gt;</span>');
+            lines.push('<span class="ok">+  &lt;max_server_memory_usage&gt;41231686041&lt;/max_server_memory_usage&gt;</span>');
+          }
+        } else {
+          lines.push('<span class="ok">ok: ['+h+']</span>');
+        }
+      });
+      lines.push('');
+    });
+    var nh = Object.keys(notified);
+    if(nh.length){
+      lines.push(header('RUNNING HANDLER [clickhouse : restart clickhouse]'));
+      HOSTS.forEach(function(h){
+        if(notified[h]){ recap[h].changed++; recap[h].ok++; lines.push('<span class="chg">changed: ['+h+']</span>'); }
+      });
+      lines.push('');
+    }
+    lines.push(header('PLAY RECAP'));
+    HOSTS.forEach(function(h){
+      var r = recap[h];
+      var line = pad(h, 16) + ': ' +
+        '<span class="ok">ok=' + pad(String(r.ok),4) + '</span>' +
+        '<span class="' + (r.changed ? 'chg' : 'dim') + '">changed=' + pad(String(r.changed),4) + '</span>' +
+        '<span class="dim">unreachable=0    failed=0    skipped=' + r.skipped + '</span>';
+      lines.push(line);
+    });
+    lines.push('');
+    var totalChanged = HOSTS.reduce(function(a,h){ return a + recap[h].changed; }, 0);
+    if(check) lines.push('<span class="dim">Nothing was written. Run without --check to converge.</span>');
+    else if(totalChanged === 0) lines.push('<span class="ok">changed=0 everywhere. The machines already matched the repo \u2014 this is what a correct playbook looks like on its second run.</span>');
+    else if(applied) lines.push('<span class="chg">One file, one host, one restart. Everything else was already correct, so nothing else was touched.</span>');
+    return lines;
+  }
+
+  function run(check){
+    if(busy) return;
+    var lines = build(check);
+    term.innerHTML = '';
+    var i = 0;
+    function finish(){
+      busy = false;
+      Object.keys(btns).forEach(function(k){ btns[k].disabled = false; });
+      if(!check){ applied = true; drift = null; }
+      setLabel();
+    }
+    if(RM){ term.innerHTML = lines.join('\n'); finish(); return; }
+    busy = true;
+    Object.keys(btns).forEach(function(k){ btns[k].disabled = true; });
+    (function next(){
+      if(i >= lines.length){ finish(); return; }
+      term.innerHTML += lines[i++] + '\n';
+      term.scrollTop = term.scrollHeight;
+      setTimeout(next, 45);
+    })();
+  }
+
+  btns.run.addEventListener('click', function(){ run(false); });
+  btns.check.addEventListener('click', function(){ run(true); });
+  btns.drift.addEventListener('click', function(){
+    if(busy) return;
+    if(!applied){
+      term.innerHTML = '<span class="chg">Run the playbook first \u2014 there is nothing to drift away from yet.</span>';
+      return;
+    }
+    drift = 'clickhouse-02'; setLabel();
+    term.innerHTML = '<span class="dim">$ ssh clickhouse-02</span>\n' +
+      '<span class="dim">$ sudo vim /etc/clickhouse-server/config.d/cluster.xml</span>\n' +
+      '<span class="chg">-  &lt;max_server_memory_usage&gt;41231686041&lt;/max_server_memory_usage&gt;</span>\n' +
+      '<span class="chg">+  &lt;max_server_memory_usage&gt;99857989632&lt;/max_server_memory_usage&gt;</span>\n' +
+      '<span class="dim">$ sudo systemctl restart clickhouse-server</span>\n' +
+      '<span class="dim">$ exit</span>\n\n' +
+      '<span class="dim">Nobody wrote this down. Now run the playbook again.</span>';
+  });
+  btns.wipe.addEventListener('click', function(){
+    if(busy) return;
+    applied = false; drift = null; setLabel();
+    term.innerHTML = '<span class="dim">Terraform replaced the three instances. Fresh Ubuntu, an unformatted\n2 TB volume at /dev/xvdf, and nothing else.\n\nThe playbook has not run against these hosts.</span>';
+  });
+  setLabel();
+  term.innerHTML = '<span class="dim">Three EC2 instances, created by Terraform in the previous module,\ntagged AnsibleGroup=clickhouse. Ubuntu 24.04, an empty 2 TB volume,\nno ClickHouse.\n\nRun the playbook.</span>';
+})();
+
+/* ============================ helm renderer ============================= */
+(function(){
+  var pv = $('#hvPre'); if(!pv) return;
+  var pt = $('#htPre'), pr = $('#hrPre'), cmd = $('#helmCmd');
+  var el = {env:$('#hEnv'), tag:$('#hTag'), rep:$('#hRep'), res:$('#hRes'), hpa:$('#hHpa'), ing:$('#hIng')};
+  var RES = {
+    s:{cpu:'100m', mem:'128Mi', lim:'256Mi'},
+    m:{cpu:'500m', mem:'512Mi', lim:'1Gi'},
+    l:{cpu:'2000m', mem:'2Gi', lim:'4Gi'}
+  };
+  var TEMPLATE =
+'apiVersion: apps/v1\n' +
+'kind: Deployment\n' +
+'metadata:\n' +
+'  name: {{ include "urlshort.fullname" . }}-api\n' +
+'  labels:\n' +
+'    {{- include "urlshort.labels" . | nindent 4 }}\n' +
+'    app.kubernetes.io/component: api\n' +
+'spec:\n' +
+'  {{- if not .Values.api.autoscaling.enabled }}\n' +
+'  replicas: {{ .Values.api.replicas }}\n' +
+'  {{- end }}\n' +
+'  selector:\n' +
+'    matchLabels:\n' +
+'      {{- include "urlshort.selectorLabels" . | nindent 6 }}\n' +
+'      app.kubernetes.io/component: api\n' +
+'  template:\n' +
+'    metadata:\n' +
+'      annotations:\n' +
+'        # any change to the ConfigMap changes this hash, which changes the pod\n' +
+'        # spec, which is the only way Kubernetes will roll your pods on a config edit\n' +
+'        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}\n' +
+'      labels:\n' +
+'        {{- include "urlshort.selectorLabels" . | nindent 8 }}\n' +
+'        app.kubernetes.io/component: api\n' +
+'    spec:\n' +
+'      serviceAccountName: {{ include "urlshort.serviceAccountName" . }}\n' +
+'      containers:\n' +
+'        - name: api\n' +
+'          image: "{{ .Values.image.registry }}/urlshort-api:{{ .Values.image.tag }}"\n' +
+'          ports:\n' +
+'            - name: http\n' +
+'              containerPort: 8080\n' +
+'          env:\n' +
+'            - name: REDIS_URL\n' +
+'              value: {{ .Values.redis.url | quote }}\n' +
+'            - name: KAFKA_BROKERS\n' +
+'              value: {{ .Values.kafka.brokers | quote }}\n' +
+'            - name: PG_DSN\n' +
+'              valueFrom:\n' +
+'                secretKeyRef:\n' +
+'                  name: {{ include "urlshort.fullname" . }}-pg\n' +
+'                  key: dsn\n' +
+'          resources:\n' +
+'            {{- toYaml .Values.api.resources | nindent 12 }}\n' +
+'          readinessProbe:\n' +
+'            httpGet:\n' +
+'              path: /healthz\n' +
+'              port: http';
+
+  function hash(s){
+    var h = 5381;
+    for(var i=0;i<s.length;i++){ h = ((h*33) ^ s.charCodeAt(i)) >>> 0; }
+    var out = '';
+    for(var j=0;j<8;j++){ out += ((h * (j+7)) >>> 0).toString(16).slice(0,8); }
+    return out.slice(0,64);
+  }
+  function st(){
+    var prod = el.env.value === 'prod';
+    return {
+      prod: prod, tag: el.tag.value || 'v1.8.3',
+      rep: parseInt(el.rep.value,10), res: RES[el.res.value],
+      hpa: el.hpa.checked, ing: el.ing.checked,
+      reg: prod ? '4711.dkr.ecr.ap-south-1.amazonaws.com' : 'ghcr.io/acme',
+      redis: prod ? 'rediss://urlshort-prod-redis.k3x8vq.ng.0001.aps1.cache.amazonaws.com:6379'
+                  : 'redis://urlshort-redis-master:6379',
+      kafka: prod ? 'b-1.urlshortprod.9lm4.c2.kafka.ap-south-1.amazonaws.com:9098'
+                  : 'urlshort-kafka:9092'
+    };
+  }
+  function valuesText(s){
+    var t = '';
+    t += '# ' + (s.prod ? 'values.yaml + values-prod.yaml, merged in that order' : 'values.yaml only') + '\n\n';
+    t += 'image:\n  registry: ' + s.reg + '\n  tag: ' + s.tag + '\n\n';
+    t += 'api:\n  replicas: ' + s.rep + '\n';
+    t += '  resources:\n';
+    t += '    requests:\n      cpu: ' + s.res.cpu + '\n      memory: ' + s.res.mem + '\n';
+    t += '    limits:\n      memory: ' + s.res.lim + '\n';
+    t += '  autoscaling:\n    enabled: ' + s.hpa + '\n';
+    if(s.hpa) t += '    minReplicas: ' + s.rep + '\n    maxReplicas: 20\n    targetCPUUtilizationPercentage: 70\n';
+    t += '\nredis:\n  embedded: ' + (!s.prod) + '\n  url: "' + s.redis + '"\n';
+    t += '\nkafka:\n  embedded: ' + (!s.prod) + '\n  brokers: "' + s.kafka + '"\n';
+    t += '\npostgresql:\n  embedded: ' + (!s.prod) + '\n';
+    if(s.prod) t += '  secretRef: "arn:aws:secretsmanager:ap-south-1:4711:secret:rds!db-9f2a"\n';
+    t += '\ningress:\n  enabled: ' + s.ing + '\n';
+    if(s.ing) t += '  className: alb\n  host: ' + (s.prod ? 'urlsh.rt' : 'urlshort.localhost') + '\n';
+    return t;
+  }
+  function renderText(s){
+    var t = '';
+    t += '---\n# Source: urlshort/templates/deployment-api.yaml\n';
+    t += 'apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: urlshort-api\n';
+    t += '  labels:\n    app.kubernetes.io/name: urlshort\n    app.kubernetes.io/instance: urlshort\n';
+    t += '    app.kubernetes.io/version: "' + s.tag + '"\n    app.kubernetes.io/component: api\n';
+    t += 'spec:\n';
+    if(!s.hpa) t += '  replicas: ' + s.rep + '\n';
+    t += '  selector:\n    matchLabels:\n      app.kubernetes.io/name: urlshort\n';
+    t += '      app.kubernetes.io/instance: urlshort\n      app.kubernetes.io/component: api\n';
+    t += '  template:\n    metadata:\n      annotations:\n';
+    t += '        checksum/config: ' + hash(s.redis + s.kafka + s.tag + String(s.prod)) + '\n';
+    t += '      labels:\n        app.kubernetes.io/name: urlshort\n';
+    t += '        app.kubernetes.io/instance: urlshort\n        app.kubernetes.io/component: api\n';
+    t += '    spec:\n      serviceAccountName: urlshort\n      containers:\n';
+    t += '        - name: api\n          image: "' + s.reg + '/urlshort-api:' + s.tag + '"\n';
+    t += '          ports:\n            - name: http\n              containerPort: 8080\n';
+    t += '          env:\n            - name: REDIS_URL\n              value: "' + s.redis + '"\n';
+    t += '            - name: KAFKA_BROKERS\n              value: "' + s.kafka + '"\n';
+    t += '            - name: PG_DSN\n              valueFrom:\n                secretKeyRef:\n';
+    t += '                  name: urlshort-pg\n                  key: dsn\n';
+    t += '          resources:\n            requests:\n              cpu: ' + s.res.cpu + '\n';
+    t += '              memory: ' + s.res.mem + '\n            limits:\n              memory: ' + s.res.lim + '\n';
+    t += '          readinessProbe:\n            httpGet:\n              path: /healthz\n              port: http\n';
+    if(s.hpa){
+      t += '---\n# Source: urlshort/templates/hpa.yaml\n';
+      t += 'apiVersion: autoscaling/v2\nkind: HorizontalPodAutoscaler\nmetadata:\n  name: urlshort-api\n';
+      t += 'spec:\n  scaleTargetRef:\n    apiVersion: apps/v1\n    kind: Deployment\n    name: urlshort-api\n';
+      t += '  minReplicas: ' + s.rep + '\n  maxReplicas: 20\n  metrics:\n    - type: Resource\n';
+      t += '      resource:\n        name: cpu\n        target:\n          type: Utilization\n';
+      t += '          averageUtilization: 70\n';
+    }
+    if(s.ing){
+      t += '---\n# Source: urlshort/templates/ingress.yaml\n';
+      t += 'apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: urlshort\n';
+      t += '  annotations:\n    alb.ingress.kubernetes.io/scheme: internet-facing\n';
+      t += '    alb.ingress.kubernetes.io/target-type: ip\n';
+      t += 'spec:\n  ingressClassName: alb\n  rules:\n    - host: ' + (s.prod ? 'urlsh.rt' : 'urlshort.localhost') + '\n';
+      t += '      http:\n        paths:\n          - path: /\n            pathType: Prefix\n';
+      t += '            backend:\n              service:\n                name: urlshort-api\n';
+      t += '                port:\n                  name: http\n';
+    }
+    return t;
+  }
+  var prevR = null, prevV = null;
+  function paint(pre, text, prev, lang){
+    var lines = text.split('\n'), old = prev ? prev.split('\n') : null;
+    pre.innerHTML = lines.map(function(l, i){
+      var h = hl(l, lang);
+      if(old && old[i] !== l && l.trim()) return '<mark class="hl">' + h + '</mark>';
+      return h;
+    }).join('\n');
+  }
+  function update(){
+    var s = st();
+    $('#hRepVal').textContent = s.rep;
+    var v = valuesText(s), r = renderText(s);
+    paint(pv, v, prevV, 'yaml');
+    paint(pr, r, prevR, 'yaml');
+    prevV = v; prevR = r;
+    cmd.textContent = s.prod ? '-f values.yaml -f values-prod.yaml' : '-f values.yaml';
+  }
+  pt.innerHTML = hl(TEMPLATE, 'yaml');
+  Object.keys(el).forEach(function(k){
+    el[k].addEventListener('input', update);
+    el[k].addEventListener('change', update);
+  });
+  $('#helmTabs').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    $$('button', e.currentTarget).forEach(function(x){ x.classList.toggle('on', x === b); });
+    ['hv','ht','hr'].forEach(function(id){ $('#'+id).classList.toggle('on', id === b.dataset.pane); });
+  });
+  update();
+})();
+
+/* ============================ argo cd sim =============================== */
+(function(){
+  var gear = $('#gear'); if(!gear) return;
+  var A = {
+    gitTag:'v1.8.3', gitRep:3, gitBroken:false,
+    liveTag:'v1.8.3', liveRep:3, liveBroken:false,
+    sync:'Synced', health:'Healthy', phase:'idle', roll:0,
+    auto:true, heal:true, since:0, announced:false,
+    history:[{sha:'9f3a1c2', msg:'prod: urlshort-api v1.8.3'}]
+  };
+  var el = {
+    gTag:$('#gTag'), gRep:$('#gRep'), gLog:$('#gLog'), lTag:$('#lTag'), lRep:$('#lRep'),
+    sync:$('#aSync'), health:$('#aHealth'), pods:$('#pods'), term:$('#argoTerm'),
+    tick:$('#argoTick'), loopLbl:$('#loopLbl'), auto:$('#aAuto'), heal:$('#aHeal'),
+    syncNow:$('#aSyncNow')
+  };
+  function log(txt, cls){
+    var t = new Date();
+    var ts = String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0')+':'+String(t.getSeconds()).padStart(2,'0');
+    el.term.innerHTML += '<span class="dim">'+ts+'</span> <span class="'+(cls||'')+'">'+esc(txt)+'</span>\n';
+    el.term.scrollTop = el.term.scrollHeight;
+  }
+  function sha(){ return Math.random().toString(16).slice(2,9); }
+  function statClass(v){
+    if(v==='Synced'||v==='Healthy') return 'sync';
+    if(v==='OutOfSync') return 'out';
+    if(v==='Progressing') return 'prog';
+    return 'deg';
+  }
+  function paint(){
+    el.gTag.textContent = A.gitTag; el.gRep.textContent = A.gitRep;
+    el.lTag.textContent = A.liveTag; el.lRep.textContent = A.liveRep;
+    el.sync.textContent = A.sync; el.sync.className = 'stat ' + statClass(A.sync);
+    el.health.textContent = A.health; el.health.className = 'stat ' + statClass(A.health);
+    el.gLog.innerHTML = A.history.slice(0,4).map(function(c){
+      return '<div class="commit"><b>'+c.sha+'</b> '+esc(c.msg)+'</div>';
+    }).join('');
+    var pods = '';
+    for(var i=0;i<A.liveRep;i++){
+      var cls = 'pod';
+      if(A.phase === 'rolling'){ cls += i < A.roll ? ' new' : ' old'; }
+      else if(A.liveBroken) cls += ' bad';
+      pods += '<div class="'+cls+'"></div>';
+    }
+    el.pods.innerHTML = pods;
+    el.syncNow.style.display = A.auto ? 'none' : '';
+    el.heal.disabled = !A.auto;
+    gear.classList.toggle('spin', A.phase === 'rolling');
+    el.loopLbl.textContent = A.phase === 'rolling' ? 'syncing' : 'compare';
+  }
+  function startSync(reason){
+    A.phase = 'rolling'; A.roll = 0; A.health = 'Progressing'; A.sync = 'OutOfSync';
+    log('initiating sync to '+A.history[0].sha+' ('+reason+')', 'arg');
+    log('Deployment/urlshort-api configured');
+  }
+  function tick(){
+    A.since++;
+    el.tick.textContent = 'last comparison ' + A.since + 's ago';
+    if(A.phase === 'rolling'){
+      A.roll++;
+      if(A.roll >= A.liveRep){
+        A.phase = 'idle'; A.liveTag = A.gitTag; A.liveRep = A.gitRep; A.liveBroken = A.gitBroken;
+        A.sync = 'Synced';
+        if(A.liveBroken){
+          A.health = 'Degraded';
+          log('Deployment/urlshort-api: 0/'+A.liveRep+' pods ready \u2014 CrashLoopBackOff', 'rm');
+          log('Synced and Degraded. Argo applied exactly what Git said. Git was wrong.', 'chg');
+        } else {
+          A.health = 'Healthy';
+          log('sync operation succeeded', 'ok');
+        }
+        A.announced = false;
+      }
+      paint(); return;
+    }
+    var tagDiff = A.gitTag !== A.liveTag, repDiff = A.gitRep !== A.liveRep;
+    A.since = 0;
+    if(!tagDiff && !repDiff){
+      if(A.sync !== 'Synced'){ A.sync = 'Synced'; A.announced = false; }
+      paint(); return;
+    }
+    A.sync = 'OutOfSync';
+    if(!A.announced){ log('comparison determined app is OutOfSync', 'chg'); A.announced = true; }
+    if(tagDiff && A.auto) startSync('automated');
+    else if(repDiff && A.auto && A.heal){
+      log('selfHeal: live spec.replicas='+A.liveRep+' differs from Git ('+A.gitRep+')', 'chg');
+      A.liveRep = A.gitRep; A.sync = 'Synced'; A.announced = false;
+      log('Deployment/urlshort-api reverted to '+A.gitRep+' replicas', 'ok');
+    }
+    paint();
+  }
+  $('#aCommit').addEventListener('click', function(){
+    var next = 'v1.8.' + (parseInt(A.gitTag.split('.')[2],10) + 1);
+    A.gitTag = next; A.gitBroken = false; A.announced = false;
+    A.history.unshift({sha:sha(), msg:'prod: urlshort-api '+next});
+    log('push received: image.tag \u2192 '+next, 'arg');
+    if(!A.auto) log('automated sync is off \u2014 press Sync when you are ready', 'dim');
+    paint();
+  });
+  $('#aBreak').addEventListener('click', function(){
+    A.gitTag = 'v1.9.0-rc1'; A.gitBroken = true; A.announced = false;
+    A.history.unshift({sha:sha(), msg:'prod: urlshort-api v1.9.0-rc1'});
+    log('push received: image.tag \u2192 v1.9.0-rc1 (this image does not start)', 'arg');
+    paint();
+  });
+  $('#aScale').addEventListener('click', function(){
+    A.liveRep = 9; A.announced = false;
+    log('$ kubectl scale deploy/urlshort-api --replicas=9', 'dim');
+    log('deployment.apps/urlshort-api scaled', 'dim');
+    paint();
+  });
+  $('#aRevert').addEventListener('click', function(){
+    if(A.history.length < 2){ log('nothing to revert to', 'dim'); return; }
+    var prev = A.history[1];
+    var m = prev.msg.match(/v[\d.]+(?:-rc\d)?/);
+    A.gitTag = m ? m[0] : 'v1.8.3'; A.gitBroken = false; A.announced = false;
+    A.history.unshift({sha:sha(), msg:'Revert "'+A.history[0].msg+'"'});
+    log('git revert pushed \u2014 Git now says '+A.gitTag, 'arg');
+    paint();
+  });
+  el.syncNow.addEventListener('click', function(){
+    if(A.gitTag !== A.liveTag) startSync('manual');
+    else if(A.gitRep !== A.liveRep){ A.liveRep = A.gitRep; A.sync = 'Synced'; log('Deployment/urlshort-api configured', 'ok'); }
+    paint();
+  });
+  el.auto.addEventListener('change', function(){
+    A.auto = this.checked;
+    log('syncPolicy.automated = '+A.auto, 'dim');
+    if(!A.auto) log('drift will now be reported and left alone', 'dim');
+    paint();
+  });
+  el.heal.addEventListener('change', function(){ A.heal = this.checked; log('selfHeal = '+A.heal, 'dim'); paint(); });
+  log('Application urlshort-prod registered', 'ok');
+  log('watching github.com/acme/urlshort-deploy @ main', 'dim');
+  paint();
+  setInterval(tick, 1800);
+})();
+
+/* ============================ timeline ================================== */
+(function(){
+  var tl = $('#timeline'); if(!tl) return;
+  tl.addEventListener('click', function(e){
+    var b = e.target.closest('.tlstep > button'); if(!b) return;
+    var body = b.nextElementSibling;
+    body.classList.toggle('on');
+  });
+})();
+
+/* ============================ quizzes =================================== */
+(function(){
+  var T = ['Terraform','Ansible','Helm values','Argo CD / a Git commit'];
+  var DATA = {
+    q1:{ label:'Checkpoint \u2014 Terraform', qs:[
+      { q:'A colleague ran terraform apply from their laptop. It proposed creating a second RDS instance identical to the one already running in the same account. What happened?',
+        opts:['Their AWS credentials point at the wrong region','They had a local state file that knows nothing about the existing database','The provider version is too old','They forgot to run terraform plan first'],
+        a:1, why:'State is the map from your config to real resource IDs. A fresh local state file is empty, so Terraform concluded nothing exists and offered to build it all again. This is why the remote backend goes in on commit one.' },
+      { q:'A plan shows <code>-/+ resource "aws_db_instance" "canonical"</code> with <code># forces replacement</code> next to one attribute. What does that mean?',
+        opts:['The resource will be updated safely in place','Terraform will destroy the database and create a new, empty one','Terraform will create a replica and fail over','The plan is stale and needs a refresh'],
+        a:1, why:'Some attributes cannot be changed through the API, so Terraform\u2019s only option is delete-then-create. On an RDS instance that means an empty database. Reading plans for this symbol is the single most valuable Terraform habit.' }
+    ]},
+    q2:{ label:'Checkpoint \u2014 Ansible', qs:[
+      { q:'You run the playbook a second time with no changes anywhere and it reports changed=7. What is the most likely cause?',
+        opts:['Normal \u2014 Ansible reports changed on every run','Several tasks use shell or command instead of a module that can check state','The inventory cache is stale','SSH reconnected to the hosts'],
+        a:1, why:'A shell task has no idea whether it needed to run, so it always reports changed. That is not cosmetic: those tasks also notify handlers, so your service restarts on every run. Replace them with real modules, or set an honest changed_when.' },
+      { q:'Terraform adds a fourth ClickHouse instance. What do you change in Ansible so it gets configured?',
+        opts:['Add it to inventory/hosts.ini','Nothing \u2014 dynamic inventory finds it by its tags','Add it to the hosts: list in site.yml','Add a new entry in group_vars/'],
+        a:1, why:'The aws_ec2 inventory plugin queries the AWS API at runtime and groups hosts by the AnsibleGroup tag Terraform set. That tag is the entire interface between the two tools, and it means the machine list is never wrong.' }
+    ]},
+    q3:{ label:'Checkpoint \u2014 Helm', qs:[
+      { q:'You change a value that only affects the ConfigMap, sync it, and the pods keep serving the old configuration. Why?',
+        opts:['Kubernetes does not restart pods when a ConfigMap changes','The chart version was not bumped','Helm caches rendered templates for five minutes','ConfigMaps are immutable by default'],
+        a:0, why:'Nothing about the pod spec changed, so there was no rollout, so the pods kept their old mounted values. The fix is the checksum/config annotation: hash the ConfigMap into the pod template so a config edit becomes a spec change and triggers a normal rolling update.' },
+      { q:'In Chart.yaml, what is the difference between <code>version</code> and <code>appVersion</code>?',
+        opts:['version is the chart\u2019s own version; appVersion is the default version of the software it deploys','They must always be kept identical','appVersion is the minimum Kubernetes version','version is the required Helm CLI version'],
+        a:0, why:'They move independently. Fixing a typo in a template bumps version and leaves appVersion alone; shipping a new build bumps appVersion (and usually image.tag) with no template change at all.' }
+    ]},
+    q4:{ label:'Checkpoint \u2014 Argo CD', qs:[
+      { q:'Argo CD shows the application as Synced and Degraded. What does that tell you?',
+        opts:['Argo failed to apply the manifests','Git and the cluster match \u2014 the manifests themselves describe something broken','The repository credentials expired','The Helm chart failed to render'],
+        a:1, why:'Sync and health are independent. Synced means the cluster is exactly what Git asked for. Degraded means what Git asked for does not work \u2014 a bad image tag, a failing probe, an unschedulable resource request. Argo did its job perfectly.' },
+      { q:'A deploy has broken production. What is the fastest correct fix?',
+        opts:['kubectl rollout undo deploy/urlshort-api','helm rollback urlshort 12','git revert the offending commit and push','Disable automated sync and edit the Deployment by hand'],
+        a:2, why:'The first two put the cluster deliberately out of sync with Git, so the next automated comparison reverts your rollback and breaks production a second time. A revert is the same thirty seconds, fixes it permanently, and leaves an auditable record.' }
+    ]},
+    exam:{ label:'Final exam', qs:[
+      { q:'Redis is evicting hot short codes. You need a bigger node type.', opts:T, a:0,
+        why:'ElastiCache is a cloud resource with an ID and a bill, so it is Terraform \u2014 change node_type and apply. The application does not change at all; it keeps reading the same endpoint.' },
+      { q:'The api needs a new environment variable, FEATURE_QR_CODES=true.', opts:T, a:2,
+        why:'This is part of the shape of the application, so it belongs in the chart and its values. Argo CD then delivers it, but the change you make is a Helm one.' },
+      { q:'ClickHouse merges are thrashing. You need to raise max_bytes_to_merge_at_max_space in its config file.', opts:T, a:1,
+        why:'A file inside a machine that already exists. Change the value in group_vars, run the playbook, and the template task rewrites the file and notifies the restart handler \u2014 one host at a time.' },
+      { q:'Ship v1.9.0 of the api to production.', opts:T, a:3,
+        why:'CI has already built and pushed the image. The deploy is a one-line commit to the deploy repo changing image.tag, and Argo CD rolls it out. Nothing runs kubectl, and CI never holds cluster credentials.' },
+      { q:'During an incident someone ran kubectl edit on the api Deployment. Who puts it back?', opts:T, a:3,
+        why:'Argo CD, on the next comparison, if selfHeal is on. That is the property push-based pipelines cannot give you: convergence happens continuously rather than at the next deploy.' },
+      { q:'You need a fourth ClickHouse shard \u2014 machine, disk and all.', opts:T, a:0,
+        why:'Terraform first: bump the count, and the instance, volume and attachment appear with the right tags. Then Ansible converges it into a shard. Two tools, in that order, and neither one needs to know about the other.' },
+      { q:'The dashboard should also be served from a second domain, links.acme.com.', opts:T, a:0,
+        why:'A certificate, a CloudFront alias and a Route 53 record \u2014 all cloud resources. The SPA bundle in S3 does not change, and nothing in Kubernetes is involved at all.' },
+      { q:'An engineer needs the production database password to debug a query.',
+        opts:['Read it from the Helm values file','Decrypt it from an Ansible vault','Grant them IAM access to the Secrets Manager entry','Read it out of the Terraform state file'],
+        a:2, why:'The password was never written down by a human. AWS generated it into Secrets Manager, Terraform only ever handled the ARN, and External Secrets resolves it inside the cluster. Access is an IAM grant, which is auditable and revocable.' },
+      { q:'Staging should run three api replicas instead of one, permanently.', opts:T, a:2,
+        why:'values-staging.yaml. And if autoscaling is on there, you are really changing minReplicas \u2014 setting spec.replicas while an HPA is also managing it makes the two fight on every sync.' },
+      { q:'Argo CD was installed as a bootstrap helm_release from Terraform. You need to upgrade it from 7.6 to 7.8.', opts:T, a:0,
+        why:'Whatever installed it owns upgrading it, and here that is Terraform \u2014 bump the version and apply. Having Argo CD manage its own upgrade through an Application is a legitimate and common alternative, but it is a decision you make once, not a thing that is true by default.' }
+    ]}
+  };
+  $$('[data-quiz]').forEach(function(root){
+    var d = DATA[root.dataset.quiz]; if(!d) return;
+    var i = 0, score = 0, answered = false;
+    function render(){
+      var q = d.qs[i];
+      root.innerHTML =
+        '<div class="qn">' + d.label + ' \u00b7 question ' + (i+1) + ' of ' + d.qs.length + '</div>' +
+        '<div class="qq">' + q.q + '</div>' +
+        '<div class="opts">' + q.opts.map(function(o,j){
+          return '<button class="opt" data-j="'+j+'">' + o + '</button>';
+        }).join('') + '</div>' +
+        '<div class="verdict"></div>' +
+        '<div class="qfoot"><button class="btn lite nextq" style="display:none">' +
+          (i === d.qs.length-1 ? 'See score' : 'Next question') + '</button>' +
+        '<span class="score">' + score + ' / ' + d.qs.length + '</span></div>';
+      answered = false;
+    }
+    function finish(){
+      var msg = score === d.qs.length ? 'Every one. You have the model.'
+        : score >= d.qs.length - 2 ? 'Close. The misses are worth rereading \u2014 they are usually the handoffs.'
+        : 'Worth another pass through the modules you missed; the boundaries are the whole point.';
+      root.innerHTML = '<div class="qn">' + d.label + '</div>' +
+        '<div class="qq">' + score + ' out of ' + d.qs.length + '</div>' +
+        '<p style="margin:0 0 14px;color:var(--ink2)">' + msg + '</p>' +
+        '<button class="btn lite again">Try again</button>';
+      $('.again', root).addEventListener('click', function(){ i = 0; score = 0; render(); });
+    }
+    root.addEventListener('click', function(e){
+      var opt = e.target.closest('.opt');
+      if(opt && !answered){
+        answered = true;
+        var j = +opt.dataset.j, q = d.qs[i];
+        $$('.opt', root).forEach(function(b, k){
+          b.disabled = true;
+          if(k === q.a) b.classList.add('right');
+          else if(k === j) b.classList.add('wrong');
+        });
+        if(j === q.a) score++;
+        var v = $('.verdict', root);
+        v.innerHTML = '<b>' + (j === q.a ? 'Correct. ' : 'Not this time. ') + '</b>' + q.why;
+        v.classList.add('show');
+        $('.score', root).textContent = score + ' / ' + d.qs.length;
+        $('.nextq', root).style.display = '';
+        return;
+      }
+      if(e.target.closest('.nextq')){
+        i++;
+        if(i >= d.qs.length) finish(); else render();
+      }
+    });
+    render();
+  });
+})();
+})();
+</script>
+</body>
+</html>
