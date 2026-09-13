@@ -146,36 +146,38 @@
     <svg viewBox="0 0 680 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The full storage stack from physical disks up to the user's container">
       <defs>
         <style>
-          .lbl{font-family:Georgia,serif;font-size:15px;font-weight:700;fill:#20211d}
+          .lbl{font-family:Georgia,serif;font-size:15px;font-weight:700}
           .sub{font-family:SFMono-Regular,Consolas,monospace;font-size:10.5px;fill:#6b6a60}
           .tiny{font-family:SFMono-Regular,Consolas,monospace;font-size:9px;fill:#fff}
         </style>
+        <marker id="a" viewBox="0 0 10 10" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="8.5" refY="5" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="#6b6a60"/>
+        </marker>
       </defs>
       <!-- top: container -->
       <rect x="210" y="18" width="260" height="52" rx="9" fill="#211f1a"/>
-      <text x="340" y="42" text-anchor="middle" class="lbl" fill="#fff">User's container</text>
-      <text x="340" y="59" text-anchor="middle" class="sub" fill="#cfc9ba">reads &amp; writes /data</text>
-      <path d="M340 70 L340 92" stroke="#6b6a60" stroke-width="2" marker-end="url(#a)"/>
-      <defs><marker id="a" markerWidth="8" markerHeight="8" refX="4" refY="6" orient="auto"><path d="M0 0 L8 0 L4 8 z" fill="#6b6a60"/></marker></defs>
+      <text x="340" y="42" text-anchor="middle" class="lbl" style="fill:#fff">User's container</text>
+      <text x="340" y="59" text-anchor="middle" class="sub" style="fill:#cfc9ba">reads &amp; writes /data</text>
+      <path d="M340 70 L340 90" stroke="#6b6a60" stroke-width="2" marker-end="url(#a)"/>
 
       <!-- zfs layer -->
       <rect x="120" y="94" width="440" height="78" rx="10" fill="#e7f0ec" stroke="#2f6f5e" stroke-width="1.5"/>
-      <text x="140" y="120" class="lbl" fill="#2f6f5e">ZFS</text>
+      <text x="140" y="120" class="lbl" style="fill:#2f6f5e">ZFS</text>
       <text x="140" y="138" class="sub">zpool on the virtual disk · thin, compressed, snapshotted</text>
       <rect x="140" y="144" width="120" height="20" rx="5" fill="#2f6f5e"/><text x="200" y="158" text-anchor="middle" class="tiny">dataset vol-a</text>
       <rect x="270" y="144" width="120" height="20" rx="5" fill="#2f6f5e"/><text x="330" y="158" text-anchor="middle" class="tiny">dataset vol-b</text>
       <rect x="400" y="144" width="120" height="20" rx="5" fill="#3f8a75"/><text x="460" y="158" text-anchor="middle" class="tiny">dataset vol-c</text>
-      <path d="M340 172 L340 194" stroke="#6b6a60" stroke-width="2" marker-end="url(#a)"/>
+      <path d="M340 172 L340 192" stroke="#6b6a60" stroke-width="2" marker-end="url(#a)"/>
 
       <!-- rbd layer -->
       <rect x="150" y="196" width="380" height="56" rx="10" fill="#eef1f8" stroke="#4a5a86" stroke-width="1.5"/>
-      <text x="170" y="220" class="lbl" fill="#4a5a86">Ceph RBD</text>
+      <text x="170" y="220" class="lbl" style="fill:#4a5a86">Ceph RBD</text>
       <text x="170" y="238" class="sub">looks like a plain disk /dev/rbd0 — but lives in the cluster</text>
-      <path d="M340 252 L340 274" stroke="#6b6a60" stroke-width="2" marker-end="url(#a)"/>
+      <path d="M340 252 L340 272" stroke="#6b6a60" stroke-width="2" marker-end="url(#a)"/>
 
       <!-- rados layer -->
       <rect x="60" y="276" width="560" height="66" rx="10" fill="#fbe9df" stroke="#c1440e" stroke-width="1.5"/>
-      <text x="80" y="300" class="lbl" fill="#c1440e">Ceph / RADOS</text>
+      <text x="80" y="300" class="lbl" style="fill:#c1440e">Ceph / RADOS</text>
       <text x="80" y="318" class="sub">pools every disk into one cluster · keeps 3 copies on different machines</text>
       <text x="80" y="333" class="sub">CRUSH decides where each piece goes — no central bottleneck</text>
 
