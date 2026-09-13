@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ceph + ZFS on Bare Metal, Explained Like You're Five</title>
+<style>
+  :root{
+    --bg:#f6f3ec;
+    --panel:#fffdf8;
+    --ink:#20211d;
+    --muted:#6b6a60;
+    --line:#e2ddd0;
+    --ceph:#c1440e;      /* rust orange */
+    --zfs:#2f6f5e;       /* deep teal */
+    --host:#4a5a86;      /* slate blue */
+    --accent:#c1440e;
+    --code-bg:#211f1a;
+    --code-ink:#e9e4d6;
+    --shadow:0 1px 0 rgba(0,0,0,.04), 0 8px 30px rgba(30,26,18,.06);
+    --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    --serif:Georgia,"Times New Roman",serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.62;font-size:18px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:0 22px}
+  header.hero{
+    padding:74px 0 34px;border-bottom:1px solid var(--line);
+    margin-bottom:8px;
+  }
+  .kicker{
+    font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--accent);margin:0 0 18px;
+  }
+  h1{
+    font-family:var(--serif);font-weight:700;font-size:clamp(30px,5.4vw,46px);
+    line-height:1.1;margin:0 0 18px;letter-spacing:-.01em;
+  }
+  .lede{font-size:20px;color:var(--muted);margin:0;max-width:60ch}
+  .stack-tag{
+    display:inline-flex;gap:8px;flex-wrap:wrap;margin-top:26px;
+  }
+  .stack-tag span{
+    font-family:var(--mono);font-size:12px;padding:5px 11px;border-radius:999px;
+    border:1px solid var(--line);background:var(--panel);color:var(--muted);
+  }
+  main{padding:16px 0 80px}
+  h2{
+    font-family:var(--serif);font-size:27px;margin:56px 0 6px;letter-spacing:-.01em;
+    scroll-margin-top:20px;
+  }
+  h2 .num{font-family:var(--mono);font-size:14px;color:var(--accent);display:block;margin-bottom:4px;letter-spacing:.1em}
+  h3{font-size:19px;margin:30px 0 4px}
+  p{margin:14px 0}
+  a{color:var(--ceph);text-decoration-thickness:1px;text-underline-offset:2px}
+  strong{color:#000}
+  .eli5{
+    background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+    border-radius:10px;padding:16px 20px;margin:22px 0;box-shadow:var(--shadow);
+  }
+  .eli5 .lbl{
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);display:block;margin-bottom:6px;
+  }
+  .eli5 p{margin:6px 0}
+  .eli5 p:first-of-type{margin-top:0}
+  .eli5 p:last-child{margin-bottom:0}
+  figure{margin:32px 0;text-align:center}
+  figure svg{max-width:100%;height:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+  figcaption{font-size:14px;color:var(--muted);margin-top:12px;font-family:var(--mono);letter-spacing:.02em}
+  pre{
+    background:var(--code-bg);color:var(--code-ink);border-radius:10px;padding:16px 18px;
+    overflow-x:auto;font-family:var(--mono);font-size:14px;line-height:1.55;margin:18px 0;
+  }
+  pre .c{color:#8c9a6f}
+  code:not(pre code){
+    font-family:var(--mono);font-size:.86em;background:#ece7db;padding:2px 6px;border-radius:5px;
+    border:1px solid var(--line);
+  }
+  ul,ol{padding-left:22px}
+  li{margin:8px 0}
+  .layer-legend{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;margin-top:14px;font-size:13px}
+  .layer-legend span{display:inline-flex;align-items:center;gap:7px;color:var(--muted)}
+  .dot{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .callout{
+    background:#211f1a;color:#efe9db;border-radius:12px;padding:20px 22px;margin:30px 0;
+  }
+  .callout .lbl{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:#e0a86b;display:block;margin-bottom:8px}
+  .callout p{margin:8px 0;color:#efe9db}
+  .callout strong{color:#fff}
+  table{width:100%;border-collapse:collapse;margin:22px 0;font-size:15.5px}
+  th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .flow{counter-reset:step;margin:24px 0;padding:0;list-style:none}
+  .flow li{
+    position:relative;padding:14px 16px 14px 56px;border:1px solid var(--line);border-radius:10px;
+    background:var(--panel);margin:10px 0;box-shadow:var(--shadow);
+  }
+  .flow li::before{
+    counter-increment:step;content:counter(step);
+    position:absolute;left:14px;top:14px;width:28px;height:28px;border-radius:50%;
+    background:var(--accent);color:#fff;font-family:var(--mono);font-size:14px;font-weight:600;
+    display:flex;align-items:center;justify-content:center;
+  }
+  footer{border-top:1px solid var(--line);padding:30px 0 60px;color:var(--muted);font-size:14px}
+  footer .mono{font-family:var(--mono)}
+  hr.sep{border:0;border-top:1px solid var(--line);margin:0}
+  @media (max-width:520px){
+    body{font-size:16.5px}
+    .wrap{padding:0 18px}
+    header.hero{padding:52px 0 28px}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="kicker">Infrastructure / Storage · Explainer</p>
+    <h1>How a bare-metal cloud gives you a hard drive that never dies and grows on demand</h1>
+    <p class="lede">Ceph + ZFS is the combo behind "attach a volume to your app, grow it whenever, and never lose the data." Here's the whole stack, explained for someone who has never touched either.</p>
+    <div class="stack-tag">
+      <span>Ceph</span><span>RADOS · RBD</span><span>ZFS · zpool · zvol</span><span>Containers</span><span>Bare metal</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <p>Imagine you run a hosting platform on your own hardware — racks of servers in a datacenter, no AWS underneath. A customer deploys a database and clicks <em>"add a 20&nbsp;GB volume."</em> You now owe them storage that:</p>
+  <ul>
+    <li><strong>survives failure</strong> — a disk dies, or a whole server catches fire, and their data is still there;</li>
+    <li><strong>follows the app</strong> — if their container moves to a different machine, the data moves with it;</li>
+    <li><strong>grows on demand</strong> — 20&nbsp;GB today, 200&nbsp;GB next month, no downtime;</li>
+    <li><strong>doesn't waste money</strong> — you don't buy 20&nbsp;GB of physical disk for a volume that's 2&nbsp;GB full.</li>
+  </ul>
+  <p>A single hard drive plugged into a single server can't do any of that. So you build the storage in two layers that each solve half the problem: <strong>Ceph</strong> for durability and mobility, and <strong>ZFS</strong> for efficiency and per-customer features. Let's build it from the bottom up.</p>
+
+  <figure>
+    <svg viewBox="0 0 680 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The full storage stack from physical disks up to the user's container">
+      <defs>
+        <style>
+          .lbl{font-family:Georgia,serif;font-size:15px;font-weight:700;fill:#20211d}
+          .sub{font-family:SFMono-Regular,Consolas,monospace;font-size:10.5px;fill:#6b6a60}
+          .tiny{font-family:SFMono-Regular,Consolas,monospace;font-size:9px;fill:#fff}
+        </style>
+      </defs>
+      <!-- top: container -->
+      <rect x="210" y="18" width="260" height="52" rx="9" fill="#211f1a"/>
+      <text x="340" y="42" text-anchor="middle" class="lbl" fill="#fff">User's container</text>
+      <text x="340" y="59" text-anchor="middle" class="sub" fill="#cfc9ba">reads &amp; writes /data</text>
+      <path d="M340 70 L340 92" stroke="#6b6a60" stroke-width="2" marker-end="url(#a)"/>
+      <defs><marker id="a" markerWidth="8" markerHeight="8" refX="4" refY="6" orient="auto"><path d="M0 0 L8 0 L4 8 z" fill="#6b6a60"/></marker></defs>
+
+      <!-- zfs layer -->
+      <rect x="120" y="94" width="440" height="78" rx="10" fill="#e7f0ec" stroke="#2f6f5e" stroke-width="1.5"/>
+      <text x="140" y="120" class="lbl" fill="#2f6f5e">ZFS</text>
+      <text x="140" y="138" class="sub">zpool on the virtual disk · thin, compressed, snapshotted</text>
+      <rect x="140" y="144" width="120" height="20" rx="5" fill="#2f6f5e"/><text x="200" y="158" text-anchor="middle" class="tiny">dataset vol-a</text>
+      <rect x="270" y="144" width="120" height="20" rx="5" fill="#2f6f5e"/><text x="330" y="158" text-anchor="middle" class="tiny">dataset vol-b</text>
+      <rect x="400" y="144" width="120" height="20" rx="5" fill="#3f8a75"/><text x="460" y="158" text-anchor="middle" class="tiny">dataset vol-c</text>
+      <path d="M340 172 L340 194" stroke="#6b6a60" stroke-width="2" marker-end="url(#a)"/>
+
+      <!-- rbd layer -->
+      <rect x="150" y="196" width="380" height="56" rx="10" fill="#eef1f8" stroke="#4a5a86" stroke-width="1.5"/>
+      <text x="170" y="220" class="lbl" fill="#4a5a86">Ceph RBD</text>
+      <text x="170" y="238" class="sub">looks like a plain disk /dev/rbd0 — but lives in the cluster</text>
+      <path d="M340 252 L340 274" stroke="#6b6a60" stroke-width="2" marker-end="url(#a)"/>
+
+      <!-- rados layer -->
+      <rect x="60" y="276" width="560" height="66" rx="10" fill="#fbe9df" stroke="#c1440e" stroke-width="1.5"/>
+      <text x="80" y="300" class="lbl" fill="#c1440e">Ceph / RADOS</text>
+      <text x="80" y="318" class="sub">pools every disk into one cluster · keeps 3 copies on different machines</text>
+      <text x="80" y="333" class="sub">CRUSH decides where each piece goes — no central bottleneck</text>
+
+      <!-- physical disks -->
+      <text x="340" y="366" text-anchor="middle" class="sub">physical disks, spread across many hosts (one OSD per disk)</text>
+      <g fill="#c1440e">
+        <rect x="70" y="378" width="46" height="66" rx="6"/><rect x="126" y="378" width="46" height="66" rx="6"/>
+        <rect x="182" y="378" width="46" height="66" rx="6"/><rect x="248" y="378" width="46" height="66" rx="6" opacity=".85"/>
+        <rect x="304" y="378" width="46" height="66" rx="6" opacity=".85"/><rect x="360" y="378" width="46" height="66" rx="6" opacity=".85"/>
+        <rect x="426" y="378" width="46" height="66" rx="6" opacity=".7"/><rect x="482" y="378" width="46" height="66" rx="6" opacity=".7"/>
+        <rect x="538" y="378" width="46" height="66" rx="6" opacity=".7"/>
+      </g>
+      <text x="93" y="461" text-anchor="middle" class="sub">host&nbsp;1</text>
+      <text x="327" y="461" text-anchor="middle" class="sub">host&nbsp;2</text>
+      <text x="561" y="461" text-anchor="middle" class="sub">host&nbsp;3</text>
+    </svg>
+    <figcaption>The whole stack: disks → Ceph cluster → one virtual disk → ZFS → your container.</figcaption>
+    <div class="layer-legend">
+      <span><i class="dot" style="background:#c1440e"></i>Ceph (durability &amp; mobility)</span>
+      <span><i class="dot" style="background:#4a5a86"></i>RBD (the virtual disk)</span>
+      <span><i class="dot" style="background:#2f6f5e"></i>ZFS (efficiency &amp; features)</span>
+    </div>
+  </figure>
+
+  <h2><span class="num">01</span>What Ceph is</h2>
+  <p>Start with the problem Ceph solves. You have hundreds of hard drives scattered across dozens of servers. Left alone, each is an island: a 4&nbsp;TB drive in server&nbsp;7 is just 4&nbsp;TB of storage that dies when server&nbsp;7 dies. Ceph glues all of them into <strong>one giant shared pool</strong> that behaves like a single, enormous, self-healing storage system.</p>
+
+  <div class="eli5">
+    <span class="lbl">ELI5</span>
+    <p>Think of one massive warehouse built out of thousands of tiny storage lockers spread across several buildings. You don't care which locker your box is in — you hand it to the system and it stashes <strong>three copies in three different buildings</strong>. If a locker breaks, or a whole building loses power, your box is still safe in the other two, and the system quietly makes a fresh third copy somewhere else. That self-healing warehouse is Ceph.</p>
+  </div>
+
+  <p>The clever part is that there's <strong>no central librarian</strong> that every request has to go through (that would be a bottleneck and a single point of failure). Instead, a shared math formula lets any client <em>calculate</em> exactly which drives hold a given piece of data. That's how Ceph scales to thousands of disks without choking. Here are the pieces you'll hear named:</p>
+
+  <table>
+    <tr><th>Piece</th><th>ELI5 job</th></tr>
+    <tr><td><strong>OSD</strong><br><span class="sub" style="font-family:var(--mono);font-size:12px">Object Storage Daemon</span></td><td>One worker per physical disk. It actually reads and writes the bytes. 100 disks ≈ 100 OSDs.</td></tr>
+    <tr><td><strong>Monitor (MON)</strong></td><td>The small council (usually 3 or 5) that holds the official map of the cluster — who's alive, where things live. They vote so they always agree.</td></tr>
+    <tr><td><strong>Manager (MGR)</strong></td><td>The bookkeeper — metrics, dashboard, health. Keeps the humans informed.</td></tr>
+    <tr><td><strong>RADOS</strong></td><td>The engine underneath it all. Everything in Ceph is ultimately <em>objects</em> spread across OSDs; RADOS is what stores and replicates them.</td></tr>
+    <tr><td><strong>CRUSH</strong></td><td>The map + formula that decides which OSDs hold which data — deterministically, so no lookups needed.</td></tr>
+    <tr><td><strong>Pool</strong></td><td>A logical slice of the cluster with a rule attached, e.g. "keep 3 copies of everything in here."</td></tr>
+  </table>
+
+  <p>To stand up a small cluster you'd install these daemons across your servers: a few monitors for quorum, one OSD per disk, a manager or two. Modern Ceph uses a tool called <code>cephadm</code> that deploys them in containers, so bootstrapping looks roughly like: bootstrap the first monitor, add the other hosts, then tell Ceph "turn every spare disk into an OSD." At that point you have a working pool of storage.</p>
+
+  <h2><span class="num">02</span>Turning Ceph into a "hard drive": block storage with RBD</h2>
+  <p>A pool of replicated objects is great, but your customer's database doesn't speak "objects" — it wants a plain disk it can format and write files to. Ceph's answer is <strong>RBD: the RADOS Block Device</strong>.</p>
+
+  <div class="eli5">
+    <span class="lbl">ELI5</span>
+    <p>RBD is Ceph wearing a disk costume. You ask for a "50&nbsp;GB disk" and Ceph hands you something that looks exactly like a normal drive — it shows up on a server as <code>/dev/rbd0</code>, and you can format and mount it like any hard drive. Behind the costume, that "disk" is really chopped into thousands of little objects sprinkled across the whole cluster, each with three copies.</p>
+  </div>
+
+  <p>Two things make RBD special compared to a real drive:</p>
+  <ul>
+    <li><strong>It's not chained to one machine.</strong> The virtual disk lives in the cluster, so <em>any</em> host can attach it. The server it's plugged into is just a temporary renter.</li>
+    <li><strong>It's already backed up.</strong> The 3-copies-on-different-hosts rule from the pool applies automatically. Lose a disk or a whole server and the RBD keeps working without a blip.</li>
+  </ul>
+
+  <pre><span class="c"># carve a 50 GB virtual disk out of the pool, then attach it to this host</span>
+rbd create volumes/vol-a --size 50G
+rbd map volumes/vol-a        <span class="c"># → now visible as /dev/rbd0</span></pre>
+
+  <p>So after this step you have, on some host, a device at <code>/dev/rbd0</code> that acts like a disk, survives hardware death, and can be re-attached elsewhere. That's the durable, movable foundation. Now we make it <em>smart</em>.</p>
+
+  <h2><span class="num">03</span>ZFS on top: efficiency, snapshots, and growing on demand</h2>
+  <p>Ceph gave us a disk that won't die. But we still want the money-saving and feature tricks: don't reserve space you're not using, compress data automatically, take instant backups, and resize without downtime. That's <strong>ZFS</strong> — a filesystem and volume manager fused into one very clever piece of software.</p>
+
+  <div class="eli5">
+    <span class="lbl">ELI5</span>
+    <p>If Ceph is the warehouse, ZFS is the <strong>brilliant organizer you put in charge of one room</strong>. You give ZFS a disk — here, our Ceph RBD — and it turns it into a <strong>zpool</strong>. Out of that pool the organizer can hand out any number of labelled compartments (<strong>datasets</strong>), each acting like its own drive, while quietly compressing everything, only using the shelf space actually filled, and being able to photograph the whole room in an instant so you can rewind to how it looked yesterday.</p>
+  </div>
+
+  <p>You point ZFS at the Ceph block device and create a pool, then a dataset per customer volume:</p>
+  <pre><span class="c"># make a ZFS pool that lives ON the Ceph virtual disk</span>
+zpool create tank /dev/rbd0
+
+<span class="c"># one dataset per user volume, with the good stuff switched on</span>
+zfs create -o compression=lz4 -o quota=20G tank/vol-a
+<span class="c"># tank/vol-a is now a folder that behaves like a 20 GB drive</span></pre>
+
+  <p>Here's why each ZFS feature earns its place in a hosting platform:</p>
+  <table>
+    <tr><th>ZFS feature</th><th>What it buys you</th></tr>
+    <tr><td><strong>Thin provisioning</strong></td><td>A "20&nbsp;GB volume" only uses the space actually written. You can promise big volumes without buying the disk up front.</td></tr>
+    <tr><td><strong>Compression</strong> (lz4)</td><td>Transparently squishes data — often <em>more</em> usable space <em>and</em> faster, because less is read from disk.</td></tr>
+    <tr><td><strong>Snapshots</strong></td><td>Instant, near-free point-in-time copies (copy-on-write). Backups and one-click rollback for the customer.</td></tr>
+    <tr><td><strong>Checksums</strong></td><td>Every block is verified on read; silent corruption is caught and repaired from a good copy.</td></tr>
+    <tr><td><strong>Online resize</strong></td><td>Grow the pool and raise quotas live — the basis of autoscaling volumes.</td></tr>
+  </table>
+
+  <h3>What "autoscalable" actually means here</h3>
+  <p>The magic of stacking these two layers is that <strong>every layer is elastic</strong>, so a volume can grow while the app keeps running. When a customer's 20&nbsp;GB volume starts filling up, the platform can, live and in order:</p>
+  <ol class="flow">
+    <li><strong>Grow the Ceph disk.</strong> <code>rbd resize volumes/vol-a --size 40G</code> — the virtual disk is now bigger, drawn from the cluster's free space.</li>
+    <li><strong>Grow the ZFS pool into the new space.</strong> ZFS notices the underlying device grew and expands to fill it.</li>
+    <li><strong>Raise the quota.</strong> <code>zfs set quota=40G tank/vol-a</code> — the customer's limit is lifted with zero downtime.</li>
+  </ol>
+  <p>And if the whole <em>cluster</em> is running low, you rack another server, add its disks as new OSDs, and Ceph rebalances into the extra capacity automatically. The warehouse itself grows without anyone reconfiguring the customers.</p>
+
+  <h2><span class="num">04</span>Mounting it into the container</h2>
+  <p>The customer's service runs inside a <strong>container</strong> — really just their process with its own private view of the filesystem. To give it persistent storage, you <strong>bind-mount</strong> the ZFS dataset from the host into the container.</p>
+
+  <div class="eli5">
+    <span class="lbl">ELI5</span>
+    <p>A bind-mount is like installing a magic door in the container's wall. Open the door labelled <code>/data</code> inside the container and you step straight into the ZFS compartment on the host. The app just sees a normal folder at <code>/data</code> and writes to it — never knowing that behind the folder is ZFS, behind ZFS is a Ceph virtual disk, and behind that are three copies scattered across the datacenter.</p>
+  </div>
+
+  <pre><span class="c"># host path  →  container path</span>
+docker run -v /tank/vol-a:/data  my-database</pre>
+
+  <p>The app writes to <code>/data</code>. Those writes flow down through ZFS (compressed, checksummed), onto the RBD, and into RADOS, which replicates them three times across the cluster. That's the entire round trip.</p>
+
+  <h2><span class="num">05</span>Why this combo — and what happens when a server dies</h2>
+  <p>The two layers are a deliberate division of labour:</p>
+  <table>
+    <tr><th>Layer</th><th>Owns</th></tr>
+    <tr><td><strong>Ceph</strong></td><td><strong>Durability &amp; mobility</strong> — survive dead disks and dead servers; move a volume between hosts.</td></tr>
+    <tr><td><strong>ZFS</strong></td><td><strong>Efficiency &amp; features</strong> — thin provisioning, compression, snapshots, easy resize.</td></tr>
+  </table>
+
+  <p>The payoff is clearest in a failure. Suppose the server running a customer's database <strong>suddenly dies</strong>:</p>
+  <ol class="flow">
+    <li>The data is <strong>never lost</strong> — Ceph still holds its copies on OSDs on other servers.</li>
+    <li>The platform reschedules the container onto a <strong>healthy host</strong>.</li>
+    <li>That host <strong>re-attaches the same RBD</strong> (<code>rbd map</code>) — the virtual disk simply moves.</li>
+    <li>ZFS <strong>imports the pool</strong> (<code>zpool import tank</code>) and the dataset is back, byte-for-byte.</li>
+    <li>The dataset is <strong>bind-mounted</strong> into the new container at <code>/data</code>, and the service is running again.</li>
+  </ol>
+  <p>From the customer's view, their app blinked and came back with all its data. The storage followed the service across the datacenter on its own.</p>
+
+  <div class="callout">
+    <span class="lbl">The honest trade-off</span>
+    <p>Stacking ZFS on top of Ceph RBD means <strong>two smart layers</strong> that both do copy-on-write and checksumming, which adds some overhead and tuning work — you're paying a little performance for a lot of features. It also means <strong>one host "owns" a given ZFS pool at a time</strong> (it isn't shared by many machines at once), which fits perfectly with "one volume attached to one service." Teams choose this pattern on purpose: Ceph's durability plus ZFS's per-tenant tricks give you a cloud-grade volume service on hardware you own.</p>
+  </div>
+
+  <h2><span class="num">06</span>The whole thing in one breath</h2>
+  <p>Bottom to top: physical disks across many servers → one OSD per disk → <strong>RADOS</strong> pools them all and keeps three copies → <strong>RBD</strong> carves out a virtual disk that any host can attach and that can't be killed by hardware failure → <strong>ZFS</strong> turns that disk into thin, compressed, snapshottable, resizable datasets → each dataset is <strong>bind-mounted</strong> into a customer's container as <code>/data</code>. Ceph makes the storage <em>indestructible and portable</em>; ZFS makes it <em>cheap, flexible, and feature-rich</em>; the container just sees an ordinary folder that happens to be backed by a whole datacenter.</p>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p class="mono">A from-scratch explainer of the Ceph + ZFS bare-metal storage stack.</p>
+    <p>Command examples are illustrative and simplified to show the shape of each step — real deployments add authentication, placement rules, monitoring, and orchestration that a platform automates for you.</p>
+  </div>
+</footer>
+
+</body>
+</html>
