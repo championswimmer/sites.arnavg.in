@@ -110,12 +110,12 @@
     <div class="slides">
 
       <section id="title" class="section-divider" data-state="is-section-divider">
-        <p class="eyebrow">An interactive field guide · Pi coding agent</p>
+        <p class="eyebrow">Inside the Pi coding agent</p>
         <h1>Small core.<br><span class="accent">Your extensions.</span></h1>
-        <p class="lede" style="margin-top:24px">How a coding harness works, where Pi exposes hooks, and what three real extensions build on top.</p>
+        <p class="lede" style="margin-top:24px">How the agent loop works—and how three Pi extensions change what it can do.</p>
         <div class="controls-row" style="margin-top:34px"><span class="pill mint">01 · Harness</span><span class="pill blue">02 · Hooks</span><span class="pill gold">03 · Real extensions</span></div>
         <p class="instruction" style="margin-top:28px!important">→ / space: next slide · ←: back · Esc: overview · click the controls inside slides</p>
-        <aside class="notes">Opening: this is a talk about shaping a coding harness with small modules. The audience already knows what coding agents do; frame the new part as owning the lifecycle boundaries. The controls on several slides are for the presenter to drive. Press S to open speaker notes in a separate window.</aside>
+        <aside class="notes">You already use coding agents. Today I want to look underneath: what runs around the model, and where we can change it. We'll walk through Pi's hooks, then three extensions I've built. I'll click through the examples as we go. Presenter shortcut: S opens these notes in a separate window.</aside>
       </section>
 
       <section id="slide-2">
@@ -137,15 +137,15 @@
 
       <section id="slide-3">
         <p class="eyebrow">01 / What the harness owns</p>
-        <h2>The model is one component of the system</h2>
+        <h2>The model needs a harness around it</h2>
         <div class="content" style="margin-top:27px">
           <div class="row">
-            <div class="card blue-border"><p class="tag blue">I/O</p><h3>Tools</h3><p>Expose operations such as reading files or running commands. Execute calls and return typed results.</p></div>
-            <div class="card mint-border"><p class="tag accent">Memory</p><h3>Context + sessions</h3><p>Assemble the next request and preserve the conversation tree across turns.</p></div>
-            <div class="card gold-border"><p class="tag gold">Experience</p><h3>Streaming + UI</h3><p>Show partial output, status, tool progress, commands, and errors as they happen.</p></div>
+            <div class="card blue-border"><p class="tag blue">I/O</p><h3>Tools</h3><p>Read files, run commands, and return results to the model.</p></div>
+            <div class="card mint-border"><p class="tag accent">Memory</p><h3>Context + sessions</h3><p>Build the next request. Keep the conversation and its branches.</p></div>
+            <div class="card gold-border"><p class="tag gold">Experience</p><h3>Streaming + UI</h3><p>Show the response, tool progress, and errors as they happen.</p></div>
           </div>
           <div class="diagram" style="margin-top:8px"><p class="diagram-title">A SINGLE TOOL ROUND TRIP</p><div class="flow"><div class="node"><p>model emits<br><span class="gold">tool call</span></p></div><span class="arrow">→</span><div class="node"><p>harness executes<br><span class="blue">tool</span></p></div><span class="arrow">→</span><div class="node"><p>tool result becomes<br><span class="pink">context</span></p></div><span class="arrow">→</span><div class="node"><p>model continues<br><span class="accent">reasoning</span></p></div></div></div>
-          <p class="big">The extension points live at these boundaries.</p>
+          <p class="big">These are the places extensions can step in.</p>
         </div>
         <aside class="notes">Stress the distinction between model and harness. The model selects tool calls; the harness owns the actual tools and their results. That means extensions can affect the system without changing model weights or forking core Pi.</aside>
       </section>
@@ -207,7 +207,7 @@
 
       <section id="slide-6">
         <p class="eyebrow">02 / Four ways to extend</p>
-        <h2>Hooks are only one door</h2>
+        <h2>Extensions can do more than listen</h2>
         <div class="row" style="margin-top:32px">
           <div class="card mint-border"><p class="tag accent">pi.on(...)</p><h3>Event handlers</h3><p>Observe or shape moments in the lifecycle.</p><p class="small muted" style="margin-top:14px">Example: trim future context.</p></div>
           <div class="card blue-border"><p class="tag blue">pi.registerTool(...)</p><h3>Agent tools</h3><p>Give the model a new callable capability.</p><p class="small muted" style="margin-top:14px">Example: update a checklist.</p></div>
@@ -222,29 +222,29 @@
 
       <section id="slide-7">
         <p class="eyebrow">02 / Your turn</p>
-        <h2>Which boundary would you choose?</h2>
-        <p class="lede">A user wants verbose tool output removed from future model requests, while keeping the original session history.</p>
+        <h2>Where would you hook in?</h2>
+        <p class="lede">Keep a huge tool result in the saved session, but leave it out of the next model request.</p>
         <div class="hook-grid" id="hook-quiz" style="margin-top:30px">
           <button class="control" data-answer="tool_call">tool_call<span>Before a tool runs</span></button>
           <button class="control" data-answer="context">context<span>Before each model request</span></button>
           <button class="control" data-answer="message_update">message_update<span>During model streaming</span></button>
           <button class="control" data-answer="session_start">session_start<span>When a session loads</span></button>
         </div>
-        <div class="readout" id="quiz-readout" style="margin-top:22px"><p>Pick an event above to test your instinct.</p></div>
+        <div class="readout" id="quiz-readout" style="margin-top:22px"><p>Which event gives us that control?</p></div>
         <p class="instruction">The answer is one of the hooks used by pi-context-prune.</p>
         <aside class="notes">Pause for audience answers. context is the point where an extension can return a modified copy of messages for the next model request. tool_call would be too early and relates to executing a tool; message_update observes a stream; session_start is for restoring state. pi-context-prune also uses turn_end and message_end around the summary workflow.</aside>
       </section>
 
       <section id="slide-8">
         <p class="eyebrow">03 / Three extension strategies</p>
-        <h2>One harness. Three different moves.</h2>
+        <h2>Three extensions, three useful jobs</h2>
         <div class="row" style="margin-top:34px">
           <div class="card mint-border"><p class="big accent">Prune</p><p>Shape the next model request.</p><p class="pill mint" style="margin-top:25px">context</p></div>
           <div class="card blue-border"><p class="big blue">Measure</p><p>Observe the live stream.</p><p class="pill blue" style="margin-top:25px">message_update</p></div>
           <div class="card gold-border"><p class="big gold">Organize</p><p>Add tools and session state.</p><p class="pill gold" style="margin-top:25px">registerTool</p></div>
         </div>
         <div class="diagram" style="margin-top:33px"><p class="diagram-title">ALL THREE LIVE OUTSIDE PI’S CORE LOOP</p><div class="flow"><div class="node"><p>Pi harness</p></div><span class="arrow">→</span><div class="node active"><p>named events + APIs</p></div><span class="arrow">→</span><div class="node"><p>your extension</p></div></div></div>
-        <aside class="notes">Transition: the power of an extension API is not one magic hook. It offers several kinds of seams. These examples show a transformer, an observer, and a new agent capability. All are real code from my repositories.</aside>
+        <aside class="notes">Let's make this concrete with three extensions from my repositories. One changes what goes into the next request. One watches how fast the response arrives. One gives the agent a checklist it can actually update. Each uses a different part of the same API.</aside>
         <p class="source"><a href="https://github.com/championswimmer/pi-context-prune" target="_blank" rel="noopener">pi-context-prune</a> · <a href="https://github.com/championswimmer/pi-speedometer" target="_blank" rel="noopener">pi-speedometer</a> · <a href="https://github.com/championswimmer/pi-checklist" target="_blank" rel="noopener">pi-checklist</a></p>
       </section>
 
@@ -253,7 +253,7 @@
         <h2>Tool results can swamp the context</h2>
         <div class="row" style="margin-top:30px;align-items:center">
           <div class="diagram" style="flex:1.1"><p class="diagram-title">NEXT MODEL REQUEST</p><div class="context-list"><div class="context-item"><p>user request</p></div><div class="context-item"><p>assistant → bash</p></div><div class="context-item tool-result"><p>toolResult · giant test log</p></div><div class="context-item"><p>assistant → read</p></div><div class="context-item tool-result"><p>toolResult · giant file</p></div></div></div>
-          <div style="flex:.9" class="stack"><p class="big">Useful once.<br><span class="pink">Expensive forever.</span></p><div class="card mint-border"><p>Summarize completed results. Keep originals in the session. Send the compact view next time.</p></div></div>
+          <div style="flex:.9" class="stack"><p class="big">Useful once.<br><span class="pink">Sent again and again.</span></p><div class="card mint-border"><p>Save a summary for the next request. Keep the original for when you need it.</p></div></div>
         </div>
         <aside class="notes">Tool calls and their outputs can be large. The extension does not delete the underlying transcript. It captures result batches, makes summaries, indexes originals, then removes only summarized toolResult messages from future model context. Assistant tool-call blocks remain. Note cache trade-off: its default agent-message trigger batches work to avoid constantly changing the prompt prefix.</aside>
         <p class="source"><a href="https://github.com/championswimmer/pi-context-prune/blob/main/README.md" target="_blank" rel="noopener">README</a> · <a href="https://github.com/championswimmer/pi-context-prune/blob/main/src/pruner.ts" target="_blank" rel="noopener">context filter</a></p>
@@ -314,7 +314,7 @@
 
       <section id="slide-14">
         <p class="eyebrow">Case study B / the code shape</p>
-        <h2>No new tool. Just listen to the stream.</h2>
+        <h2>Listen to the stream. Show the numbers.</h2>
         <div class="diagram" style="margin-top:33px"><div class="flow"><div class="node"><p class="blue">before_provider_request</p><p class="small">start clock</p></div><span class="arrow">→</span><div class="node"><p class="gold">message_update</p><p class="small">first delta + tokens</p></div><span class="arrow">→</span><div class="node"><p class="accent">message_end</p><p class="small">final usage</p></div><span class="arrow">→</span><div class="node"><p>ctx.ui.setStatus</p><p class="small">show metric</p></div></div></div>
         <div class="row" style="margin-top:28px"><div class="card blue-border"><p class="big">Measure at the right moments.</p></div><div class="card"><p class="big">Use <span class="gold">/speed</span> to change the display.</p></div></div>
         <aside class="notes">The extension resets per-call state on before_provider_request; observes text_delta, thinking_delta and toolcall_delta within message_update; finalizes on message_end; settles on agent_end and session_shutdown. /speed toggles TPS or TTFT on/off and icon/text style, persisting preferences. There is no tool_call hook in this extension and no registerTool call.</aside>
@@ -323,7 +323,7 @@
 
       <section id="slide-15">
         <p class="eyebrow">Case study C / pi-checklist</p>
-        <h2>Give the agent a task model</h2>
+        <h2>Give the agent a checklist it can update</h2>
         <div class="row" style="margin-top:30px"><div class="card gold-border"><p class="tag gold">New agent tools</p><p class="big">create<br>read<br>update</p></div><div class="card blue-border"><p class="tag blue">Rules</p><p class="big">IDs<br>statuses<br>dependencies</p></div><div class="card mint-border"><p class="tag accent">Experience</p><p class="big">/checklist<br>widget<br>footer</p></div></div>
         <div class="mini-ui" style="margin-top:28px"><p>☑ 1/3  |  inspect API ✓  →  write extension ◯  →  verify ◯</p></div>
         <aside class="notes">Checklist registers checklist_create, checklist_read, and checklist_update. The tool schemas guide the model, while execute functions apply mutations. The extension also registers /checklist for people and renders a widget/status line. Task IDs are short three-character IDs; updates are atomic. Dependencies form a DAG and prevent starting or completing a task before prerequisites are done. This is more than a UI skin: it gives the agent a structured capability.</aside>
@@ -340,7 +340,7 @@
 
       <section id="slide-17">
         <p class="eyebrow">Case study C / where state lives</p>
-        <h2>A checklist survives the session tree</h2>
+        <h2>Switch branches. Restore the checklist.</h2>
         <div class="diagram" style="margin-top:28px"><div class="flow"><div class="node"><p>checklist_update</p><p class="small">agent changes task</p></div><span class="arrow">→</span><div class="node active"><p>pi.appendEntry</p><p class="small">write snapshot</p></div><span class="arrow">→</span><div class="node"><p>session_tree</p><p class="small">change branch</p></div><span class="arrow">→</span><div class="node"><p>reconstruct</p><p class="small">restore branch state</p></div></div></div>
         <div class="row" style="margin-top:26px"><div class="card"><p><span class="pill mint">before_agent_start</span><br>Put open tasks into the agent’s instructions.</p></div><div class="card"><p><span class="pill blue">turn_start / turn_end</span><br>Show the widget at the right time.</p></div></div>
         <aside class="notes">Mutations commit a snapshot with pi.appendEntry and also include it in tool result details. On session_start and session_tree, the extension walks the current branch and takes the last valid snapshot; that makes branching and navigation coherent. Display preferences live in a separate global JSON file. before_agent_start injects checklist guidance/open tasks. turn_start hides the end-of-turn widget and turn_end or agent_settled refreshes it. The task list is branch scoped, while display preferences are global.</aside>
@@ -349,14 +349,14 @@
 
       <section id="slide-18">
         <p class="eyebrow">04 / Your first extension</p>
-        <h2>Start with one seam</h2>
+        <h2>Start with one hook</h2>
         <div class="row" style="margin-top:34px"><div class="card mint-border"><p class="big accent">1</p><p>Pick a moment: request, stream, tool, or session.</p></div><div class="card blue-border"><p class="big blue">2</p><p>Register one handler or one tool.</p></div><div class="card gold-border"><p class="big gold">3</p><p>Try it with <code>pi -e ./extension.ts</code>.</p></div></div>
         <div class="codebox" style="margin-top:30px"><p class="label">the whole shape</p><pre>export default function (pi) {
   pi.on("session_start", (_event, ctx) =&gt; {
     ctx.ui.notify("Hello!", "info");
   });
 }</pre></div>
-        <aside class="notes">This is the minimum mental model: default export a function receiving the extension API; register behavior once; Pi loads the module and calls handlers at the named boundary. For a quick local experiment use pi -e path. For auto discovery, put an extension in ~/.pi/agent/extensions or project .pi/extensions, then /reload. The published Pi docs currently describe this, although import package names can vary across Pi versions. The three case-study repos provide complete examples. A good first extension observes one event and paints a status, then grows into mutation or tools only when needed.</aside>
+        <aside class="notes">This is enough to get started: export a function, receive Pi's API, and register a handler. Pi calls it when the event happens. Try pi -e ./extension.ts locally. For automatic loading, put the file in ~/.pi/agent/extensions or the project's .pi/extensions, then /reload. Check the docs for your Pi version when adding imports; package names can differ. The three repositories have full examples. I'd start by watching one event and showing a status message, then add behavior from there.</aside>
         <p class="source"><a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md" target="_blank" rel="noopener">Pi extension quick start</a></p>
       </section>
 
@@ -364,9 +364,9 @@
         <p class="eyebrow">The takeaway</p>
         <h2>Pi makes the loop <span class="accent">yours to shape.</span></h2>
         <div class="row" style="margin-top:39px"><div class="card mint-border"><p class="big">Observe</p><p>See what the harness is doing.</p></div><div class="card blue-border"><p class="big">Intervene</p><p>Change context or tool behavior.</p></div><div class="card gold-border"><p class="big">Add</p><p>Give the agent new tools and UI.</p></div></div>
-        <p class="lede" style="margin-top:34px">The trick is choosing the right lifecycle moment.</p>
+        <p class="lede" style="margin-top:34px">What would you change about your agent’s next run?</p>
         <p class="instruction">Q&amp;A · press Esc for slide overview · S for speaker notes</p>
-        <aside class="notes">Close by revisiting the three shapes: prune transforms a future request without destroying the transcript; speedometer measures the stream; checklist introduces an agent-visible capability plus durable state. Mention the research.md file next to this deck for implementation references and demo commands. Invite questions about which events the audience would hook into.</aside>
+        <aside class="notes">We've changed the next request with pruner, measured the response with speedometer, and added tasks the agent can manage with checklist. All three fit around the existing loop. Think of one thing you wish your agent did differently: which hook or API would let you build it? The research.md file beside this deck has the source links and demo commands.</aside>
         <p class="source"><a href="./research.md" target="_blank">Research notes and source links</a></p>
       </section>
 
@@ -403,7 +403,7 @@
       context: ['Context', 'Pi assembles instructions, prior messages, and tool results for the next model call.'],
       model: ['Model', 'The provider streams text, thinking, or tool-call deltas back to the harness.'],
       tool: ['Tools', 'Pi executes the requested operation and returns a result. That result can trigger another model turn.'],
-      session: ['Session', 'Pi records messages and state in a navigable session, while its UI renders progress.']
+      session: ['Session', 'Pi saves messages and state so you can revisit the conversation or follow another branch.']
     };
     document.querySelectorAll('[data-harness]').forEach(btn => btn.addEventListener('click', () => {
       activate('[data-harness]', btn);
@@ -415,7 +415,7 @@
       input: ['input', 'The submitted prompt can be handled or transformed before the run.'],
       before_agent_start: ['before_agent_start', 'An extension can change the system prompt or inject a message.'],
       context: ['context', 'A copy of the messages is ready for the next model request. An extension can return a modified copy.'],
-      before_provider_request: ['before_provider_request', 'The provider payload is about to go out. This is a precise timing point.'],
+      before_provider_request: ['before_provider_request', 'Pi is about to send the request to the provider. Start the clock here.'],
       message_update: ['message_update', 'A streaming assistant message changed. Watch content deltas as they arrive.'],
       tool_call: ['tool_call', 'A tool is about to execute. An extension can inspect or block it.'],
       tool_result: ['tool_result', 'A tool has returned. An extension can patch the result before it is used.'],
@@ -441,8 +441,8 @@
     document.querySelectorAll('[data-answer]').forEach(btn => btn.addEventListener('click', () => {
       activate('[data-answer]', btn);
       byId('quiz-readout').innerHTML = btn.dataset.answer === 'context'
-        ? '<p><strong class="accent">Exactly:</strong> context lets the extension change the messages used in a future request while the stored history remains intact.</p>'
-        : '<p><strong class="gold">Try another boundary.</strong> We need the moment just before messages are sent to the model.</p>';
+        ? '<p><strong class="accent">Yes—context.</strong> Change the next request’s messages while keeping the saved history.</p>'
+        : '<p><strong class="gold">Try another event.</strong> We need access to the messages going into the next request.</p>';
     }));
 
     const pruneStates = {
@@ -458,17 +458,17 @@
       },
       summarized: {
         title: 'SUMMARY + RECOVERY INDEX', hook: 'message_end',
-        explain: 'Default mode summarizes after the final text reply. Store short refs t1 and t2.', meter: '86%', label: 'Summary prepared; next context not built yet',
+        explain: 'After the final text reply, summarize the batch. Save refs t1 and t2 for recovery.', meter: '86%', label: 'Summary ready for the next request',
         rows: [['toolResult: full test log','result'],['toolResult: full file','result'],['summary: test failure + config clue · t1, t2','summary'],['index: t1 → original test log','summary']]
       },
       pruned: {
         title: 'NEXT MODEL REQUEST · AFTER', hook: 'context',
-        explain: 'Only summarized toolResult messages leave this request copy.', meter: '34%', label: 'Shorter future request',
+        explain: 'Leave summarized toolResult messages out of the next request.', meter: '34%', label: 'A shorter next request',
         rows: [['user: debug the tests',''],['assistant → bash',''],['assistant → read',''],['summary: test failure + config clue · t1, t2','summary']]
       },
       recover: {
         title: 'RECOVER ORIGINAL ON DEMAND', hook: 'context_tree_query',
-        explain: 'The model asks for t1 and gets the stored full result back.', meter: '34%', label: 'Normal context remains compact',
+        explain: 'Need the full log? The model asks for t1 and gets the original back.', meter: '34%', label: 'Original available on demand',
         rows: [['summary: test failure + config clue · t1, t2','summary'],['context_tree_query({ toolCallIds: ["t1"] })',''],['original test log returned','result']]
       }
     };
@@ -498,12 +498,12 @@
       after: {
         saved: [['assistant → bash',''],['toolResult: complete log','result'],['assistant → read',''],['toolResult: complete file','result'],['summary + index t1, t2','summary']],
         request: [['assistant → bash',''],['assistant → read',''],['summary: key findings · t1, t2','summary']],
-        caption: 'Stored originals remain. The next request carries the summary and refs.'
+        caption: 'The session keeps the originals. The next request gets the summary and refs.'
       },
       retrieved: {
         saved: [['toolResult: complete log','result'],['toolResult: complete file','result'],['summary + index t1, t2','summary']],
         request: [['summary: key findings · t1, t2','summary'],['context_tree_query(t1)',''],['full log returned on demand','result']],
-        caption: 'A short ref leads back to the indexed original.'
+        caption: 'Ask for t1 to bring the full log back into the conversation.'
       }
     };
     function paintView(target, rows) {
@@ -526,7 +526,7 @@
 
     const speedStates = [
       {ttft:'waiting…',tps:'waiting…',status:'—',caption:'before_provider_request starts the clock.'},
-      {ttft:'412 ms',tps:'starting…',status:'⏱ 412ms',caption:'The first content delta fixes TTFT.'},
+      {ttft:'412 ms',tps:'starting…',status:'⏱ 412ms',caption:'The first content arrives: TTFT is 412 ms.'},
       {ttft:'412 ms',tps:'42.0 t/s',status:'⚡ 42.0 t/s  ⏱ 412ms',caption:'Streaming output produces a live TPS estimate.'},
       {ttft:'412 ms',tps:'42.1 t/s',status:'⚡ 42.1 t/s  ⏱ 412ms',caption:'message_end replaces the estimate with final usage, when available.'}
     ];
@@ -556,8 +556,8 @@
       byId('checklist-readout').textContent = message;
     }
     byId('try-blocked').addEventListener('click', () => {
-      if (!firstDone) paintTasks('Rejected: task 2 depends on unfinished task 1. No state changed.');
-      else { secondStarted = true; paintTasks('Accepted: task 1 is done, so task 2 can move to ongoing.'); }
+      if (!firstDone) paintTasks('Task 2 cannot start yet. Finish task 1 first. Nothing changed.');
+      else { secondStarted = true; paintTasks('Task 1 is done. Task 2 is now ongoing.'); }
     });
     byId('finish-first').addEventListener('click', () => { firstDone = true; paintTasks('Task 1 is done. Task 2 is now ready to start.'); });
     byId('reset-tasks').addEventListener('click', () => { firstDone = false; secondStarted = false; paintTasks('Task 2 needs task 1 to be done first.'); });
