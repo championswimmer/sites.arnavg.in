@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pi extensions — the harness is yours</title>
+  <meta name="description" content="An interactive reveal.js walkthrough of Pi coding-agent extensions, with three real examples: context-prune, speedometer, and checklist.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <style>
+    :root{--bg:#0b1020;--panel:#151c30;--panel2:#1d2740;--line:#34415e;--text:#edf3ff;--muted:#afbdd6;--mint:#57e3b4;--blue:#69b9ff;--gold:#ffd37a;--pink:#ff88ab;--violet:#c9a4ff;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--sans:Arial,Helvetica,sans-serif}
+    *{box-sizing:border-box}
+    body{background:var(--bg)}
+    .reveal{font-family:var(--sans);color:var(--text);font-size:18pt}
+    .reveal .slides section{height:720px;padding:42px 58px;text-align:left;background:radial-gradient(circle at 85% 10%,#182949 0,transparent 35%),var(--bg);overflow:hidden}
+    .reveal .slides section.section-divider{display:flex!important;flex-direction:column;justify-content:center}
+    .reveal h1,.reveal h2,.reveal h3,.reveal p,.reveal li{font-family:var(--sans);text-transform:none;color:var(--text);letter-spacing:0;line-height:1.23;margin:0}
+    .reveal h1{font-size:48pt;font-weight:800;max-width:1040px;letter-spacing:-.045em}
+    .reveal h2{font-size:31pt;font-weight:800;letter-spacing:-.035em;margin-bottom:18px}
+    .reveal h3{font-size:17pt;font-weight:700;margin-bottom:10px}
+    .reveal p,.reveal li{font-size:16pt;line-height:1.4}
+    .reveal p+p{margin-top:10px}
+    .reveal code,.reveal pre{font-family:var(--mono)}
+    .reveal pre{box-shadow:none;width:auto;margin:0;white-space:pre-wrap;font-size:12pt;line-height:1.45;color:#dbe9ff}
+    .reveal a{color:var(--blue);text-decoration:none;border-bottom:1px solid #6ab9ff66}
+    .reveal a:hover{color:#c8e6ff}
+    .reveal .controls{color:var(--mint)}
+    .reveal .progress{color:var(--mint);height:4px}
+    .reveal .slide-number{color:var(--muted);background:#0b1020bd;font-family:var(--mono);font-size:11pt}
+    .eyebrow{font:700 10pt var(--mono)!important;letter-spacing:.18em!important;text-transform:uppercase!important;color:var(--mint)!important;margin-bottom:16px!important}
+    .lede{font-size:21pt!important;color:#d6e3f9!important;max-width:970px}
+    .muted{color:var(--muted)!important}
+    .small{font-size:12pt!important;line-height:1.42!important}
+    .tiny{font-size:10pt!important;line-height:1.4!important}
+    .big{font-size:25pt!important;font-weight:700}
+    .accent{color:var(--mint)!important}.blue{color:var(--blue)!important}.gold{color:var(--gold)!important}.pink{color:var(--pink)!important}.violet{color:var(--violet)!important}
+    .content{display:flex;flex-direction:column;gap:18px;min-height:0}
+    .row{display:flex;gap:14px;align-items:stretch}.row>*{flex:1;min-width:0}
+    .stack{display:flex;flex-direction:column;gap:12px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;min-width:0}
+    .card.dark{background:#101729}.card.soft{background:#1b2940}
+    .card h3{color:#fff}
+    .card p{font-size:14pt;line-height:1.36}
+    .card .small{font-size:12pt!important}
+    .card.mint-border{border-color:#398a78}.card.blue-border{border-color:#4579a7}.card.gold-border{border-color:#987741}.card.pink-border{border-color:#a35273}
+    .pill{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:700 10pt var(--mono)!important;color:#dbe8fa!important;background:#1b2940;margin:0 6px 6px 0}
+    .pill.mint{color:var(--mint)!important;border-color:#398a78}.pill.blue{color:var(--blue)!important;border-color:#4579a7}.pill.gold{color:var(--gold)!important;border-color:#987741}.pill.pink{color:var(--pink)!important;border-color:#a35273}
+    .tag{font:700 10pt var(--mono)!important;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)!important;margin-bottom:8px!important}
+    .diagram{background:#101729;border:1px solid var(--line);border-radius:16px;padding:20px}
+    .diagram-title{font:700 11pt var(--mono)!important;color:var(--muted)!important;margin-bottom:14px!important}
+    .flow{display:flex;gap:8px;align-items:center;justify-content:space-between}.flow .node{flex:1;min-width:0}.flow .arrow{flex:0 0 auto;color:var(--muted);font:700 19pt var(--mono)}
+    .node{border:1px solid var(--line);background:#202b45;border-radius:12px;padding:13px 10px;text-align:center}.node p{font-size:13pt!important;font-weight:700;line-height:1.2!important}.node .small{font-size:10pt!important;font-weight:400;color:var(--muted)!important;margin-top:4px}
+    .node.active{border-color:var(--mint);background:#1c3d3f;box-shadow:0 0 0 2px #57e3b433}
+    .node.dim{opacity:.38}.node.result{border-color:var(--pink)}
+    .source{position:absolute;left:58px;bottom:22px;right:58px;color:#9faec9!important;font:10pt var(--mono)!important;line-height:1.3!important}
+    .source a{font:inherit}
+    .instruction{font:11pt var(--mono)!important;color:var(--gold)!important;margin-top:7px!important}
+    button.control{appearance:none;background:#23334f;border:1px solid #5b7194;border-radius:8px;color:var(--text);padding:8px 13px;font:700 11pt var(--mono);cursor:pointer;line-height:1.2}
+    button.control:hover,button.control:focus-visible{background:#345173;border-color:var(--blue);outline:none}
+    button.control[aria-pressed=true],button.control.selected{background:#194d4b;border-color:var(--mint);color:var(--mint)}
+    button.control.gold-btn[aria-pressed=true]{background:#66512c;border-color:var(--gold);color:#fff1c9}
+    .controls-row{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+    .readout{border-left:4px solid var(--mint);padding:13px 18px;background:#1a273c;border-radius:0 10px 10px 0;min-height:92px}.readout p{font-size:15pt!important}.readout .small{margin-top:6px}
+    .codebox{background:#0a1223;border:1px solid #34415e;border-radius:12px;padding:16px 20px;overflow:hidden}.codebox .label{font:700 10pt var(--mono)!important;color:var(--muted)!important;margin-bottom:10px!important}
+    .codebox .hl{color:var(--mint)}.codebox .kw{color:var(--violet)}.codebox .str{color:var(--gold)}
+    .mock-terminal{background:#090f1c;border:1px solid #40506c;border-radius:12px;padding:16px 20px;font-family:var(--mono)}
+    .mock-terminal p{font:12pt/1.55 var(--mono)!important;white-space:pre-wrap;color:#d6e3f9!important}
+    .compare{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .context-list{display:flex;flex-direction:column;gap:8px}.context-item{display:flex;align-items:center;justify-content:space-between;border-radius:8px;padding:8px 13px;background:#24314b;border:1px solid #455779}.context-item p{font:12pt var(--mono)!important}.context-item.tool-result{border-color:#ad667c}.context-item.summary{border-color:#4ea992;background:#1d3c3c}
+    .meter{height:15px;background:#26324c;border-radius:999px;overflow:hidden}.meter span{display:block;height:100%;width:80%;background:linear-gradient(90deg,var(--mint),var(--gold));transition:width .35s}
+    .timeline{display:flex;position:relative;align-items:flex-start;justify-content:space-between;padding:30px 5px 0}.timeline:before{content:"";position:absolute;top:51px;left:7%;right:7%;height:3px;background:#52617e}.timepoint{position:relative;z-index:1;width:22%;text-align:center}.timepoint .dot{width:43px;height:43px;margin:0 auto 13px;border-radius:50%;display:grid;place-items:center;background:#233754;border:2px solid var(--blue);font:700 12pt var(--mono)}.timepoint.active .dot{background:#225a53;border-color:var(--mint)}.timepoint p{font-size:12pt!important}
+    .task{display:flex;align-items:center;gap:10px;border:1px solid #4c5d7b;border-radius:9px;padding:10px 13px;background:#202b43;margin-bottom:8px}.task p{font-size:13pt!important}.task .state{margin-left:auto;font:700 10pt var(--mono)!important;color:var(--gold)!important}.task.done{border-color:#397e6d}.task.done .state{color:var(--mint)!important}.task.blocked{opacity:.62}
+    .mini-ui{background:#080d18;border:1px solid #3b4a66;border-radius:10px;padding:12px 16px}.mini-ui p{font:12pt/1.4 var(--mono)!important;color:#cfe1f5!important}
+    .big-number{font:800 44pt var(--sans)!important;letter-spacing:-.05em;color:var(--mint)!important}
+    .hook-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .hook-grid button{min-height:90px;text-align:left}
+    .hook-grid button span{display:block;color:#aebcd4;font:10pt/1.3 var(--sans);margin-top:5px}
+    /* Projected-room type scale; detailed narration lives in speaker notes. */
+    .reveal p,.reveal li{font-size:18pt}
+    .reveal h3{font-size:21pt}
+    .reveal pre{font-size:15pt}
+    .codebox pre{font-size:17pt}
+    .small,.card .small{font-size:15pt!important}
+    .tiny{font-size:12pt!important}
+    .card p{font-size:17pt}
+    .pill{font-size:12pt!important}
+    .tag,.diagram-title,.codebox .label{font-size:12pt!important}
+    .node p{font-size:15pt!important}
+    .node .small{font-size:13pt!important}
+    .source{font-size:11pt!important}
+    .instruction{font-size:13pt!important}
+    button.control{font-size:14pt;padding:10px 15px}
+    .readout p{font-size:18pt!important}
+    .mock-terminal p,.context-item p,.mini-ui p{font-size:15pt!important}
+    .task p{font-size:16pt!important}
+    .task .state{font-size:13pt!important}
+    .hook-grid button span{font-size:13pt}
+    .timepoint p{font-size:15pt!important}
+    #lifecycle-flow{display:grid!important;grid-template-columns:repeat(4,1fr);gap:12px!important;counter-reset:hook}
+    #lifecycle-flow .arrow{display:none}
+    #lifecycle-flow button{min-height:93px;overflow-wrap:anywhere;counter-increment:hook}
+    #lifecycle-flow button:before{content:counter(hook,decimal-leading-zero);display:block;color:var(--mint);font:700 11pt var(--mono);margin-bottom:5px}
+    #lifecycle-flow button p{font-size:17pt!important}
+    .reveal .fragment{transition-duration:.35s}
+    @media(max-width:800px){.reveal .slides section{padding:36px 50px}}
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <section id="title" class="section-divider" data-state="is-section-divider">
+        <p class="eyebrow">An interactive field guide · Pi coding agent</p>
+        <h1>Small core.<br><span class="accent">Your extensions.</span></h1>
+        <p class="lede" style="margin-top:24px">How a coding harness works, where Pi exposes hooks, and what three real extensions build on top.</p>
+        <div class="controls-row" style="margin-top:34px"><span class="pill mint">01 · Harness</span><span class="pill blue">02 · Hooks</span><span class="pill gold">03 · Real extensions</span></div>
+        <p class="instruction" style="margin-top:28px!important">→ / space: next slide · ←: back · Esc: overview · click the controls inside slides</p>
+        <aside class="notes">Opening: this is a talk about shaping a coding harness with small modules. The audience already knows what coding agents do; frame the new part as owning the lifecycle boundaries. The controls on several slides are for the presenter to drive. Press S to open speaker notes in a separate window.</aside>
+      </section>
+
+      <section id="slide-2">
+        <p class="eyebrow">01 / The machine underneath</p>
+        <h2>What does a coding harness actually do?</h2>
+        <p class="lede">It runs the loop around the model: prepare context, call the model, execute tools, feed results back, repeat.</p>
+        <div class="content" style="margin-top:32px">
+          <div class="diagram"><p class="diagram-title">CLICK A STAGE TO SEE ITS JOB</p><div class="flow" id="harness-flow">
+            <button class="control node active" data-harness="input"><p>Prompt</p><p class="small">user intent</p></button><span class="arrow">→</span>
+            <button class="control node" data-harness="context"><p>Context</p><p class="small">instructions + history</p></button><span class="arrow">→</span>
+            <button class="control node" data-harness="model"><p>Model</p><p class="small">stream response</p></button><span class="arrow">→</span>
+            <button class="control node" data-harness="tool"><p>Tools</p><p class="small">read / edit / shell</p></button><span class="arrow">↺</span>
+            <button class="control node" data-harness="session"><p>Session</p><p class="small">record + render</p></button>
+          </div></div>
+          <div class="readout" id="harness-readout"><p><strong>Prompt:</strong> the human asks for a change. The harness turns that intent into an agent run.</p><p class="small muted">Select any stage above. A tool result can start another model turn.</p></div>
+        </div>
+        <aside class="notes">Click each stage once. A harness handles context assembly, provider calls, tool execution, session history, and UI around the model. The arrow after Tools loops back because a tool result typically causes another model call. This is conceptual; Pi's exact event timeline comes next.</aside>
+      </section>
+
+      <section id="slide-3">
+        <p class="eyebrow">01 / What the harness owns</p>
+        <h2>The model is one component of the system</h2>
+        <div class="content" style="margin-top:27px">
+          <div class="row">
+            <div class="card blue-border"><p class="tag blue">I/O</p><h3>Tools</h3><p>Expose operations such as reading files or running commands. Execute calls and return typed results.</p></div>
+            <div class="card mint-border"><p class="tag accent">Memory</p><h3>Context + sessions</h3><p>Assemble the next request and preserve the conversation tree across turns.</p></div>
+            <div class="card gold-border"><p class="tag gold">Experience</p><h3>Streaming + UI</h3><p>Show partial output, status, tool progress, commands, and errors as they happen.</p></div>
+          </div>
+          <div class="diagram" style="margin-top:8px"><p class="diagram-title">A SINGLE TOOL ROUND TRIP</p><div class="flow"><div class="node"><p>model emits<br><span class="gold">tool call</span></p></div><span class="arrow">→</span><div class="node"><p>harness executes<br><span class="blue">tool</span></p></div><span class="arrow">→</span><div class="node"><p>tool result becomes<br><span class="pink">context</span></p></div><span class="arrow">→</span><div class="node"><p>model continues<br><span class="accent">reasoning</span></p></div></div></div>
+          <p class="big">The extension points live at these boundaries.</p>
+        </div>
+        <aside class="notes">Stress the distinction between model and harness. The model selects tool calls; the harness owns the actual tools and their results. That means extensions can affect the system without changing model weights or forking core Pi.</aside>
+      </section>
+
+      <section id="slide-4">
+        <p class="eyebrow">02 / Event-driven extension</p>
+        <h2>A hook is a named moment in that loop</h2>
+        <div class="row" style="margin-top:32px">
+          <div class="card" style="flex:1.2"><p class="tag accent">Pi emits</p><div class="mock-terminal"><p>event: "tool_call"<br>toolName: "bash"<br>input: { command: "npm test" }</p></div><p class="small muted" style="margin-top:13px">An event carries the details available at that moment.</p></div>
+          <div class="card" style="flex:1.45"><p class="tag blue">Extension listens</p><div class="codebox"><pre><span class="kw">export default function</span> (pi) {
+  pi.on(<span class="str">"tool_call"</span>, (event, ctx) =&gt; {
+    <span class="hl">// inspect, block, or react</span>
+  });
+}</pre></div><p class="small muted" style="margin-top:13px">The default export receives Pi’s extension API. Add one handler; the harness calls it at the boundary.</p></div>
+        </div>
+        <div class="readout" style="margin-top:20px"><p>Hooks can <strong>observe</strong> events, <strong>alter</strong> some payloads, or <strong>block</strong> some actions. The event’s contract decides which.</p></div>
+        <aside class="notes">A Pi extension exports a default function that receives an ExtensionAPI object. Calling pi.on registers a handler. This example uses tool_call, which can inspect a proposed tool and return block=true with a reason. Other hooks have different allowed return values, so never generalize that every hook can modify everything. The snippet is intentionally tiny for a projected slide.</aside>
+        <p class="source">Source: <a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md" target="_blank" rel="noopener">Pi extension API</a></p>
+      </section>
+
+      <section id="slide-5">
+        <p class="eyebrow">02 / One run, many touchpoints</p>
+        <h2>Follow an agent turn through Pi</h2>
+        <div class="diagram" style="margin-top:22px"><p class="diagram-title">CLICK ANY EVENT — THIS IS A SIMPLIFIED SEQUENCE</p><div class="flow" id="lifecycle-flow" style="flex-wrap:wrap;justify-content:flex-start;gap:8px">
+          <button class="control node active" data-hook="input"><p>input</p></button><span class="arrow">→</span>
+          <button class="control node" data-hook="before_agent_start"><p>before_agent_start</p></button><span class="arrow">→</span>
+          <button class="control node" data-hook="context"><p>context</p></button><span class="arrow">→</span>
+          <button class="control node" data-hook="before_provider_request"><p>before_provider_request</p></button><span class="arrow">→</span>
+          <button class="control node" data-hook="message_update"><p>message_update</p></button><span class="arrow">→</span>
+          <button class="control node" data-hook="tool_call"><p>tool_call</p></button><span class="arrow">→</span>
+          <button class="control node" data-hook="tool_result"><p>tool_result</p></button><span class="arrow">→</span>
+          <button class="control node" data-hook="turn_end"><p>turn_end</p></button>
+        </div></div>
+        <div class="readout" id="lifecycle-readout" style="margin-top:18px"><p><strong>input:</strong> a submitted prompt can be handled or transformed before the run begins.</p><p class="small muted">A run may include several turns. Each tool call can lead to another model request.</p></div>
+        <div class="row" style="margin-top:14px"><div class="card soft"><p class="small"><span class="accent">Message events</span> expose streaming and completed messages.</p></div><div class="card soft"><p class="small"><span class="blue">Tool events</span> surround execution and results.</p></div><div class="card soft"><p class="small"><span class="gold">Session events</span> cover starts, branches, compaction, and shutdown.</p></div></div>
+        <aside class="notes">This is a deliberately simplified lifecycle. Click several nodes. input can transform a submitted prompt; before_agent_start can amend the prompt; context can change the request's message copy; before_provider_request occurs immediately before sending the provider payload; message_update tracks streaming; tool_call can inspect or block execution; tool_result can modify a completed result; turn_end closes a model turn. Some events repeat across multiple turns. The official Pi docs include additional lifecycle, session, and tool-execution events.</aside>
+        <p class="source">Simplified from <a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md#lifecycle-overview" target="_blank" rel="noopener">Pi’s lifecycle overview</a>. Some events are omitted for clarity.</p>
+      </section>
+
+      <section id="slide-event-lanes">
+        <p class="eyebrow">02 / Zoom into one turn</p>
+        <h2>Messages and tools have their own timelines</h2>
+        <div class="stack" id="event-lanes" style="margin-top:27px">
+          <div class="diagram"><p class="diagram-title">ASSISTANT MESSAGE</p><div class="flow">
+            <button class="control node active" data-lane="message_start"><p>message_start</p></button><span class="arrow">→</span>
+            <button class="control node" data-lane="message_update"><p>message_update</p></button><span class="arrow">→</span>
+            <button class="control node" data-lane="message_end"><p>message_end</p></button>
+          </div></div>
+          <div class="diagram"><p class="diagram-title">A TOOL CALL WITHIN THAT MESSAGE</p><div class="flow">
+            <button class="control node" data-lane="tool_call"><p>tool_call</p></button><span class="arrow">→</span>
+            <button class="control node" data-lane="tool_execution_update"><p>tool_execution_update</p></button><span class="arrow">→</span>
+            <button class="control node" data-lane="tool_result"><p>tool_result</p></button>
+          </div></div>
+        </div>
+        <div class="readout" id="lane-readout" style="margin-top:20px"><p><strong>message_start:</strong> Pi has started a new assistant message.</p></div>
+        <aside class="notes">This slide makes the event idea concrete. Click message_start, message_update, message_end: a response has a beginning, streaming deltas, and a final message. Tool events surround a call inside a turn: tool_call can block; tool_execution_update exposes partial progress; tool_result can modify the result. The full official timeline includes additional execution start/end events. The arrows are an explanatory path, not every possible interleaving. Speedometer watches message_update; pruner uses message_end; many permission extensions use tool_call.</aside>
+        <p class="source"><a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md#events" target="_blank" rel="noopener">Pi event reference</a></p>
+      </section>
+
+      <section id="slide-6">
+        <p class="eyebrow">02 / Four ways to extend</p>
+        <h2>Hooks are only one door</h2>
+        <div class="row" style="margin-top:32px">
+          <div class="card mint-border"><p class="tag accent">pi.on(...)</p><h3>Event handlers</h3><p>Observe or shape moments in the lifecycle.</p><p class="small muted" style="margin-top:14px">Example: trim future context.</p></div>
+          <div class="card blue-border"><p class="tag blue">pi.registerTool(...)</p><h3>Agent tools</h3><p>Give the model a new callable capability.</p><p class="small muted" style="margin-top:14px">Example: update a checklist.</p></div>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <div class="card gold-border"><p class="tag gold">pi.registerCommand(...)</p><h3>User commands</h3><p>Offer a slash command to control the feature.</p><p class="small muted" style="margin-top:14px">Example: /speed or /pruner.</p></div>
+          <div class="card pink-border"><p class="tag pink">ctx.ui + pi.appendEntry</p><h3>UI + state</h3><p>Show status, widgets, dialogs, and session data.</p><p class="small muted" style="margin-top:14px">Example: persistent task view.</p></div>
+        </div>
+        <aside class="notes">Extensions may combine these APIs. pi-context-prune uses event hooks and tools. pi-speedometer uses event hooks, a status UI, and a user command. pi-checklist uses tools, commands, UI, and session persistence. Agent tools are callable by the model; slash commands are initiated by the human.</aside>
+        <p class="source">Source: <a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md" target="_blank" rel="noopener">Pi extension API</a></p>
+      </section>
+
+      <section id="slide-7">
+        <p class="eyebrow">02 / Your turn</p>
+        <h2>Which boundary would you choose?</h2>
+        <p class="lede">A user wants verbose tool output removed from future model requests, while keeping the original session history.</p>
+        <div class="hook-grid" id="hook-quiz" style="margin-top:30px">
+          <button class="control" data-answer="tool_call">tool_call<span>Before a tool runs</span></button>
+          <button class="control" data-answer="context">context<span>Before each model request</span></button>
+          <button class="control" data-answer="message_update">message_update<span>During model streaming</span></button>
+          <button class="control" data-answer="session_start">session_start<span>When a session loads</span></button>
+        </div>
+        <div class="readout" id="quiz-readout" style="margin-top:22px"><p>Pick an event above to test your instinct.</p></div>
+        <p class="instruction">The answer is one of the hooks used by pi-context-prune.</p>
+        <aside class="notes">Pause for audience answers. context is the point where an extension can return a modified copy of messages for the next model request. tool_call would be too early and relates to executing a tool; message_update observes a stream; session_start is for restoring state. pi-context-prune also uses turn_end and message_end around the summary workflow.</aside>
+      </section>
+
+      <section id="slide-8">
+        <p class="eyebrow">03 / Three extension strategies</p>
+        <h2>One harness. Three different moves.</h2>
+        <div class="row" style="margin-top:34px">
+          <div class="card mint-border"><p class="big accent">Prune</p><p>Shape the next model request.</p><p class="pill mint" style="margin-top:25px">context</p></div>
+          <div class="card blue-border"><p class="big blue">Measure</p><p>Observe the live stream.</p><p class="pill blue" style="margin-top:25px">message_update</p></div>
+          <div class="card gold-border"><p class="big gold">Organize</p><p>Add tools and session state.</p><p class="pill gold" style="margin-top:25px">registerTool</p></div>
+        </div>
+        <div class="diagram" style="margin-top:33px"><p class="diagram-title">ALL THREE LIVE OUTSIDE PI’S CORE LOOP</p><div class="flow"><div class="node"><p>Pi harness</p></div><span class="arrow">→</span><div class="node active"><p>named events + APIs</p></div><span class="arrow">→</span><div class="node"><p>your extension</p></div></div></div>
+        <aside class="notes">Transition: the power of an extension API is not one magic hook. It offers several kinds of seams. These examples show a transformer, an observer, and a new agent capability. All are real code from my repositories.</aside>
+        <p class="source"><a href="https://github.com/championswimmer/pi-context-prune" target="_blank" rel="noopener">pi-context-prune</a> · <a href="https://github.com/championswimmer/pi-speedometer" target="_blank" rel="noopener">pi-speedometer</a> · <a href="https://github.com/championswimmer/pi-checklist" target="_blank" rel="noopener">pi-checklist</a></p>
+      </section>
+
+      <section id="slide-9">
+        <p class="eyebrow">Case study A / pi-context-prune</p>
+        <h2>Tool results can swamp the context</h2>
+        <div class="row" style="margin-top:30px;align-items:center">
+          <div class="diagram" style="flex:1.1"><p class="diagram-title">NEXT MODEL REQUEST</p><div class="context-list"><div class="context-item"><p>user request</p></div><div class="context-item"><p>assistant → bash</p></div><div class="context-item tool-result"><p>toolResult · giant test log</p></div><div class="context-item"><p>assistant → read</p></div><div class="context-item tool-result"><p>toolResult · giant file</p></div></div></div>
+          <div style="flex:.9" class="stack"><p class="big">Useful once.<br><span class="pink">Expensive forever.</span></p><div class="card mint-border"><p>Summarize completed results. Keep originals in the session. Send the compact view next time.</p></div></div>
+        </div>
+        <aside class="notes">Tool calls and their outputs can be large. The extension does not delete the underlying transcript. It captures result batches, makes summaries, indexes originals, then removes only summarized toolResult messages from future model context. Assistant tool-call blocks remain. Note cache trade-off: its default agent-message trigger batches work to avoid constantly changing the prompt prefix.</aside>
+        <p class="source"><a href="https://github.com/championswimmer/pi-context-prune/blob/main/README.md" target="_blank" rel="noopener">README</a> · <a href="https://github.com/championswimmer/pi-context-prune/blob/main/src/pruner.ts" target="_blank" rel="noopener">context filter</a></p>
+      </section>
+
+      <section id="slide-10">
+        <p class="eyebrow">Case study A / interactive trace</p>
+        <h2>Prune the request. Preserve the record.</h2>
+        <div class="controls-row" id="prune-controls" style="margin:24px 0"><button class="control selected" data-prune="raw" aria-pressed="true">Raw</button><button class="control" data-prune="queued" aria-pressed="false">Capture</button><button class="control" data-prune="summarized" aria-pressed="false">Summarize</button><button class="control" data-prune="pruned" aria-pressed="false">Next request</button><button class="control" data-prune="recover" aria-pressed="false">Recover t1</button></div>
+        <div class="row"><div class="diagram" style="flex:1.1"><p class="diagram-title" id="prune-context-title">MODEL CONTEXT · BEFORE</p><div class="context-list" id="prune-context"></div></div><div style="flex:.9" class="stack"><div class="card mint-border"><p class="tag accent">Active seam</p><p id="prune-hook" class="big">tool results</p><p id="prune-explain" class="muted" style="margin-top:12px">Raw results enter the live conversation.</p></div><div class="card"><p class="tag">Future context · illustrative</p><div class="meter"><span id="prune-meter"></span></div><p id="prune-meter-label" style="margin-top:12px">Raw outputs included</p></div></div></div>
+        <aside class="notes">Click across the five states. turn_end captures completed call/result pairs; default agent-message mode waits for a final text reply before summarizing. The extension persists index and summary entries, then the context hook removes indexed toolResult messages from the request copy. A model can retrieve a full original with context_tree_query using short refs like t1. Diagram sizes are illustrative. If a summary is larger than the raw result, the extension skips that pruning attempt.</aside>
+        <p class="source"><a href="https://github.com/championswimmer/pi-context-prune/blob/main/index.ts" target="_blank" rel="noopener">event wiring</a> · <a href="https://github.com/championswimmer/pi-context-prune/blob/main/src/query-tool.ts" target="_blank" rel="noopener">recovery tool</a></p>
+      </section>
+
+      <section id="slide-11">
+        <p class="eyebrow">Case study A / the code shape</p>
+        <h2>Capture → summarize → filter → recover</h2>
+        <div class="diagram" style="margin-top:34px"><div class="flow"><div class="node"><p class="accent">turn_end</p><p class="small">collect results</p></div><span class="arrow">→</span><div class="node"><p class="gold">message_end</p><p class="small">flush batch</p></div><span class="arrow">→</span><div class="node"><p class="blue">context</p><p class="small">omit indexed results</p></div><span class="arrow">→</span><div class="node"><p class="pink">context_tree_query</p><p class="small">retrieve original</p></div></div></div>
+        <div class="row" style="margin-top:26px"><div class="card"><p class="big">The transcript stays intact.</p></div><div class="card mint-border"><p class="big accent">Only the next request changes.</p></div></div>
+        <aside class="notes">The real filter in src/pruner.ts checks msg.role === toolResult and indexer.isSummarized(msg.toolCallId). The extension also handles session_start and session_tree to rebuild its state. Default prune-on mode is agent-message but enabled is false initially. Demonstration commands: /pruner on, /pruner prune-on on-demand, /pruner now, /pruner tree. Mention prompt caching: changing earlier context can bust prefix cache, so batching matters.</aside>
+        <p class="source"><a href="https://github.com/championswimmer/pi-context-prune/blob/main/index.ts" target="_blank" rel="noopener">index.ts</a> · <a href="https://github.com/championswimmer/pi-context-prune/blob/main/src/pruner.ts" target="_blank" rel="noopener">src/pruner.ts</a></p>
+      </section>
+
+      <section id="slide-prune-two-views">
+        <p class="eyebrow">Case study A / the crucial distinction</p>
+        <h2>Two views of the same conversation</h2>
+        <div class="controls-row" style="margin:24px 0"><button class="control selected" data-view="before" aria-pressed="true">Before prune</button><button class="control" data-view="after" aria-pressed="false">After prune</button><button class="control" data-view="retrieved" aria-pressed="false">Query t1</button></div>
+        <div class="compare">
+          <div class="diagram"><p class="diagram-title">SAVED SESSION · COMPLETE RECORD</p><div class="context-list" id="saved-view"></div></div>
+          <div class="diagram"><p class="diagram-title">NEXT MODEL REQUEST · CONTEXT COPY</p><div class="context-list" id="request-view"></div></div>
+        </div>
+        <div class="readout" style="margin-top:20px"><p id="views-caption">The two views begin with the same messages.</p></div>
+        <aside class="notes">This is the most important point about the extension. Click After prune: the stored session still contains original tool results, while the next request copy replaces their detail with a compact summary. The context hook returns a modified messages array; it does not rewrite historical session entries. Click Query t1: the agent calls context_tree_query and receives the indexed original output when it needs it. The query result then joins the ongoing conversation like a normal tool result. This diagram is schematic, not a literal full session dump.</aside>
+        <p class="source"><a href="https://github.com/championswimmer/pi-context-prune/blob/main/src/pruner.ts" target="_blank" rel="noopener">context copy filter</a> · <a href="https://github.com/championswimmer/pi-context-prune/blob/main/src/indexer.ts" target="_blank" rel="noopener">session-backed index</a></p>
+      </section>
+
+      <section id="slide-12">
+        <p class="eyebrow">Case study B / pi-speedometer</p>
+        <h2>“It feels slow” becomes two numbers</h2>
+        <div class="row" style="margin-top:39px">
+          <div class="card blue-border"><p class="big blue">TTFT</p><p>Request → first content delta</p><p class="big" style="margin-top:23px">412 ms</p></div>
+          <div class="card gold-border"><p class="big gold">TPS</p><p>Output tokens ÷ time since first delta</p><p class="big" style="margin-top:23px">42.1 t/s</p></div>
+        </div>
+        <div class="mini-ui" style="margin-top:28px"><p>Pi footer  |  ⚡ 42.1 t/s   ⏱ 412ms</p></div>
+        <aside class="notes">TTFT means time to first token, implemented as time to first content delta after before_provider_request. TPS is output tokens divided by elapsed seconds since that first delta. Speedometer uses ctx.ui.setStatus; it does not add a model tool. Its UI is useful during a live demo to separate startup latency from generation throughput.</aside>
+        <p class="source"><a href="https://github.com/championswimmer/pi-speedometer/blob/main/README.md" target="_blank" rel="noopener">README</a> · <a href="https://github.com/championswimmer/pi-speedometer/blob/main/src/index.ts" target="_blank" rel="noopener">src/index.ts</a></p>
+      </section>
+
+      <section id="slide-13">
+        <p class="eyebrow">Case study B / interactive timeline</p>
+        <h2>Scrub through one response</h2>
+        <div class="diagram" style="margin-top:25px"><p class="diagram-title">CLICK A MILESTONE OR DRAG THE SLIDER</p><div class="timeline" id="speed-timeline"><button class="control timepoint active" data-speed-step="0"><span class="dot">0</span><p>request</p></button><button class="control timepoint" data-speed-step="1"><span class="dot">1</span><p>first delta</p></button><button class="control timepoint" data-speed-step="2"><span class="dot">2</span><p>more deltas</p></button><button class="control timepoint" data-speed-step="3"><span class="dot">3</span><p>message_end</p></button></div><input id="speed-slider" type="range" min="0" max="3" value="0" step="1" aria-label="Streaming timeline step" style="width:100%;margin-top:25px;accent-color:#57e3b4"></div>
+        <div class="row" style="margin-top:20px"><div class="card"><p class="tag blue">TTFT</p><p class="big" id="speed-ttft">waiting…</p></div><div class="card"><p class="tag gold">TPS</p><p class="big" id="speed-tps">waiting…</p></div><div class="card"><p class="tag accent">Pi footer</p><p class="big" id="speed-status">—</p></div></div>
+        <p id="speed-caption" class="muted" style="margin-top:16px">before_provider_request starts the clock.</p>
+        <aside class="notes">The timeline numbers simulate one response; the math follows the extension. At first content delta, firstDeltaTime is set and TTFT appears. Subsequent updates use partial.usage.output where available or estimate from content length at roughly four characters per token. UI updates are throttled to at most every 250 ms. At message_end, exact output usage replaces the estimate if present, and final status stays visible. Use the range control with a pointer; keyboard arrows also work when it is focused.</aside>
+        <p class="source"><a href="https://github.com/championswimmer/pi-speedometer/blob/main/src/index.ts" target="_blank" rel="noopener">src/index.ts</a> · figures simulate a response</p>
+      </section>
+
+      <section id="slide-14">
+        <p class="eyebrow">Case study B / the code shape</p>
+        <h2>No new tool. Just listen to the stream.</h2>
+        <div class="diagram" style="margin-top:33px"><div class="flow"><div class="node"><p class="blue">before_provider_request</p><p class="small">start clock</p></div><span class="arrow">→</span><div class="node"><p class="gold">message_update</p><p class="small">first delta + tokens</p></div><span class="arrow">→</span><div class="node"><p class="accent">message_end</p><p class="small">final usage</p></div><span class="arrow">→</span><div class="node"><p>ctx.ui.setStatus</p><p class="small">show metric</p></div></div></div>
+        <div class="row" style="margin-top:28px"><div class="card blue-border"><p class="big">Measure at the right moments.</p></div><div class="card"><p class="big">Use <span class="gold">/speed</span> to change the display.</p></div></div>
+        <aside class="notes">The extension resets per-call state on before_provider_request; observes text_delta, thinking_delta and toolcall_delta within message_update; finalizes on message_end; settles on agent_end and session_shutdown. /speed toggles TPS or TTFT on/off and icon/text style, persisting preferences. There is no tool_call hook in this extension and no registerTool call.</aside>
+        <p class="source"><a href="https://github.com/championswimmer/pi-speedometer/blob/main/src/index.ts" target="_blank" rel="noopener">src/index.ts</a></p>
+      </section>
+
+      <section id="slide-15">
+        <p class="eyebrow">Case study C / pi-checklist</p>
+        <h2>Give the agent a task model</h2>
+        <div class="row" style="margin-top:30px"><div class="card gold-border"><p class="tag gold">New agent tools</p><p class="big">create<br>read<br>update</p></div><div class="card blue-border"><p class="tag blue">Rules</p><p class="big">IDs<br>statuses<br>dependencies</p></div><div class="card mint-border"><p class="tag accent">Experience</p><p class="big">/checklist<br>widget<br>footer</p></div></div>
+        <div class="mini-ui" style="margin-top:28px"><p>☑ 1/3  |  inspect API ✓  →  write extension ◯  →  verify ◯</p></div>
+        <aside class="notes">Checklist registers checklist_create, checklist_read, and checklist_update. The tool schemas guide the model, while execute functions apply mutations. The extension also registers /checklist for people and renders a widget/status line. Task IDs are short three-character IDs; updates are atomic. Dependencies form a DAG and prevent starting or completing a task before prerequisites are done. This is more than a UI skin: it gives the agent a structured capability.</aside>
+        <p class="source"><a href="https://github.com/championswimmer/pi-checklist/blob/main/src/index.ts" target="_blank" rel="noopener">src/index.ts</a> · <a href="https://github.com/championswimmer/pi-checklist/blob/main/src/tools.ts" target="_blank" rel="noopener">tool definitions</a></p>
+      </section>
+
+      <section id="slide-16">
+        <p class="eyebrow">Case study C / dependency simulator</p>
+        <h2>What happens when a task is blocked?</h2>
+        <div class="row" style="margin-top:26px"><div class="diagram"><p class="diagram-title">TASK GRAPH</p><div class="task" id="task-a"><p>1 · Inspect API</p><p class="state">planned</p></div><p class="accent" style="text-align:center;font-size:26pt">↓</p><div class="task blocked" id="task-b"><p>2 · Build extension</p><p class="state">blocked</p></div><p class="accent" style="text-align:center;font-size:26pt">↓</p><div class="task blocked" id="task-c"><p>3 · Verify behavior</p><p class="state">blocked</p></div></div><div class="stack"><div class="card gold-border"><p class="tag gold">Try the transition</p><div class="controls-row"><button class="control" id="try-blocked">Start task 2</button><button class="control" id="finish-first">Finish task 1</button><button class="control" id="reset-tasks">Reset</button></div></div><div class="readout"><p id="checklist-readout">Task 2 needs task 1 to be done first.</p></div></div></div>
+        <aside class="notes">First click Start task 2. The extension's update logic rejects a transition to ongoing or done when dependencies are unfinished. Then click Finish task 1 and Start task 2 to show the allowed transition. This demo is a visualization of store.ts rules, not a live Pi invocation. The actual tool reports a rejected batch without partial mutation. Dependencies are cycle checked.</aside>
+        <p class="source"><a href="https://github.com/championswimmer/pi-checklist/blob/main/src/store.ts" target="_blank" rel="noopener">dependency and transition rules</a></p>
+      </section>
+
+      <section id="slide-17">
+        <p class="eyebrow">Case study C / where state lives</p>
+        <h2>A checklist survives the session tree</h2>
+        <div class="diagram" style="margin-top:28px"><div class="flow"><div class="node"><p>checklist_update</p><p class="small">agent changes task</p></div><span class="arrow">→</span><div class="node active"><p>pi.appendEntry</p><p class="small">write snapshot</p></div><span class="arrow">→</span><div class="node"><p>session_tree</p><p class="small">change branch</p></div><span class="arrow">→</span><div class="node"><p>reconstruct</p><p class="small">restore branch state</p></div></div></div>
+        <div class="row" style="margin-top:26px"><div class="card"><p><span class="pill mint">before_agent_start</span><br>Put open tasks into the agent’s instructions.</p></div><div class="card"><p><span class="pill blue">turn_start / turn_end</span><br>Show the widget at the right time.</p></div></div>
+        <aside class="notes">Mutations commit a snapshot with pi.appendEntry and also include it in tool result details. On session_start and session_tree, the extension walks the current branch and takes the last valid snapshot; that makes branching and navigation coherent. Display preferences live in a separate global JSON file. before_agent_start injects checklist guidance/open tasks. turn_start hides the end-of-turn widget and turn_end or agent_settled refreshes it. The task list is branch scoped, while display preferences are global.</aside>
+        <p class="source"><a href="https://github.com/championswimmer/pi-checklist/blob/main/src/index.ts" target="_blank" rel="noopener">event wiring</a> · <a href="https://github.com/championswimmer/pi-checklist/blob/main/src/store.ts" target="_blank" rel="noopener">branch reconstruction</a></p>
+      </section>
+
+      <section id="slide-18">
+        <p class="eyebrow">04 / Your first extension</p>
+        <h2>Start with one seam</h2>
+        <div class="row" style="margin-top:34px"><div class="card mint-border"><p class="big accent">1</p><p>Pick a moment: request, stream, tool, or session.</p></div><div class="card blue-border"><p class="big blue">2</p><p>Register one handler or one tool.</p></div><div class="card gold-border"><p class="big gold">3</p><p>Try it with <code>pi -e ./extension.ts</code>.</p></div></div>
+        <div class="codebox" style="margin-top:30px"><p class="label">the whole shape</p><pre>export default function (pi) {
+  pi.on("session_start", (_event, ctx) =&gt; {
+    ctx.ui.notify("Hello!", "info");
+  });
+}</pre></div>
+        <aside class="notes">This is the minimum mental model: default export a function receiving the extension API; register behavior once; Pi loads the module and calls handlers at the named boundary. For a quick local experiment use pi -e path. For auto discovery, put an extension in ~/.pi/agent/extensions or project .pi/extensions, then /reload. The published Pi docs currently describe this, although import package names can vary across Pi versions. The three case-study repos provide complete examples. A good first extension observes one event and paints a status, then grows into mutation or tools only when needed.</aside>
+        <p class="source"><a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md" target="_blank" rel="noopener">Pi extension quick start</a></p>
+      </section>
+
+      <section id="slide-19">
+        <p class="eyebrow">The takeaway</p>
+        <h2>Pi makes the loop <span class="accent">yours to shape.</span></h2>
+        <div class="row" style="margin-top:39px"><div class="card mint-border"><p class="big">Observe</p><p>See what the harness is doing.</p></div><div class="card blue-border"><p class="big">Intervene</p><p>Change context or tool behavior.</p></div><div class="card gold-border"><p class="big">Add</p><p>Give the agent new tools and UI.</p></div></div>
+        <p class="lede" style="margin-top:34px">The trick is choosing the right lifecycle moment.</p>
+        <p class="instruction">Q&amp;A · press Esc for slide overview · S for speaker notes</p>
+        <aside class="notes">Close by revisiting the three shapes: prune transforms a future request without destroying the transcript; speedometer measures the stream; checklist introduces an agent-visible capability plus durable state. Mention the research.md file next to this deck for implementation references and demo commands. Invite questions about which events the audience would hook into.</aside>
+        <p class="source"><a href="./research.md" target="_blank">Research notes and source links</a></p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: 'c/t',
+      hash: true,
+      transition: 'slide',
+      center: false,
+      plugins: [ RevealNotes ]
+    });
+
+    const byId = id => document.getElementById(id);
+    const activate = (selector, chosen) => {
+      document.querySelectorAll(selector).forEach(el => {
+        const selected = el === chosen;
+        el.classList.toggle('active', selected);
+        el.classList.toggle('selected', selected);
+        if (el.tagName === 'BUTTON') el.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      });
+    };
+    const harnessCopy = {
+      input: ['Prompt', 'The human asks for a change. Pi starts an agent run with that intent.'],
+      context: ['Context', 'Pi assembles instructions, prior messages, and tool results for the next model call.'],
+      model: ['Model', 'The provider streams text, thinking, or tool-call deltas back to the harness.'],
+      tool: ['Tools', 'Pi executes the requested operation and returns a result. That result can trigger another model turn.'],
+      session: ['Session', 'Pi records messages and state in a navigable session, while its UI renders progress.']
+    };
+    document.querySelectorAll('[data-harness]').forEach(btn => btn.addEventListener('click', () => {
+      activate('[data-harness]', btn);
+      const [name, copy] = harnessCopy[btn.dataset.harness];
+      byId('harness-readout').innerHTML = '<p><strong>' + name + ':</strong> ' + copy + '</p>';
+    }));
+
+    const hookCopy = {
+      input: ['input', 'The submitted prompt can be handled or transformed before the run.'],
+      before_agent_start: ['before_agent_start', 'An extension can change the system prompt or inject a message.'],
+      context: ['context', 'A copy of the messages is ready for the next model request. An extension can return a modified copy.'],
+      before_provider_request: ['before_provider_request', 'The provider payload is about to go out. This is a precise timing point.'],
+      message_update: ['message_update', 'A streaming assistant message changed. Watch content deltas as they arrive.'],
+      tool_call: ['tool_call', 'A tool is about to execute. An extension can inspect or block it.'],
+      tool_result: ['tool_result', 'A tool has returned. An extension can patch the result before it is used.'],
+      turn_end: ['turn_end', 'This model turn completed, including any tool calls and their results.']
+    };
+    document.querySelectorAll('[data-hook]').forEach(btn => btn.addEventListener('click', () => {
+      activate('[data-hook]', btn);
+      const [name, copy] = hookCopy[btn.dataset.hook];
+      byId('lifecycle-readout').innerHTML = '<p><strong>' + name + ':</strong> ' + copy + '</p><p class="small muted">A run may include several turns; a tool result can lead to another model request.</p>';
+    }));
+    const laneCopy = {
+      message_start: 'Pi has started a new assistant message.',
+      message_update: 'A partial assistant message changed; extensions can observe streaming deltas.',
+      message_end: 'The assistant message is complete, with final content and usage.',
+      tool_call: 'The proposed tool call can be inspected or blocked before execution.',
+      tool_execution_update: 'A running tool published a partial result.',
+      tool_result: 'The completed tool result can be inspected or modified.'
+    };
+    document.querySelectorAll('[data-lane]').forEach(btn => btn.addEventListener('click', () => {
+      activate('[data-lane]', btn);
+      byId('lane-readout').innerHTML = '<p><strong>' + btn.dataset.lane + ':</strong> ' + laneCopy[btn.dataset.lane] + '</p>';
+    }));
+    document.querySelectorAll('[data-answer]').forEach(btn => btn.addEventListener('click', () => {
+      activate('[data-answer]', btn);
+      byId('quiz-readout').innerHTML = btn.dataset.answer === 'context'
+        ? '<p><strong class="accent">Exactly:</strong> context lets the extension change the messages used in a future request while the stored history remains intact.</p>'
+        : '<p><strong class="gold">Try another boundary.</strong> We need the moment just before messages are sent to the model.</p>';
+    }));
+
+    const pruneStates = {
+      raw: {
+        title: 'MODEL CONTEXT · BEFORE', hook: 'tool results',
+        explain: 'Raw results enter the live conversation.', meter: '86%', label: 'Raw outputs included',
+        rows: [['user: debug the tests',''],['assistant → bash',''],['toolResult: full test log','result'],['assistant → read',''],['toolResult: full file','result']]
+      },
+      queued: {
+        title: 'SESSION + PENDING BATCH', hook: 'turn_end',
+        explain: 'Capture completed tool call/result pairs; keep the originals.', meter: '86%', label: 'No pruning yet',
+        rows: [['assistant → bash',''],['toolResult: full test log','result'],['assistant → read',''],['toolResult: full file','result'],['pending batch: 2 results','summary']]
+      },
+      summarized: {
+        title: 'SUMMARY + RECOVERY INDEX', hook: 'message_end',
+        explain: 'Default mode summarizes after the final text reply. Store short refs t1 and t2.', meter: '86%', label: 'Summary prepared; next context not built yet',
+        rows: [['toolResult: full test log','result'],['toolResult: full file','result'],['summary: test failure + config clue · t1, t2','summary'],['index: t1 → original test log','summary']]
+      },
+      pruned: {
+        title: 'NEXT MODEL REQUEST · AFTER', hook: 'context',
+        explain: 'Only summarized toolResult messages leave this request copy.', meter: '34%', label: 'Shorter future request',
+        rows: [['user: debug the tests',''],['assistant → bash',''],['assistant → read',''],['summary: test failure + config clue · t1, t2','summary']]
+      },
+      recover: {
+        title: 'RECOVER ORIGINAL ON DEMAND', hook: 'context_tree_query',
+        explain: 'The model asks for t1 and gets the stored full result back.', meter: '34%', label: 'Normal context remains compact',
+        rows: [['summary: test failure + config clue · t1, t2','summary'],['context_tree_query({ toolCallIds: ["t1"] })',''],['original test log returned','result']]
+      }
+    };
+    function setPrune(state) {
+      const s = pruneStates[state];
+      byId('prune-context-title').textContent = s.title;
+      byId('prune-hook').textContent = s.hook;
+      byId('prune-explain').textContent = s.explain;
+      byId('prune-meter').style.width = s.meter;
+      byId('prune-meter-label').textContent = s.label;
+      byId('prune-context').replaceChildren(...s.rows.map(([label, kind]) => {
+        const row = document.createElement('div'); row.className = 'context-item' + (kind === 'result' ? ' tool-result' : kind === 'summary' ? ' summary' : '');
+        const p = document.createElement('p'); p.textContent = label; row.append(p); return row;
+      }));
+    }
+    document.querySelectorAll('[data-prune]').forEach(btn => btn.addEventListener('click', () => {
+      activate('[data-prune]', btn); setPrune(btn.dataset.prune);
+    }));
+    setPrune('raw');
+
+    const viewStates = {
+      before: {
+        saved: [['assistant → bash',''],['toolResult: complete log','result'],['assistant → read',''],['toolResult: complete file','result']],
+        request: [['assistant → bash',''],['toolResult: complete log','result'],['assistant → read',''],['toolResult: complete file','result']],
+        caption: 'The two views begin with the same messages.'
+      },
+      after: {
+        saved: [['assistant → bash',''],['toolResult: complete log','result'],['assistant → read',''],['toolResult: complete file','result'],['summary + index t1, t2','summary']],
+        request: [['assistant → bash',''],['assistant → read',''],['summary: key findings · t1, t2','summary']],
+        caption: 'Stored originals remain. The next request carries the summary and refs.'
+      },
+      retrieved: {
+        saved: [['toolResult: complete log','result'],['toolResult: complete file','result'],['summary + index t1, t2','summary']],
+        request: [['summary: key findings · t1, t2','summary'],['context_tree_query(t1)',''],['full log returned on demand','result']],
+        caption: 'A short ref leads back to the indexed original.'
+      }
+    };
+    function paintView(target, rows) {
+      byId(target).replaceChildren(...rows.map(([label, kind]) => {
+        const row = document.createElement('div');
+        row.className = 'context-item' + (kind === 'result' ? ' tool-result' : kind === 'summary' ? ' summary' : '');
+        const p = document.createElement('p'); p.textContent = label; row.append(p); return row;
+      }));
+    }
+    function setView(key) {
+      const s = viewStates[key];
+      paintView('saved-view', s.saved);
+      paintView('request-view', s.request);
+      byId('views-caption').textContent = s.caption;
+    }
+    document.querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', () => {
+      activate('[data-view]', btn); setView(btn.dataset.view);
+    }));
+    setView('before');
+
+    const speedStates = [
+      {ttft:'waiting…',tps:'waiting…',status:'—',caption:'before_provider_request starts the clock.'},
+      {ttft:'412 ms',tps:'starting…',status:'⏱ 412ms',caption:'The first content delta fixes TTFT.'},
+      {ttft:'412 ms',tps:'42.0 t/s',status:'⚡ 42.0 t/s  ⏱ 412ms',caption:'Streaming output produces a live TPS estimate.'},
+      {ttft:'412 ms',tps:'42.1 t/s',status:'⚡ 42.1 t/s  ⏱ 412ms',caption:'message_end replaces the estimate with final usage, when available.'}
+    ];
+    function setSpeed(step) {
+      const s = speedStates[step];
+      byId('speed-slider').value = step;
+      byId('speed-ttft').textContent = s.ttft;
+      byId('speed-tps').textContent = s.tps;
+      byId('speed-status').textContent = s.status;
+      byId('speed-caption').textContent = s.caption;
+      document.querySelectorAll('[data-speed-step]').forEach(btn => btn.classList.toggle('active', Number(btn.dataset.speedStep) === step));
+    }
+    document.querySelectorAll('[data-speed-step]').forEach(btn => btn.addEventListener('click', () => setSpeed(Number(btn.dataset.speedStep))));
+    byId('speed-slider').addEventListener('input', event => setSpeed(Number(event.target.value)));
+
+    let firstDone = false;
+    let secondStarted = false;
+    function paintTasks(message) {
+      const a = byId('task-a'), b = byId('task-b'), c = byId('task-c');
+      a.classList.toggle('done', firstDone);
+      b.classList.toggle('blocked', !firstDone);
+      b.classList.toggle('done', false);
+      c.classList.add('blocked');
+      a.querySelector('.state').textContent = firstDone ? 'done' : 'planned';
+      b.querySelector('.state').textContent = secondStarted ? 'ongoing' : firstDone ? 'ready' : 'blocked';
+      c.querySelector('.state').textContent = 'blocked';
+      byId('checklist-readout').textContent = message;
+    }
+    byId('try-blocked').addEventListener('click', () => {
+      if (!firstDone) paintTasks('Rejected: task 2 depends on unfinished task 1. No state changed.');
+      else { secondStarted = true; paintTasks('Accepted: task 1 is done, so task 2 can move to ongoing.'); }
+    });
+    byId('finish-first').addEventListener('click', () => { firstDone = true; paintTasks('Task 1 is done. Task 2 is now ready to start.'); });
+    byId('reset-tasks').addEventListener('click', () => { firstDone = false; secondStarted = false; paintTasks('Task 2 needs task 1 to be done first.'); });
+  </script>
+</body>
+</html>
