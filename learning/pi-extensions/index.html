@@ -101,6 +101,12 @@
     #lifecycle-flow button{min-height:93px;overflow-wrap:anywhere;counter-increment:hook}
     #lifecycle-flow button:before{content:counter(hook,decimal-leading-zero);display:block;color:var(--mint);font:700 11pt var(--mono);margin-bottom:5px}
     #lifecycle-flow button p{font-size:17pt!important}
+    .trace-slide .node{min-height:82px;display:flex;flex-direction:column;justify-content:center;overflow-wrap:anywhere}
+    .trace-slide .node p{font-size:17pt!important}
+    .trace-slide .node .small{font-size:13pt!important}
+    .trace-slide .readout{min-height:74px}
+    .trace-slide .readout p{font-size:18pt!important}
+    #session-model .node p,#session-tools .node p{font-size:16pt!important}
     .reveal .fragment{transition-duration:.35s}
     @media(max-width:800px){.reveal .slides section{padding:36px 50px}}
   </style>
@@ -108,7 +114,6 @@
 <body>
   <div class="reveal">
     <div class="slides">
-
       <section id="title" class="section-divider" data-state="is-section-divider">
         <p class="eyebrow">Inside the Pi coding agent</p>
         <h1>Small core.<br><span class="accent">Your extensions.</span></h1>
@@ -150,6 +155,81 @@
         <aside class="notes">Stress the distinction between model and harness. The model selects tool calls; the harness owns the actual tools and their results. That means extensions can affect the system without changing model weights or forking core Pi.</aside>
       </section>
 
+      <section id="session-prompt" class="trace-slide">
+        <p class="eyebrow">01 / A Pi session · prompt</p>
+        <h2>1. You send “fix the failing tests”</h2>
+        <div class="row" style="margin-top:26px;align-items:center">
+          <div class="card blue-border" style="flex:1.35"><p class="tag blue">You</p><p class="big">“Fix the failing tests”</p></div>
+          <div class="card" style="flex:.65"><p class="tag">Already happened</p><p class="pill mint">session_start</p><p class="small muted">The session loaded before this prompt.</p></div>
+        </div>
+        <div class="diagram" style="margin-top:22px"><p class="diagram-title">PI RECEIVES THE PROMPT · CLICK A HOOK</p><div class="flow">
+          <button class="control node active" data-phase-event="input" data-explain="Inspect, transform, or handle the submitted prompt."><p>input</p><p class="small">prompt arrives</p></button><span class="arrow">→</span>
+          <button class="control node" data-phase-event="before_agent_start" data-explain="Add a message or change the system prompt before the agent begins."><p>before_agent_start</p><p class="small">prepare the run</p></button><span class="arrow">→</span>
+          <button class="control node" data-phase-event="agent_start" data-explain="The agent run begins. It may contain several model turns."><p>agent_start</p><p class="small">run begins</p></button>
+        </div></div>
+        <div class="readout" data-phase-readout style="margin-top:18px"><p><strong>input:</strong> inspect, transform, or handle the submitted prompt.</p></div>
+        <aside class="notes">Begin with a real prompt. Pi has already emitted session_start while loading the session; that event is not repeated for every prompt. A submitted prompt reaches input, which can transform or handle it. before_agent_start can adjust the system prompt or inject a message. Then agent_start marks the beginning of one agent run. That run may make several provider calls. Click each hook while describing it.</aside>
+        <p class="source">Sequence: <a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md#lifecycle-overview" target="_blank" rel="noopener">Pi lifecycle overview</a></p>
+      </section>
+
+      <section id="session-model" class="trace-slide">
+        <p class="eyebrow">01 / A Pi session · model</p>
+        <h2>2. Pi builds the request, then streams the reply</h2>
+        <div class="stack" style="margin-top:20px">
+          <div class="diagram"><p class="diagram-title">OUTBOUND REQUEST · CLICK A HOOK</p><div class="flow">
+            <button class="control node active" data-phase-event="turn_start" data-explain="A model turn begins; this happens again if a tool result leads to another call."><p>turn_start</p></button><span class="arrow">→</span>
+            <button class="control node" data-phase-event="context" data-explain="Pi assembles the messages. An extension may return a modified request copy."><p>context</p></button><span class="arrow">→</span>
+            <button class="control node" data-phase-event="before_provider_request" data-explain="The provider payload is ready to send. This is where speedometer starts its timer."><p>before_provider_<br>request</p></button><span class="arrow">→</span>
+            <div class="node"><p class="blue">LLM</p></div>
+          </div></div>
+          <div class="diagram"><p class="diagram-title">INBOUND RESPONSE · CLICK A HOOK</p><div class="flow">
+            <button class="control node" data-phase-event="after_provider_response" data-explain="Pi has received the provider response status and headers, before consuming the stream."><p>after_provider_<br>response</p></button><span class="arrow">→</span>
+            <button class="control node" data-phase-event="message_start" data-explain="An assistant message has begun."><p>message_start</p></button><span class="arrow">→</span>
+            <button class="control node" data-phase-event="message_update" data-explain="Text, thinking, or tool-call deltas arrive. Speedometer watches content deltas here."><p>message_update</p></button><span class="arrow">→</span>
+            <button class="control node" data-phase-event="message_end" data-explain="The assistant message is complete; final content and usage are available."><p>message_end</p></button>
+          </div></div>
+        </div>
+        <div class="readout" data-phase-readout style="margin-top:15px"><p><strong>turn_start:</strong> a model turn begins.</p></div>
+        <aside class="notes">This is the provider round trip. turn_start begins each model turn. At context, Pi has assembled a copy of the messages that an extension may change. before_provider_request fires just before the payload is sent; that is the clean start point for speedometer's timer. after_provider_response exposes response status and headers before the stream is consumed. Then message_start, message_update, and message_end bracket the assistant message. Speedometer uses message_update to see the first content delta and message_end to use final token usage. Message events can also describe other messages; this slide follows the assistant response.</aside>
+        <p class="source">Sequence: <a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md#lifecycle-overview" target="_blank" rel="noopener">Pi lifecycle overview</a></p>
+      </section>
+
+      <section id="session-tools" class="trace-slide">
+        <p class="eyebrow">01 / A Pi session · tools</p>
+        <h2>3. The model asks Pi to run a tool</h2>
+        <div class="card gold-border" style="margin-top:20px"><p class="tag gold">Assistant output</p><p class="big">bash({ command: "npm test" })</p></div>
+        <div class="diagram" style="margin-top:16px"><p class="diagram-title">PI EXECUTES THE CALL · CLICK A HOOK</p><div class="flow">
+          <button class="control node active" data-phase-event="tool_execution_start" data-explain="Pi begins the tool-execution lifecycle."><p>tool_execution_<br>start</p></button><span class="arrow">→</span>
+          <button class="control node" data-phase-event="tool_call" data-explain="The extension sees the proposed call before the tool runs and can block it."><p>tool_call</p></button><span class="arrow">→</span>
+          <button class="control node" data-phase-event="tool_execution_update" data-explain="A running tool can publish progress or a partial result."><p>tool_execution_<br>update</p></button><span class="arrow">→</span>
+          <button class="control node" data-phase-event="tool_result" data-explain="The tool returned; an extension can change the result."><p>tool_result</p></button><span class="arrow">→</span>
+          <button class="control node" data-phase-event="tool_execution_end" data-explain="Tool execution has finished."><p>tool_execution_<br>end</p></button>
+        </div></div>
+        <div class="flow" style="margin-top:14px"><div class="node"><p class="gold">turn_end</p><p class="small">this turn closes</p></div><span class="arrow">→</span><div class="node active"><p class="accent">turn_start ↺</p><p class="small">Pi calls the model again</p></div><span class="arrow">→</span><div class="node"><p class="blue">agent_end</p><p class="small">after the final reply</p></div></div>
+        <div class="readout" data-phase-readout style="margin-top:14px"><p><strong>tool_execution_start:</strong> Pi begins tool execution.</p></div>
+        <aside class="notes">The model emits a tool call; Pi executes it. The official extension lifecycle lists tool_execution_start, tool_call, tool_execution_update, tool_result, and tool_execution_end. tool_call is the gate where an extension can block execution. tool_result can modify a completed result. Once the tool-calling turn ends, the result is available for the next model turn, so the loop goes back to turn_start and context. After the agent's final answer, agent_end fires, followed by agent_settled when no follow-up work remains. One response can contain more than one tool call; this diagram follows one.</aside>
+        <p class="source">Sequence: <a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md#lifecycle-overview" target="_blank" rel="noopener">Pi lifecycle overview</a></p>
+      </section>
+
+      <section id="slide-5">
+        <p class="eyebrow">01 / Put the run back together</p>
+        <h2>One prompt can create several model turns</h2>
+        <div class="diagram" style="margin-top:22px"><p class="diagram-title">CLICK ANY EVENT — THIS IS A SIMPLIFIED SEQUENCE</p><div class="flow" id="lifecycle-flow" style="flex-wrap:wrap;justify-content:flex-start;gap:8px">
+          <button class="control node active" data-hook="input"><p>input</p></button><span class="arrow">→</span>
+          <button class="control node" data-hook="before_agent_start"><p>before_agent_start</p></button><span class="arrow">→</span>
+          <button class="control node" data-hook="context"><p>context</p></button><span class="arrow">→</span>
+          <button class="control node" data-hook="before_provider_request"><p>before_provider_request</p></button><span class="arrow">→</span>
+          <button class="control node" data-hook="message_update"><p>message_update</p></button><span class="arrow">→</span>
+          <button class="control node" data-hook="tool_call"><p>tool_call</p></button><span class="arrow">→</span>
+          <button class="control node" data-hook="tool_result"><p>tool_result</p></button><span class="arrow">→</span>
+          <button class="control node" data-hook="turn_end"><p>turn_end</p></button>
+        </div></div>
+        <div class="readout" id="lifecycle-readout" style="margin-top:18px"><p><strong>input:</strong> a submitted prompt can be handled or transformed before the run begins.</p><p class="small muted">A run may include several turns. Each tool call can lead to another model request.</p></div>
+        <div class="row" style="margin-top:14px"><div class="card soft"><p class="small"><span class="accent">Message events</span> expose streaming and completed messages.</p></div><div class="card soft"><p class="small"><span class="blue">Tool events</span> surround execution and results.</p></div><div class="card soft"><p class="small"><span class="gold">Session events</span> cover starts, branches, compaction, and shutdown.</p></div></div>
+        <aside class="notes">Bring the three stages back into one picture. A prompt starts a run. Each model turn prepares context, calls the provider, and streams a message. When the model requests a tool, Pi executes it, adds the result, and begins another turn. This map selects eight useful hooks rather than every event. Click context, message_update, and tool_call to remind the room what each extension will use. turn_end closes one turn; agent_end comes after the final answer.</aside>
+        <p class="source">Simplified from <a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md#lifecycle-overview" target="_blank" rel="noopener">Pi’s lifecycle overview</a>. Some events are omitted for clarity.</p>
+      </section>
+
       <section id="slide-4">
         <p class="eyebrow">02 / Event-driven extension</p>
         <h2>A hook is a named moment in that loop</h2>
@@ -164,45 +244,6 @@
         <div class="readout" style="margin-top:20px"><p>Hooks can <strong>observe</strong> events, <strong>alter</strong> some payloads, or <strong>block</strong> some actions. The event’s contract decides which.</p></div>
         <aside class="notes">A Pi extension exports a default function that receives an ExtensionAPI object. Calling pi.on registers a handler. This example uses tool_call, which can inspect a proposed tool and return block=true with a reason. Other hooks have different allowed return values, so never generalize that every hook can modify everything. The snippet is intentionally tiny for a projected slide.</aside>
         <p class="source">Source: <a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md" target="_blank" rel="noopener">Pi extension API</a></p>
-      </section>
-
-      <section id="slide-5">
-        <p class="eyebrow">02 / One run, many touchpoints</p>
-        <h2>Follow an agent turn through Pi</h2>
-        <div class="diagram" style="margin-top:22px"><p class="diagram-title">CLICK ANY EVENT — THIS IS A SIMPLIFIED SEQUENCE</p><div class="flow" id="lifecycle-flow" style="flex-wrap:wrap;justify-content:flex-start;gap:8px">
-          <button class="control node active" data-hook="input"><p>input</p></button><span class="arrow">→</span>
-          <button class="control node" data-hook="before_agent_start"><p>before_agent_start</p></button><span class="arrow">→</span>
-          <button class="control node" data-hook="context"><p>context</p></button><span class="arrow">→</span>
-          <button class="control node" data-hook="before_provider_request"><p>before_provider_request</p></button><span class="arrow">→</span>
-          <button class="control node" data-hook="message_update"><p>message_update</p></button><span class="arrow">→</span>
-          <button class="control node" data-hook="tool_call"><p>tool_call</p></button><span class="arrow">→</span>
-          <button class="control node" data-hook="tool_result"><p>tool_result</p></button><span class="arrow">→</span>
-          <button class="control node" data-hook="turn_end"><p>turn_end</p></button>
-        </div></div>
-        <div class="readout" id="lifecycle-readout" style="margin-top:18px"><p><strong>input:</strong> a submitted prompt can be handled or transformed before the run begins.</p><p class="small muted">A run may include several turns. Each tool call can lead to another model request.</p></div>
-        <div class="row" style="margin-top:14px"><div class="card soft"><p class="small"><span class="accent">Message events</span> expose streaming and completed messages.</p></div><div class="card soft"><p class="small"><span class="blue">Tool events</span> surround execution and results.</p></div><div class="card soft"><p class="small"><span class="gold">Session events</span> cover starts, branches, compaction, and shutdown.</p></div></div>
-        <aside class="notes">This is a deliberately simplified lifecycle. Click several nodes. input can transform a submitted prompt; before_agent_start can amend the prompt; context can change the request's message copy; before_provider_request occurs immediately before sending the provider payload; message_update tracks streaming; tool_call can inspect or block execution; tool_result can modify a completed result; turn_end closes a model turn. Some events repeat across multiple turns. The official Pi docs include additional lifecycle, session, and tool-execution events.</aside>
-        <p class="source">Simplified from <a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md#lifecycle-overview" target="_blank" rel="noopener">Pi’s lifecycle overview</a>. Some events are omitted for clarity.</p>
-      </section>
-
-      <section id="slide-event-lanes">
-        <p class="eyebrow">02 / Zoom into one turn</p>
-        <h2>Messages and tools have their own timelines</h2>
-        <div class="stack" id="event-lanes" style="margin-top:27px">
-          <div class="diagram"><p class="diagram-title">ASSISTANT MESSAGE</p><div class="flow">
-            <button class="control node active" data-lane="message_start"><p>message_start</p></button><span class="arrow">→</span>
-            <button class="control node" data-lane="message_update"><p>message_update</p></button><span class="arrow">→</span>
-            <button class="control node" data-lane="message_end"><p>message_end</p></button>
-          </div></div>
-          <div class="diagram"><p class="diagram-title">A TOOL CALL WITHIN THAT MESSAGE</p><div class="flow">
-            <button class="control node" data-lane="tool_call"><p>tool_call</p></button><span class="arrow">→</span>
-            <button class="control node" data-lane="tool_execution_update"><p>tool_execution_update</p></button><span class="arrow">→</span>
-            <button class="control node" data-lane="tool_result"><p>tool_result</p></button>
-          </div></div>
-        </div>
-        <div class="readout" id="lane-readout" style="margin-top:20px"><p><strong>message_start:</strong> Pi has started a new assistant message.</p></div>
-        <aside class="notes">This slide makes the event idea concrete. Click message_start, message_update, message_end: a response has a beginning, streaming deltas, and a final message. Tool events surround a call inside a turn: tool_call can block; tool_execution_update exposes partial progress; tool_result can modify the result. The full official timeline includes additional execution start/end events. The arrows are an explanatory path, not every possible interleaving. Speedometer watches message_update; pruner uses message_end; many permission extensions use tool_call.</aside>
-        <p class="source"><a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md#events" target="_blank" rel="noopener">Pi event reference</a></p>
       </section>
 
       <section id="slide-6">
@@ -220,36 +261,97 @@
         <p class="source">Source: <a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/extensions.md" target="_blank" rel="noopener">Pi extension API</a></p>
       </section>
 
-      <section id="slide-7">
-        <p class="eyebrow">02 / Your turn</p>
-        <h2>Where would you hook in?</h2>
-        <p class="lede">Keep a huge tool result in the saved session, but leave it out of the next model request.</p>
-        <div class="hook-grid" id="hook-quiz" style="margin-top:30px">
-          <button class="control" data-answer="tool_call">tool_call<span>Before a tool runs</span></button>
-          <button class="control" data-answer="context">context<span>Before each model request</span></button>
-          <button class="control" data-answer="message_update">message_update<span>During model streaming</span></button>
-          <button class="control" data-answer="session_start">session_start<span>When a session loads</span></button>
-        </div>
-        <div class="readout" id="quiz-readout" style="margin-top:22px"><p>Which event gives us that control?</p></div>
-        <p class="instruction">The answer is one of the hooks used by pi-context-prune.</p>
-        <aside class="notes">Pause for audience answers. context is the point where an extension can return a modified copy of messages for the next model request. tool_call would be too early and relates to executing a tool; message_update observes a stream; session_start is for restoring state. pi-context-prune also uses turn_end and message_end around the summary workflow.</aside>
-      </section>
-
       <section id="slide-8">
-        <p class="eyebrow">03 / Three extension strategies</p>
-        <h2>Three extensions, three useful jobs</h2>
+        <p class="eyebrow">03 / From easy to hard</p>
+        <h2>Start small. Then add capability and state.</h2>
         <div class="row" style="margin-top:34px">
-          <div class="card mint-border"><p class="big accent">Prune</p><p>Shape the next model request.</p><p class="pill mint" style="margin-top:25px">context</p></div>
-          <div class="card blue-border"><p class="big blue">Measure</p><p>Observe the live stream.</p><p class="pill blue" style="margin-top:25px">message_update</p></div>
-          <div class="card gold-border"><p class="big gold">Organize</p><p>Add tools and session state.</p><p class="pill gold" style="margin-top:25px">registerTool</p></div>
+          <div class="card blue-border"><p class="tag blue">A · pi-speedometer</p><p class="big blue">Measure</p><p>Listen to a request and its stream.</p><p class="pill blue" style="margin-top:25px">event hooks + status</p></div>
+          <div class="card gold-border"><p class="tag gold">B · pi-checklist</p><p class="big gold">Organize</p><p>Give the agent tools and branch-aware state.</p><p class="pill gold" style="margin-top:25px">tools + session</p></div>
+          <div class="card mint-border"><p class="tag accent">C · pi-context-prune</p><p class="big accent">Prune</p><p>Rewrite future context without losing the record.</p><p class="pill mint" style="margin-top:25px">capture + context</p></div>
         </div>
         <div class="diagram" style="margin-top:33px"><p class="diagram-title">ALL THREE LIVE OUTSIDE PI’S CORE LOOP</p><div class="flow"><div class="node"><p>Pi harness</p></div><span class="arrow">→</span><div class="node active"><p>named events + APIs</p></div><span class="arrow">→</span><div class="node"><p>your extension</p></div></div></div>
-        <aside class="notes">Let's make this concrete with three extensions from my repositories. One changes what goes into the next request. One watches how fast the response arrives. One gives the agent a checklist it can actually update. Each uses a different part of the same API.</aside>
+        <aside class="notes">Let's make this concrete with three extensions from my repositories, in rising complexity. Speedometer is mostly event handlers plus a status line. Checklist gives the model tools, task rules, and session-backed state. Context-prune spans tool capture, summarization, future request filtering, and recovery. Each is built against the same Pi extension API.</aside>
         <p class="source"><a href="https://github.com/championswimmer/pi-context-prune" target="_blank" rel="noopener">pi-context-prune</a> · <a href="https://github.com/championswimmer/pi-speedometer" target="_blank" rel="noopener">pi-speedometer</a> · <a href="https://github.com/championswimmer/pi-checklist" target="_blank" rel="noopener">pi-checklist</a></p>
       </section>
 
+      <section id="slide-12">
+        <p class="eyebrow">Case study A / pi-speedometer</p>
+        <h2>“It feels slow” becomes two numbers</h2>
+        <div class="row" style="margin-top:39px">
+          <div class="card blue-border"><p class="big blue">TTFT</p><p>Request → first content delta</p><p class="big" style="margin-top:23px">412 ms</p></div>
+          <div class="card gold-border"><p class="big gold">TPS</p><p>Output tokens ÷ time since first delta</p><p class="big" style="margin-top:23px">42.1 t/s</p></div>
+        </div>
+        <div class="mini-ui" style="margin-top:28px"><p>Pi footer  |  ⚡ 42.1 t/s   ⏱ 412ms</p></div>
+        <aside class="notes">TTFT means time to first token, implemented as time to first content delta after before_provider_request. TPS is output tokens divided by elapsed seconds since that first delta. Speedometer uses ctx.ui.setStatus; it does not add a model tool. Its UI is useful during a live demo to separate startup latency from generation throughput.</aside>
+        <p class="source"><a href="https://github.com/championswimmer/pi-speedometer/blob/main/README.md" target="_blank" rel="noopener">README</a> · <a href="https://github.com/championswimmer/pi-speedometer/blob/main/src/index.ts" target="_blank" rel="noopener">src/index.ts</a></p>
+      </section>
+
+      <section id="slide-7">
+        <p class="eyebrow">Case study A / Choose the hook</p>
+        <h2>Where should the timer start?</h2>
+        <p class="lede">Speedometer measures the gap between sending a provider request and receiving the first content delta.</p>
+        <div class="hook-grid" id="hook-quiz" style="margin-top:30px">
+          <button class="control" data-answer="turn_start">turn_start<span>When a turn begins</span></button>
+          <button class="control" data-answer="context">context<span>While messages are assembled</span></button>
+          <button class="control" data-answer="before_provider_request">before_provider_request<span>Just before sending</span></button>
+          <button class="control" data-answer="message_update">message_update<span>When content arrives</span></button>
+        </div>
+        <div class="readout" id="quiz-readout" style="margin-top:22px"><p>Pick the event closest to the outbound request.</p></div>
+        <p class="instruction">Then we will use message_update to find the first delta.</p>
+        <aside class="notes">Ask the room before clicking. turn_start is earlier than the provider request; context runs while request messages are being assembled. before_provider_request occurs after the provider payload is built, just before it is sent, so it is the timer's start. message_update is where speedometer detects the first content delta and computes the other endpoint. This little choice shows why the exact hook matters.</aside>
+      </section>
+
+      <section id="slide-13">
+        <p class="eyebrow">Case study A / interactive timeline</p>
+        <h2>Scrub through one response</h2>
+        <div class="diagram" style="margin-top:25px"><p class="diagram-title">CLICK A MILESTONE OR DRAG THE SLIDER</p><div class="timeline" id="speed-timeline"><button class="control timepoint active" data-speed-step="0"><span class="dot">0</span><p>request</p></button><button class="control timepoint" data-speed-step="1"><span class="dot">1</span><p>first delta</p></button><button class="control timepoint" data-speed-step="2"><span class="dot">2</span><p>more deltas</p></button><button class="control timepoint" data-speed-step="3"><span class="dot">3</span><p>message_end</p></button></div><input id="speed-slider" type="range" min="0" max="3" value="0" step="1" aria-label="Streaming timeline step" style="width:100%;margin-top:25px;accent-color:#57e3b4"></div>
+        <div class="row" style="margin-top:20px"><div class="card"><p class="tag blue">TTFT</p><p class="big" id="speed-ttft">waiting…</p></div><div class="card"><p class="tag gold">TPS</p><p class="big" id="speed-tps">waiting…</p></div><div class="card"><p class="tag accent">Pi footer</p><p class="big" id="speed-status">—</p></div></div>
+        <p id="speed-caption" class="muted" style="margin-top:16px">before_provider_request starts the clock.</p>
+        <aside class="notes">The timeline numbers simulate one response; the math follows the extension. At first content delta, firstDeltaTime is set and TTFT appears. Subsequent updates use partial.usage.output where available or estimate from content length at roughly four characters per token. UI updates are throttled to at most every 250 ms. At message_end, exact output usage replaces the estimate if present, and final status stays visible. Use the range control with a pointer; keyboard arrows also work when it is focused.</aside>
+        <p class="source"><a href="https://github.com/championswimmer/pi-speedometer/blob/main/src/index.ts" target="_blank" rel="noopener">src/index.ts</a> · figures simulate a response</p>
+      </section>
+
+      <section id="slide-14">
+        <p class="eyebrow">Case study A / the code shape</p>
+        <h2>Three hooks. Two numbers. One footer.</h2>
+        <div class="row" style="margin-top:27px">
+          <div class="card blue-border"><p class="tag blue">1 · before_provider_request</p><p class="big">Start the clock</p><div class="codebox" style="margin-top:16px"><pre>requestStart = now()<br>firstDeltaTime = null</pre></div></div>
+          <div class="card gold-border"><p class="tag gold">2 · message_update</p><p class="big">Watch the stream</p><div class="codebox" style="margin-top:16px"><pre>TTFT = first - start<br>TPS = tokens / seconds</pre></div></div>
+          <div class="card mint-border"><p class="tag accent">3 · message_end</p><p class="big">Use final usage</p><div class="codebox" style="margin-top:16px"><pre>tokens = finalUsage<br>renderStatus(ctx)</pre></div></div>
+        </div>
+        <div class="diagram" style="margin-top:24px"><div class="flow"><div class="node"><p>content delta</p><p class="small">text · thinking · tool call</p></div><span class="arrow">→</span><div class="node active"><p class="accent">ctx.ui.setStatus</p><p class="small">⚡ 42.1 t/s · ⏱ 412 ms</p></div><span class="arrow">→</span><div class="node"><p>/speed</p><p class="small">choose what to show</p></div></div></div>
+        <aside class="notes">Walk the three handlers left to right. before_provider_request records performance.now() and resets per-request state. message_update ignores non-content deltas, records TTFT only on the first content delta, counts output tokens from partial usage or a rough content-length estimate, and calculates TPS over time since that first delta. Status writes are throttled to once per 250 ms. message_end prefers exact final output usage when available, then leaves the final metrics in ctx.ui.setStatus. /speed only changes display preferences. This extension registers no agent tool and never alters a model request. The shown code is pseudocode compressed for projection; the real source has guards and formatting.</aside>
+        <p class="source"><a href="https://github.com/championswimmer/pi-speedometer/blob/main/src/index.ts" target="_blank" rel="noopener">src/index.ts</a></p>
+      </section>
+
+      <section id="slide-15">
+        <p class="eyebrow">Case study B / pi-checklist</p>
+        <h2>Give the agent a checklist it can update</h2>
+        <div class="row" style="margin-top:30px"><div class="card gold-border"><p class="tag gold">New agent tools</p><p class="big">create<br>read<br>update</p></div><div class="card blue-border"><p class="tag blue">Rules</p><p class="big">IDs<br>statuses<br>dependencies</p></div><div class="card mint-border"><p class="tag accent">Experience</p><p class="big">/checklist<br>widget<br>footer</p></div></div>
+        <div class="mini-ui" style="margin-top:28px"><p>☑ 1/3  |  inspect API ✓  →  write extension ◯  →  verify ◯</p></div>
+        <aside class="notes">Checklist registers checklist_create, checklist_read, and checklist_update. The tool schemas guide the model, while execute functions apply mutations. The extension also registers /checklist for people and renders a widget/status line. Task IDs are short three-character IDs; updates are atomic. Dependencies form a DAG and prevent starting or completing a task before prerequisites are done. This is more than a UI skin: it gives the agent a structured capability.</aside>
+        <p class="source"><a href="https://github.com/championswimmer/pi-checklist/blob/main/src/index.ts" target="_blank" rel="noopener">src/index.ts</a> · <a href="https://github.com/championswimmer/pi-checklist/blob/main/src/tools.ts" target="_blank" rel="noopener">tool definitions</a></p>
+      </section>
+
+      <section id="slide-16">
+        <p class="eyebrow">Case study B / dependency simulator</p>
+        <h2>What happens when a task is blocked?</h2>
+        <div class="row" style="margin-top:26px"><div class="diagram"><p class="diagram-title">TASK GRAPH</p><div class="task" id="task-a"><p>1 · Inspect API</p><p class="state">planned</p></div><p class="accent" style="text-align:center;font-size:26pt">↓</p><div class="task blocked" id="task-b"><p>2 · Build extension</p><p class="state">blocked</p></div><p class="accent" style="text-align:center;font-size:26pt">↓</p><div class="task blocked" id="task-c"><p>3 · Verify behavior</p><p class="state">blocked</p></div></div><div class="stack"><div class="card gold-border"><p class="tag gold">Try the transition</p><div class="controls-row"><button class="control" id="try-blocked">Start task 2</button><button class="control" id="finish-first">Finish task 1</button><button class="control" id="reset-tasks">Reset</button></div></div><div class="readout"><p id="checklist-readout">Task 2 needs task 1 to be done first.</p></div></div></div>
+        <aside class="notes">First click Start task 2. The extension's update logic rejects a transition to ongoing or done when dependencies are unfinished. Then click Finish task 1 and Start task 2 to show the allowed transition. This demo is a visualization of store.ts rules, not a live Pi invocation. The actual tool reports a rejected batch without partial mutation. Dependencies are cycle checked.</aside>
+        <p class="source"><a href="https://github.com/championswimmer/pi-checklist/blob/main/src/store.ts" target="_blank" rel="noopener">dependency and transition rules</a></p>
+      </section>
+
+      <section id="slide-17">
+        <p class="eyebrow">Case study B / where state lives</p>
+        <h2>Switch branches. Restore the checklist.</h2>
+        <div class="diagram" style="margin-top:28px"><div class="flow"><div class="node"><p>checklist_update</p><p class="small">agent changes task</p></div><span class="arrow">→</span><div class="node active"><p>pi.appendEntry</p><p class="small">write snapshot</p></div><span class="arrow">→</span><div class="node"><p>session_tree</p><p class="small">change branch</p></div><span class="arrow">→</span><div class="node"><p>reconstruct</p><p class="small">restore branch state</p></div></div></div>
+        <div class="row" style="margin-top:26px"><div class="card"><p><span class="pill mint">before_agent_start</span><br>Put open tasks into the agent’s instructions.</p></div><div class="card"><p><span class="pill blue">turn_start / turn_end</span><br>Show the widget at the right time.</p></div></div>
+        <aside class="notes">Mutations commit a snapshot with pi.appendEntry and also include it in tool result details. On session_start and session_tree, the extension walks the current branch and takes the last valid snapshot; that makes branching and navigation coherent. Display preferences live in a separate global JSON file. before_agent_start injects checklist guidance/open tasks. turn_start hides the end-of-turn widget and turn_end or agent_settled refreshes it. The task list is branch scoped, while display preferences are global.</aside>
+        <p class="source"><a href="https://github.com/championswimmer/pi-checklist/blob/main/src/index.ts" target="_blank" rel="noopener">event wiring</a> · <a href="https://github.com/championswimmer/pi-checklist/blob/main/src/store.ts" target="_blank" rel="noopener">branch reconstruction</a></p>
+      </section>
+
       <section id="slide-9">
-        <p class="eyebrow">Case study A / pi-context-prune</p>
+        <p class="eyebrow">Case study C / pi-context-prune</p>
         <h2>Tool results can swamp the context</h2>
         <div class="row" style="margin-top:30px;align-items:center">
           <div class="diagram" style="flex:1.1"><p class="diagram-title">NEXT MODEL REQUEST</p><div class="context-list"><div class="context-item"><p>user request</p></div><div class="context-item"><p>assistant → bash</p></div><div class="context-item tool-result"><p>toolResult · giant test log</p></div><div class="context-item"><p>assistant → read</p></div><div class="context-item tool-result"><p>toolResult · giant file</p></div></div></div>
@@ -260,7 +362,7 @@
       </section>
 
       <section id="slide-10">
-        <p class="eyebrow">Case study A / interactive trace</p>
+        <p class="eyebrow">Case study C / interactive trace</p>
         <h2>Prune the request. Preserve the record.</h2>
         <div class="controls-row" id="prune-controls" style="margin:24px 0"><button class="control selected" data-prune="raw" aria-pressed="true">Raw</button><button class="control" data-prune="queued" aria-pressed="false">Capture</button><button class="control" data-prune="summarized" aria-pressed="false">Summarize</button><button class="control" data-prune="pruned" aria-pressed="false">Next request</button><button class="control" data-prune="recover" aria-pressed="false">Recover t1</button></div>
         <div class="row"><div class="diagram" style="flex:1.1"><p class="diagram-title" id="prune-context-title">MODEL CONTEXT · BEFORE</p><div class="context-list" id="prune-context"></div></div><div style="flex:.9" class="stack"><div class="card mint-border"><p class="tag accent">Active seam</p><p id="prune-hook" class="big">tool results</p><p id="prune-explain" class="muted" style="margin-top:12px">Raw results enter the live conversation.</p></div><div class="card"><p class="tag">Future context · illustrative</p><div class="meter"><span id="prune-meter"></span></div><p id="prune-meter-label" style="margin-top:12px">Raw outputs included</p></div></div></div>
@@ -268,17 +370,8 @@
         <p class="source"><a href="https://github.com/championswimmer/pi-context-prune/blob/main/index.ts" target="_blank" rel="noopener">event wiring</a> · <a href="https://github.com/championswimmer/pi-context-prune/blob/main/src/query-tool.ts" target="_blank" rel="noopener">recovery tool</a></p>
       </section>
 
-      <section id="slide-11">
-        <p class="eyebrow">Case study A / the code shape</p>
-        <h2>Capture → summarize → filter → recover</h2>
-        <div class="diagram" style="margin-top:34px"><div class="flow"><div class="node"><p class="accent">turn_end</p><p class="small">collect results</p></div><span class="arrow">→</span><div class="node"><p class="gold">message_end</p><p class="small">flush batch</p></div><span class="arrow">→</span><div class="node"><p class="blue">context</p><p class="small">omit indexed results</p></div><span class="arrow">→</span><div class="node"><p class="pink">context_tree_query</p><p class="small">retrieve original</p></div></div></div>
-        <div class="row" style="margin-top:26px"><div class="card"><p class="big">The transcript stays intact.</p></div><div class="card mint-border"><p class="big accent">Only the next request changes.</p></div></div>
-        <aside class="notes">The real filter in src/pruner.ts checks msg.role === toolResult and indexer.isSummarized(msg.toolCallId). The extension also handles session_start and session_tree to rebuild its state. Default prune-on mode is agent-message but enabled is false initially. Demonstration commands: /pruner on, /pruner prune-on on-demand, /pruner now, /pruner tree. Mention prompt caching: changing earlier context can bust prefix cache, so batching matters.</aside>
-        <p class="source"><a href="https://github.com/championswimmer/pi-context-prune/blob/main/index.ts" target="_blank" rel="noopener">index.ts</a> · <a href="https://github.com/championswimmer/pi-context-prune/blob/main/src/pruner.ts" target="_blank" rel="noopener">src/pruner.ts</a></p>
-      </section>
-
       <section id="slide-prune-two-views">
-        <p class="eyebrow">Case study A / the crucial distinction</p>
+        <p class="eyebrow">Case study C / the crucial distinction</p>
         <h2>Two views of the same conversation</h2>
         <div class="controls-row" style="margin:24px 0"><button class="control selected" data-view="before" aria-pressed="true">Before prune</button><button class="control" data-view="after" aria-pressed="false">After prune</button><button class="control" data-view="retrieved" aria-pressed="false">Query t1</button></div>
         <div class="compare">
@@ -290,61 +383,13 @@
         <p class="source"><a href="https://github.com/championswimmer/pi-context-prune/blob/main/src/pruner.ts" target="_blank" rel="noopener">context copy filter</a> · <a href="https://github.com/championswimmer/pi-context-prune/blob/main/src/indexer.ts" target="_blank" rel="noopener">session-backed index</a></p>
       </section>
 
-      <section id="slide-12">
-        <p class="eyebrow">Case study B / pi-speedometer</p>
-        <h2>“It feels slow” becomes two numbers</h2>
-        <div class="row" style="margin-top:39px">
-          <div class="card blue-border"><p class="big blue">TTFT</p><p>Request → first content delta</p><p class="big" style="margin-top:23px">412 ms</p></div>
-          <div class="card gold-border"><p class="big gold">TPS</p><p>Output tokens ÷ time since first delta</p><p class="big" style="margin-top:23px">42.1 t/s</p></div>
-        </div>
-        <div class="mini-ui" style="margin-top:28px"><p>Pi footer  |  ⚡ 42.1 t/s   ⏱ 412ms</p></div>
-        <aside class="notes">TTFT means time to first token, implemented as time to first content delta after before_provider_request. TPS is output tokens divided by elapsed seconds since that first delta. Speedometer uses ctx.ui.setStatus; it does not add a model tool. Its UI is useful during a live demo to separate startup latency from generation throughput.</aside>
-        <p class="source"><a href="https://github.com/championswimmer/pi-speedometer/blob/main/README.md" target="_blank" rel="noopener">README</a> · <a href="https://github.com/championswimmer/pi-speedometer/blob/main/src/index.ts" target="_blank" rel="noopener">src/index.ts</a></p>
-      </section>
-
-      <section id="slide-13">
-        <p class="eyebrow">Case study B / interactive timeline</p>
-        <h2>Scrub through one response</h2>
-        <div class="diagram" style="margin-top:25px"><p class="diagram-title">CLICK A MILESTONE OR DRAG THE SLIDER</p><div class="timeline" id="speed-timeline"><button class="control timepoint active" data-speed-step="0"><span class="dot">0</span><p>request</p></button><button class="control timepoint" data-speed-step="1"><span class="dot">1</span><p>first delta</p></button><button class="control timepoint" data-speed-step="2"><span class="dot">2</span><p>more deltas</p></button><button class="control timepoint" data-speed-step="3"><span class="dot">3</span><p>message_end</p></button></div><input id="speed-slider" type="range" min="0" max="3" value="0" step="1" aria-label="Streaming timeline step" style="width:100%;margin-top:25px;accent-color:#57e3b4"></div>
-        <div class="row" style="margin-top:20px"><div class="card"><p class="tag blue">TTFT</p><p class="big" id="speed-ttft">waiting…</p></div><div class="card"><p class="tag gold">TPS</p><p class="big" id="speed-tps">waiting…</p></div><div class="card"><p class="tag accent">Pi footer</p><p class="big" id="speed-status">—</p></div></div>
-        <p id="speed-caption" class="muted" style="margin-top:16px">before_provider_request starts the clock.</p>
-        <aside class="notes">The timeline numbers simulate one response; the math follows the extension. At first content delta, firstDeltaTime is set and TTFT appears. Subsequent updates use partial.usage.output where available or estimate from content length at roughly four characters per token. UI updates are throttled to at most every 250 ms. At message_end, exact output usage replaces the estimate if present, and final status stays visible. Use the range control with a pointer; keyboard arrows also work when it is focused.</aside>
-        <p class="source"><a href="https://github.com/championswimmer/pi-speedometer/blob/main/src/index.ts" target="_blank" rel="noopener">src/index.ts</a> · figures simulate a response</p>
-      </section>
-
-      <section id="slide-14">
-        <p class="eyebrow">Case study B / the code shape</p>
-        <h2>Listen to the stream. Show the numbers.</h2>
-        <div class="diagram" style="margin-top:33px"><div class="flow"><div class="node"><p class="blue">before_provider_request</p><p class="small">start clock</p></div><span class="arrow">→</span><div class="node"><p class="gold">message_update</p><p class="small">first delta + tokens</p></div><span class="arrow">→</span><div class="node"><p class="accent">message_end</p><p class="small">final usage</p></div><span class="arrow">→</span><div class="node"><p>ctx.ui.setStatus</p><p class="small">show metric</p></div></div></div>
-        <div class="row" style="margin-top:28px"><div class="card blue-border"><p class="big">Measure at the right moments.</p></div><div class="card"><p class="big">Use <span class="gold">/speed</span> to change the display.</p></div></div>
-        <aside class="notes">The extension resets per-call state on before_provider_request; observes text_delta, thinking_delta and toolcall_delta within message_update; finalizes on message_end; settles on agent_end and session_shutdown. /speed toggles TPS or TTFT on/off and icon/text style, persisting preferences. There is no tool_call hook in this extension and no registerTool call.</aside>
-        <p class="source"><a href="https://github.com/championswimmer/pi-speedometer/blob/main/src/index.ts" target="_blank" rel="noopener">src/index.ts</a></p>
-      </section>
-
-      <section id="slide-15">
-        <p class="eyebrow">Case study C / pi-checklist</p>
-        <h2>Give the agent a checklist it can update</h2>
-        <div class="row" style="margin-top:30px"><div class="card gold-border"><p class="tag gold">New agent tools</p><p class="big">create<br>read<br>update</p></div><div class="card blue-border"><p class="tag blue">Rules</p><p class="big">IDs<br>statuses<br>dependencies</p></div><div class="card mint-border"><p class="tag accent">Experience</p><p class="big">/checklist<br>widget<br>footer</p></div></div>
-        <div class="mini-ui" style="margin-top:28px"><p>☑ 1/3  |  inspect API ✓  →  write extension ◯  →  verify ◯</p></div>
-        <aside class="notes">Checklist registers checklist_create, checklist_read, and checklist_update. The tool schemas guide the model, while execute functions apply mutations. The extension also registers /checklist for people and renders a widget/status line. Task IDs are short three-character IDs; updates are atomic. Dependencies form a DAG and prevent starting or completing a task before prerequisites are done. This is more than a UI skin: it gives the agent a structured capability.</aside>
-        <p class="source"><a href="https://github.com/championswimmer/pi-checklist/blob/main/src/index.ts" target="_blank" rel="noopener">src/index.ts</a> · <a href="https://github.com/championswimmer/pi-checklist/blob/main/src/tools.ts" target="_blank" rel="noopener">tool definitions</a></p>
-      </section>
-
-      <section id="slide-16">
-        <p class="eyebrow">Case study C / dependency simulator</p>
-        <h2>What happens when a task is blocked?</h2>
-        <div class="row" style="margin-top:26px"><div class="diagram"><p class="diagram-title">TASK GRAPH</p><div class="task" id="task-a"><p>1 · Inspect API</p><p class="state">planned</p></div><p class="accent" style="text-align:center;font-size:26pt">↓</p><div class="task blocked" id="task-b"><p>2 · Build extension</p><p class="state">blocked</p></div><p class="accent" style="text-align:center;font-size:26pt">↓</p><div class="task blocked" id="task-c"><p>3 · Verify behavior</p><p class="state">blocked</p></div></div><div class="stack"><div class="card gold-border"><p class="tag gold">Try the transition</p><div class="controls-row"><button class="control" id="try-blocked">Start task 2</button><button class="control" id="finish-first">Finish task 1</button><button class="control" id="reset-tasks">Reset</button></div></div><div class="readout"><p id="checklist-readout">Task 2 needs task 1 to be done first.</p></div></div></div>
-        <aside class="notes">First click Start task 2. The extension's update logic rejects a transition to ongoing or done when dependencies are unfinished. Then click Finish task 1 and Start task 2 to show the allowed transition. This demo is a visualization of store.ts rules, not a live Pi invocation. The actual tool reports a rejected batch without partial mutation. Dependencies are cycle checked.</aside>
-        <p class="source"><a href="https://github.com/championswimmer/pi-checklist/blob/main/src/store.ts" target="_blank" rel="noopener">dependency and transition rules</a></p>
-      </section>
-
-      <section id="slide-17">
-        <p class="eyebrow">Case study C / where state lives</p>
-        <h2>Switch branches. Restore the checklist.</h2>
-        <div class="diagram" style="margin-top:28px"><div class="flow"><div class="node"><p>checklist_update</p><p class="small">agent changes task</p></div><span class="arrow">→</span><div class="node active"><p>pi.appendEntry</p><p class="small">write snapshot</p></div><span class="arrow">→</span><div class="node"><p>session_tree</p><p class="small">change branch</p></div><span class="arrow">→</span><div class="node"><p>reconstruct</p><p class="small">restore branch state</p></div></div></div>
-        <div class="row" style="margin-top:26px"><div class="card"><p><span class="pill mint">before_agent_start</span><br>Put open tasks into the agent’s instructions.</p></div><div class="card"><p><span class="pill blue">turn_start / turn_end</span><br>Show the widget at the right time.</p></div></div>
-        <aside class="notes">Mutations commit a snapshot with pi.appendEntry and also include it in tool result details. On session_start and session_tree, the extension walks the current branch and takes the last valid snapshot; that makes branching and navigation coherent. Display preferences live in a separate global JSON file. before_agent_start injects checklist guidance/open tasks. turn_start hides the end-of-turn widget and turn_end or agent_settled refreshes it. The task list is branch scoped, while display preferences are global.</aside>
-        <p class="source"><a href="https://github.com/championswimmer/pi-checklist/blob/main/src/index.ts" target="_blank" rel="noopener">event wiring</a> · <a href="https://github.com/championswimmer/pi-checklist/blob/main/src/store.ts" target="_blank" rel="noopener">branch reconstruction</a></p>
+      <section id="slide-11">
+        <p class="eyebrow">Case study C / the code shape</p>
+        <h2>Capture → summarize → filter → recover</h2>
+        <div class="diagram" style="margin-top:34px"><div class="flow"><div class="node"><p class="accent">turn_end</p><p class="small">collect results</p></div><span class="arrow">→</span><div class="node"><p class="gold">message_end</p><p class="small">flush batch</p></div><span class="arrow">→</span><div class="node"><p class="blue">context</p><p class="small">omit indexed results</p></div><span class="arrow">→</span><div class="node"><p class="pink">context_tree_query</p><p class="small">retrieve original</p></div></div></div>
+        <div class="row" style="margin-top:26px"><div class="card"><p class="big">The transcript stays intact.</p></div><div class="card mint-border"><p class="big accent">Only the next request changes.</p></div></div>
+        <aside class="notes">The real filter in src/pruner.ts checks msg.role === toolResult and indexer.isSummarized(msg.toolCallId). The extension also handles session_start and session_tree to rebuild its state. Default prune-on mode is agent-message but enabled is false initially. Demonstration commands: /pruner on, /pruner prune-on on-demand, /pruner now, /pruner tree. Mention prompt caching: changing earlier context can bust prefix cache, so batching matters.</aside>
+        <p class="source"><a href="https://github.com/championswimmer/pi-context-prune/blob/main/index.ts" target="_blank" rel="noopener">index.ts</a> · <a href="https://github.com/championswimmer/pi-context-prune/blob/main/src/pruner.ts" target="_blank" rel="noopener">src/pruner.ts</a></p>
       </section>
 
       <section id="slide-18">
@@ -369,7 +414,6 @@
         <aside class="notes">We've changed the next request with pruner, measured the response with speedometer, and added tasks the agent can manage with checklist. All three fit around the existing loop. Think of one thing you wish your agent did differently: which hook or API would let you build it? The research.md file beside this deck has the source links and demo commands.</aside>
         <p class="source"><a href="./research.md" target="_blank">Research notes and source links</a></p>
       </section>
-
     </div>
   </div>
 
@@ -410,6 +454,12 @@
       const [name, copy] = harnessCopy[btn.dataset.harness];
       byId('harness-readout').innerHTML = '<p><strong>' + name + ':</strong> ' + copy + '</p>';
     }));
+    document.querySelectorAll('[data-phase-event]').forEach(btn => btn.addEventListener('click', () => {
+      const slide = btn.closest('section');
+      slide.querySelectorAll('[data-phase-event]').forEach(other => other.classList.toggle('active', other === btn));
+      const readout = slide.querySelector('[data-phase-readout] p');
+      readout.textContent = btn.dataset.phaseEvent + ': ' + btn.dataset.explain;
+    }));
 
     const hookCopy = {
       input: ['input', 'The submitted prompt can be handled or transformed before the run.'],
@@ -426,23 +476,11 @@
       const [name, copy] = hookCopy[btn.dataset.hook];
       byId('lifecycle-readout').innerHTML = '<p><strong>' + name + ':</strong> ' + copy + '</p><p class="small muted">A run may include several turns; a tool result can lead to another model request.</p>';
     }));
-    const laneCopy = {
-      message_start: 'Pi has started a new assistant message.',
-      message_update: 'A partial assistant message changed; extensions can observe streaming deltas.',
-      message_end: 'The assistant message is complete, with final content and usage.',
-      tool_call: 'The proposed tool call can be inspected or blocked before execution.',
-      tool_execution_update: 'A running tool published a partial result.',
-      tool_result: 'The completed tool result can be inspected or modified.'
-    };
-    document.querySelectorAll('[data-lane]').forEach(btn => btn.addEventListener('click', () => {
-      activate('[data-lane]', btn);
-      byId('lane-readout').innerHTML = '<p><strong>' + btn.dataset.lane + ':</strong> ' + laneCopy[btn.dataset.lane] + '</p>';
-    }));
     document.querySelectorAll('[data-answer]').forEach(btn => btn.addEventListener('click', () => {
       activate('[data-answer]', btn);
-      byId('quiz-readout').innerHTML = btn.dataset.answer === 'context'
-        ? '<p><strong class="accent">Yes—context.</strong> Change the next request’s messages while keeping the saved history.</p>'
-        : '<p><strong class="gold">Try another event.</strong> We need access to the messages going into the next request.</p>';
+      byId('quiz-readout').innerHTML = btn.dataset.answer === 'before_provider_request'
+        ? '<p><strong class="accent">Yes.</strong> Start the clock just before the request goes out; stop it at the first content delta.</p>'
+        : '<p><strong class="gold">Close, but the timing is off.</strong> Find the hook immediately before the provider request.</p>';
     }));
 
     const pruneStates = {
