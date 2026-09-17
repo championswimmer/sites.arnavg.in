@@ -1,5 +1,5 @@
 <!-- ============================================================
-     04 / pi-speedometer — "tiny extension, big insight"
+     03 / pi-speedometer — "tiny extension, big insight"
      ids: sp-divider, sp-numbers, sp-sim, sp-code, sp-events, sp-takeaway
      ============================================================ -->
 
@@ -18,7 +18,7 @@
     #sp-divider.present .arc-fill { stroke-dashoffset: 314; }
   </style>
   <div class="copy">
-    <p class="num">04 / pi-speedometer</p>
+    <p class="num">03 / pi-speedometer</p>
     <h1>pi-speedometer</h1>
     <p class="sub">How fast is my model, <em>really</em>?</p>
     <div class="pill"><b class="t-coral">⚡ 92.3 t/s</b><b class="t-blue">⏱ 840ms</b></div>
@@ -44,7 +44,7 @@
   </svg>
   <p class="glabel">tokens / second</p>
   <aside class="notes">
-    Third and final extension, and the lightest one. After context-prune, which changes what the model sees, this one changes nothing at all.
+    First of the three extensions, and deliberately the lightest one: it changes nothing at all. Every hook it registers returns undefined, so the agent behaves exactly as it did before you installed it.
     It answers a question everyone has asked: how fast is my model, really, on my own workload inside my own harness, rather than on a benchmark page?
     The pill shows the exact string the extension writes into pi's status bar: tokens per second and time to first token.
     Install line if anyone asks: pi install npm:@championswimmer/pi-speedometer.
@@ -525,8 +525,8 @@
   <p class="install" data-at="2"><span>$</span> pi install npm:@championswimmer/pi-speedometer</p>
   <aside class="notes">
     Step 0: That's the whole trick: three lifecycle hooks and one call to setStatus.
-    Step 1: The pattern here is the opposite of context-prune. context-prune changed what the model sees. The speedometer returns undefined from every hook, so the agent behaves exactly as before. You don't need to change anything to add value; just watching the right events gives you numbers you couldn't get from a benchmark page, on your real prompts, in your real harness, for every provider pi supports.
+    Step 1: The pattern here is the cheapest one available: observe and report. The speedometer returns undefined from every hook, so the agent behaves exactly as before. You don't need to change anything to add value; just watching the right events gives you numbers you couldn't get from a benchmark page, on your real prompts, in your real harness, for every provider pi supports. The next two extensions will each take one step further: checklist adds a tool, context-prune rewrites the loop.
     Step 2: Install line if people want to try it. /speed toggles the metrics and labels.
-    Transition: next, the checklist extension, which gives the agent a todo list.
+    Transition: next, the checklist extension, which stops observing and hands the agent a new tool: a todo list.
   </aside>
 </section>

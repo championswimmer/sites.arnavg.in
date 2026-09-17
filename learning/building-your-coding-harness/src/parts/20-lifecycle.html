@@ -1082,7 +1082,7 @@
     #lc-bridge .sg .dots3 { position: absolute; left: 0; right: 0; bottom: 8px; display: flex; justify-content: center; gap: 8px; }
     #lc-bridge .sg .dots3 i { width: 16px; height: 16px; border-radius: 50%; opacity: 0; transform: scale(.3); transition: all .4s var(--ease); }
     #lc-bridge .sg .dots3 i.on { opacity: 1; transform: none; }
-    #lc-bridge i.e1 { background: var(--teal); } #lc-bridge i.e2 { background: var(--coral); } #lc-bridge i.e3 { background: var(--violet); }
+    #lc-bridge i.e1 { background: var(--coral); } #lc-bridge i.e2 { background: var(--violet); } #lc-bridge i.e3 { background: var(--teal); }
     #lc-bridge .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
     #lc-bridge .card { min-height: 380px; display: flex; flex-direction: column; gap: 10px; transition: opacity .4s, box-shadow .4s; }
     #lc-bridge .card h3 { font-size: 30pt; margin: 0; display: flex; gap: 12px; align-items: center; }
@@ -1095,37 +1095,37 @@
   <p class="kicker">next: three real extensions</p>
   <h2>Now you can read the map</h2>
   <div class="lane">
-    <div class="sg"><p>Session</p><div class="dots3"><i class="e1"></i><i class="e2"></i><i class="e3" data-e="3"></i></div></div>
-    <div class="sg"><p>Input</p><div class="dots3"><i class="e1"></i><i class="e2"></i><i class="e3" data-e="3"></i></div></div>
-    <div class="sg"><p>Context</p><div class="dots3"><i class="e1" data-e="1"></i><i class="e2"></i><i class="e3"></i></div></div>
-    <div class="sg"><p>Provider</p><div class="dots3"><i class="e1"></i><i class="e2" data-e="2"></i><i class="e3"></i></div></div>
-    <div class="sg"><p>Stream</p><div class="dots3"><i class="e1" data-e="1"></i><i class="e2" data-e="2"></i><i class="e3"></i></div></div>
-    <div class="sg"><p>Tools</p><div class="dots3"><i class="e1" data-e="1"></i><i class="e2"></i><i class="e3" data-e="3"></i></div></div>
-    <div class="sg"><p>Turn end</p><div class="dots3"><i class="e1" data-e="1"></i><i class="e2"></i><i class="e3"></i></div></div>
+    <div class="sg"><p>Session</p><div class="dots3"><i class="e1"></i><i class="e2" data-e="2"></i><i class="e3"></i></div></div>
+    <div class="sg"><p>Input</p><div class="dots3"><i class="e1"></i><i class="e2" data-e="2"></i><i class="e3"></i></div></div>
+    <div class="sg"><p>Context</p><div class="dots3"><i class="e1"></i><i class="e2"></i><i class="e3" data-e="3"></i></div></div>
+    <div class="sg"><p>Provider</p><div class="dots3"><i class="e1" data-e="1"></i><i class="e2"></i><i class="e3"></i></div></div>
+    <div class="sg"><p>Stream</p><div class="dots3"><i class="e1" data-e="1"></i><i class="e2"></i><i class="e3" data-e="3"></i></div></div>
+    <div class="sg"><p>Tools</p><div class="dots3"><i class="e1"></i><i class="e2" data-e="2"></i><i class="e3" data-e="3"></i></div></div>
+    <div class="sg"><p>Turn end</p><div class="dots3"><i class="e1"></i><i class="e2"></i><i class="e3" data-e="3"></i></div></div>
   </div>
   <div class="cards">
-    <div class="card teal" data-c="1">
-      <h3><i class="e1"></i>context-prune</h3>
-      <p class="d">Swaps old tool output for short summaries in what the model sees.</p>
-      <div class="chips"><span class="hook mut">context</span><span class="hook">turn_end</span><span class="hook mut">message_end</span><span class="hook lc-api">registerTool</span></div>
-    </div>
-    <div class="card coral" data-c="2">
-      <h3><i class="e2"></i>speedometer</h3>
-      <p class="d">Live time-to-first-token and tokens/sec in the footer.</p>
+    <div class="card coral" data-c="1">
+      <h3><i class="e1"></i>speedometer</h3>
+      <p class="d">Live time-to-first-token and tokens/sec in the footer. <span class="t-coral">Observes only.</span></p>
       <div class="chips"><span class="hook mut">before_provider_request</span><span class="hook">message_update</span><span class="hook mut">message_end</span><span class="hook lc-api">ctx.ui.setStatus</span></div>
     </div>
-    <div class="card violet" data-c="3">
-      <h3><i class="e3"></i>checklist</h3>
-      <p class="d">A task list the agent keeps for itself, saved in the session.</p>
+    <div class="card violet" data-c="2">
+      <h3><i class="e2"></i>checklist</h3>
+      <p class="d">A task list the agent keeps for itself, saved in the session. <span class="t-violet">Adds a tool.</span></p>
       <div class="chips"><span class="hook lc-api">registerTool</span><span class="hook mut">before_agent_start</span><span class="hook lc-api">appendEntry</span><span class="hook">session_start</span><span class="hook">session_tree</span></div>
+    </div>
+    <div class="card teal" data-c="3">
+      <h3><i class="e3"></i>context-prune</h3>
+      <p class="d">Swaps old tool output for short summaries in what the model sees. <span class="t-teal">Rewrites the loop.</span></p>
+      <div class="chips"><span class="hook mut">context</span><span class="hook">turn_end</span><span class="hook mut">message_end</span><span class="hook lc-api">registerTool</span></div>
     </div>
   </div>
   <aside class="notes">
-    You now know enough to read any pi extension. Here are the three we'll dig into, and where each one plugs into the loop.
-    Step 1, pi-context-prune: it captures each batch of tool calls at turn_end, can flush summaries when an agent message ends (message_end), and rewrites the request in context so old tool results are replaced by summaries. It registers a context_tree_query tool so the model can pull any original back. It also uses session_start, session_tree and before_agent_start; we'll see those in the walkthrough.
-    Step 2, pi-speedometer: pure observation. It starts a clock in before_provider_request without touching the payload, watches deltas in message_update, snaps to exact usage at message_end, and paints the footer with ctx.ui.setStatus. The pencil marks on those chips show what the event CAN do; speedometer only observes.
-    Step 3, pi-checklist: three tools via registerTool, open tasks appended to the system prompt in before_agent_start, state saved with appendEntry into the session file, and rebuilt on session_start and session_tree so branches keep the right list.
-    Step 4: three very different features, all built from the same small set of hooks you've just seen. Let's start with context-prune.
+    You now know enough to read any pi extension. Here are the three we'll dig into, and where each one plugs into the loop. They're deliberately in order of how much they change the harness: watch, then add, then rewrite.
+    Step 1, pi-speedometer: pure observation, the smallest possible change. It starts a clock in before_provider_request without touching the payload, watches deltas in message_update, snaps to exact usage at message_end, and paints the footer with ctx.ui.setStatus. The pencil marks on those chips show what the event CAN do; speedometer only observes.
+    Step 2, pi-checklist: one step further. Three new tools via registerTool, open tasks appended to the system prompt in before_agent_start, state saved with appendEntry into the session file, and rebuilt on session_start and session_tree so branches keep the right list. The agent gains an ability it didn't have.
+    Step 3, pi-context-prune: the biggest change, so it goes last. It captures each batch of tool calls at turn_end, flushes summaries when an agent message ends (message_end), and rewrites the request in context so old tool results are replaced by summaries. It registers a context_tree_query tool so the model can pull any original back. It also uses session_start, session_tree and before_agent_start; we'll see those in the walkthrough.
+    Step 4: three very different features, all built from the same small set of hooks you've just seen. Let's start with the lightest one, speedometer.
   </aside>
   <script>
   (function () {

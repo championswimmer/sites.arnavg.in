@@ -16,7 +16,8 @@ building-your-coding-harness/
   research/*.md       ← source-verified research; slides must match it
 ```
 
-Parts: `00-intro` (done), `10-harness`, `20-lifecycle`, `30-context-prune`, `40-speedometer`, `50-checklist`, `90-outro`.
+Parts: `00-intro` (done), `10-harness`, `20-lifecycle`, `30-speedometer`, `40-checklist`, `50-context-prune`, `90-outro`.
+The three extension walkthroughs are ordered by how much they change the harness: speedometer observes, checklist adds a tool, context-prune rewrites the loop.
 
 Preview only your part: `node build.mjs --only 30`, then open `.preview/30.html`. Never write index.html yourself.
 Node is available via nvm. If `node` fails, run `source ~/.nvm/nvm.sh` first.

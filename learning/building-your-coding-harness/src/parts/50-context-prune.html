@@ -1,5 +1,5 @@
 <!-- ===================================================================
-     Extension 1 · pi-context-prune
+     05 / pi-context-prune  (section prefix: cp-)
      Shared metaphor: the context window as a vertical stack of message
      blocks (height ~ tokens), a token meter, and a vault (session index).
      Shared CSS + the CP helper live in the divider section below.
@@ -63,7 +63,7 @@
     #cp-divider .mini { position: absolute; right: 120px; top: 50%; transform: translateY(-50%); width: 360px; height: 520px; }
     #cp-divider .mini div { position: absolute; left: 0; right: 0; border-radius: 8px; border: 2px solid; }
   </style>
-  <p class="num">03 / pi-context-prune</p>
+  <p class="num">05 / pi-context-prune</p>
   <h1>pi-context-prune</h1>
   <p class="sub">Rewrite <span class="t-teal">what the model sees</span> on every request.<br>Keep <span class="t-green">the truth</span> on disk.</p>
   <div class="mini" aria-hidden="true">
@@ -75,9 +75,9 @@
     <div style="top:416px;height:26px;border-color:var(--blue);background:rgba(116,185,255,.2)"></div>
   </div>
   <aside class="notes">
-    Now the first real extension. You know the loop and you know the hooks. This one uses them to do something you
-    can't do from a prompt: it rewrites what the model sees on every request, without touching the saved session,
-    and it gives the model a tool to get things back.
+    The last extension, and the one that changes the most. Speedometer only watched the loop; checklist added a tool to it.
+    This one reaches into the loop itself: it rewrites what the model sees on every single request, without touching the
+    saved session, and it gives the model a tool to get things back.
     The picture on the right is the visual language for the next ten minutes: the context window as a stack of
     messages, height roughly proportional to tokens. Coral is tool output, green is a summary, violet is a tool call.
   </aside>
@@ -201,7 +201,7 @@
       <div class="co" style="--c: var(--coral)" data-at="4"><h4>Cost</h4><p>The 6,000-token test log is paid for on every later request</p></div>
       <div class="co" style="--c: var(--amber)" data-at="4"><h4>Attention</h4><p>One useful line, buried in 11,000 tokens</p></div>
       <div class="co" style="--c: var(--violet)" data-at="5"><h4>Window</h4><p>Pushes toward lossy auto-compaction</p></div>
-      <div class="co" style="--c: var(--teal)" data-at="5"><h4>Cache</h4><p>Rewriting old messages busts the prompt cache</p></div>
+      <div class="co" style="--c: var(--teal)" data-at="5"><h4>Cache</h4><p>And fixing it by rewriting old messages busts the prefix cache</p></div>
     </div>
     <div class="reqs" data-only="0 1 2 3">
       <p>input tokens per request</p>
@@ -227,7 +227,7 @@
     [Step 2] It greps for "token", another 2,000. Request 3 is 13,615.
     [Step 3] It answers. You say "OK, fix it", and request 4 is 13,875 tokens. The npm test log has now been sent three times, and it will be sent again on every request in this session.
     [Step 4] Cost scales with old tool output times the number of later requests. Attention: the one fact that matters, verifyToken comparing seconds with milliseconds, is buried.
-    [Step 5] It fills the window toward auto-compaction, which is lossy and all-at-once. The cache twist: providers cache an identical prefix, so rewriting old messages too often loses cache hits. Remember that for the modes slide.
+    [Step 5] It fills the window toward auto-compaction, which is lossy and all-at-once. And the twist that shapes the whole design: the obvious fix, editing those old messages, is exactly what a prefix cache cannot tolerate. Providers only reuse a byte-identical prefix. Park that; there is a whole slide on it after the code.
   </aside>
   <script>
   (function () {
@@ -511,7 +511,7 @@
       <!-- 3,4: pending tray -->
       <div class="cp-card teal" style="left:0;top:62px;width:836px" data-only="3">
         <p class="ttl">turn_end (turn 1) · batch captured, not summarised</p>
-        <p>Why wait? Every rewrite of old context busts the prompt cache.</p>
+        <p>Why wait? One rewrite per <b>task</b> costs one cache rebuild.<br>One per <b>turn</b> costs one every turn.</p>
       </div>
       <div class="cp-card violet" style="left:0;top:62px;width:836px" data-only="4">
         <p class="ttl">message_end · the answer</p>
@@ -631,7 +631,7 @@
     [0] Request 1. The context hook runs before every LLM call. The index is empty, so it returns undefined and pi sends the messages unchanged.
     [1] The model calls read and bash in one assistant message, and pi runs them in parallel. 12,000 and 24,000 chars land in context.
     [2] turn_end fires with the assistant message and its tool results. captureBatch builds this object: turnIndex, assistantText, and each toolCallId, toolName, args, resultText, isError. It goes into pendingBatches. Nothing is summarized yet.
-    [3] Why wait? The prompt cache. Every time you rewrite earlier messages, the cached prefix from that point is invalidated. So the default batches a whole task. Turn 1: grep, 2,000 tokens, second batch queued. (context also ran for requests 2 and 3 and returned undefined.)
+    [3] Why wait? The prefix cache. Rewriting earlier messages invalidates the cached prefix from the point of the change, so the number of rewrites is what you are optimising. Batch a whole task and you pay one rebuild per task. We will look at that properly two slides from now. Turn 1: grep, 2,000 tokens, second batch queued. (context also ran for requests 2 and 3 and returned undefined.)
     [4] The model answers in plain text. In agent-message mode, message_end with an assistant message that has zero toolCall blocks means the task is done, so flushPending runs, with session delivery.
     [5] The flush re-scans the session branch, then summarizeBatches makes one LLM call per batch, in parallel with Promise.all. It's the active model by default, or a cheap one you configure. Each tool result is cut to its first 2,000 chars, so the summarizer sees about 1,000 tokens of the 9,000.
     [6] Each summary gets short refs: turn 0 gets t1 and t2, turn 1 gets t3. There's a size check: if the summary is bigger than the raw output, the batch is skipped.
@@ -836,6 +836,214 @@ Turn: 0
 </section>
 
 <!-- =================================================================== -->
+<section id="cp-cache" class="stepper" data-steps="5">
+  <style>
+    #cp-cache h2 { font-size: 36pt; margin-bottom: 10px; }
+    #cp-cache .legend { position: absolute; left: 64px; top: 152px; width: 1472px; height: 54px; box-sizing: border-box; display: flex; align-items: center; gap: 36px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 0 22px; }
+    #cp-cache .legend p { margin: 0; font-size: 17pt; color: var(--muted); white-space: nowrap; }
+    #cp-cache .legend .sw { display: inline-block; width: 24px; height: 15px; border-radius: 4px; vertical-align: 0; margin-right: 8px; }
+
+    #cp-cache .lane { position: absolute; left: 64px; width: 1472px; opacity: 0; transition: opacity .4s; }
+    #cp-cache .lane.shown { opacity: 1; }
+    #cp-cache .lane.shown.off { opacity: .28; }
+
+    #cp-cache .mech { position: absolute; left: 64px; top: 256px; width: 1472px; }
+    #cp-cache .mrow { margin-bottom: 64px; }
+    #cp-cache .mrow .hd { display: flex; align-items: baseline; margin: 0 0 10px; }
+    #cp-cache .mrow .hd p { margin: 0; font-size: 21pt; }
+    #cp-cache .mrow .hd .vt { margin-left: auto !important; font-family: var(--mono); font-size: 20pt; }
+    #cp-cache .mbar { display: flex; height: 76px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+    #cp-cache .mbar .seg { display: grid; place-items: center; font-family: var(--mono); font-size: 18pt; text-align: center; padding: 0 12px; box-sizing: border-box; }
+    #cp-cache .mbar .cached { background: color-mix(in srgb, var(--teal) 22%, #10131b); color: var(--teal); border-right: 2px solid var(--teal); }
+    #cp-cache .mbar .fresh { background: var(--panel-2); color: var(--muted); }
+    #cp-cache .mbar .recomp { background: color-mix(in srgb, var(--coral) 20%, #10131b); color: var(--coral); }
+    #cp-cache .mbar .edit { flex: 0 0 210px; display: grid; place-items: center; background: var(--coral); color: #2a0a0f; font-family: var(--mono); font-size: 18pt; font-weight: 700; }
+    #cp-cache .lh { display: flex; align-items: baseline; gap: 16px; height: 34px; }
+    #cp-cache .lh .nm { font-family: var(--mono); font-size: 21pt; margin: 0; white-space: nowrap; }
+    #cp-cache .lh .vd { font-size: 16pt; border-radius: 999px; padding: 2px 12px; border: 1px solid var(--c); color: var(--c); margin: 0; white-space: nowrap; }
+    #cp-cache .lh .ro { margin: 0 0 0 auto; font-family: var(--mono); font-size: 17pt; color: var(--muted); white-space: nowrap; opacity: 0; transition: opacity .4s; }
+    #cp-cache .lane.shown .lh .ro { opacity: 1; }
+    #cp-cache .lh .ro b { font-weight: 500; }
+
+    #cp-cache .cells { position: relative; height: 44px; margin-top: 32px; }
+    #cp-cache .cell { position: absolute; top: 0; width: 80px; height: 44px; box-sizing: border-box; border-radius: 8px; border: 2px solid var(--line); background: var(--panel-2); display: grid; place-items: center;
+      opacity: 0; transform: translateY(10px); transition: opacity .3s var(--ease), transform .3s var(--ease); }
+    #cp-cache .lane.shown .cell { opacity: 1; transform: none; }
+    #cp-cache .cell .r { font-family: var(--mono); font-size: 15pt; color: var(--muted); }
+    #cp-cache .cell.hit { border-color: color-mix(in srgb, var(--teal) 65%, transparent); background: color-mix(in srgb, var(--teal) 16%, #10131b); }
+    #cp-cache .cell.hit .r { color: var(--teal); }
+    #cp-cache .cell.bust { border-color: var(--coral); background: color-mix(in srgb, var(--coral) 20%, #10131b); }
+    #cp-cache .cell.bust .r { color: var(--coral); }
+    #cp-cache .cell.cold { border-style: dashed; border-color: var(--muted); }
+    #cp-cache .zap { position: absolute; top: -28px; width: 80px; text-align: center; font-family: var(--mono); font-size: 20pt; color: var(--coral); opacity: 0; transition: opacity .3s; }
+    #cp-cache .zap.cold { font-size: 15pt; color: var(--muted); }
+    #cp-cache .lane.shown .zap { opacity: 1; }
+    #cp-cache .band { display: block; margin-top: 4px; opacity: 0; transition: opacity .45s; }
+    #cp-cache .lane.shown .band { opacity: 1; }
+    #cp-cache .band text { font-family: var(--mono); fill: var(--muted); }
+    #cp-cache .band .grow { transition: opacity .45s; }
+
+    #cp-cache .anno { position: absolute; left: 68px; width: 1400px; margin: 0; font-size: 21pt; color: var(--text); }
+    #cp-cache .anno.g { top: 682px; }
+    #cp-cache .anno.a { top: 724px; }
+    #cp-cache .anno .sq { display: inline-block; width: 22px; height: 14px; border: 2px solid; border-radius: 4px; margin-right: 12px; vertical-align: 1px; }
+    #cp-cache .rule { position: absolute; left: 64px; top: 672px; width: 1472px; box-sizing: border-box; display: flex; align-items: center; gap: 30px; background: var(--panel); border: 2px solid color-mix(in srgb, var(--green) 55%, transparent); border-radius: 16px; padding: 15px 24px; }
+    #cp-cache .rule .big { margin: 0; font-family: var(--head); font-size: 26pt; white-space: nowrap; }
+    #cp-cache .rule .modes { margin: 0 0 0 auto; font-size: 18pt; color: var(--muted); white-space: nowrap; }
+    #cp-cache .rule .hook { font-size: 16pt; }
+  </style>
+  <p class="kicker">the twist · provider prefix caching · one session, 4 tasks × 3 tool turns</p>
+  <h2>Every prune rewrites the prefix. So prune <em>rarely</em>.</h2>
+
+  <div class="legend">
+    <p><span class="sw" style="background:color-mix(in srgb, var(--teal) 45%, #10131b); border:2px solid var(--teal)"></span>prefix unchanged → served from cache</p>
+    <p><span class="sw" style="background:color-mix(in srgb, var(--coral) 45%, #10131b); border:2px solid var(--coral)"></span>⚡ a prune changed an earlier message → recompute from there, then re-cache</p>
+  </div>
+
+  <div class="mech" data-only="0">
+    <div class="mrow">
+      <div class="hd">
+        <p>A normal turn only <b>appends at the end</b></p>
+        <p class="vt t-teal">→ the whole prefix is still a hit</p>
+      </div>
+      <div class="mbar">
+        <span class="seg cached" style="flex: 0 0 76%">cached prefix — reused, cache-read price</span>
+        <span class="seg fresh" style="flex: 1">new tail</span>
+      </div>
+    </div>
+    <div class="mrow">
+      <div class="hd">
+        <p>A prune <b>edits a message the model already saw</b></p>
+        <p class="vt t-coral">→ everything after the edit is recomputed</p>
+      </div>
+      <div class="mbar">
+        <span class="seg cached" style="flex: 0 0 26%">still cached</span>
+        <span class="edit">⚡ pruned here</span>
+        <span class="seg recomp" style="flex: 1">recomputed, then written into the cache again</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="lane" id="cp-cache-a" style="top:222px">
+    <div class="lh">
+      <p class="nm t-coral">every-turn</p>
+      <p class="vd" style="--c: var(--coral)">“Debugging only”</p>
+      <p class="ro">prefix rewrites <b class="t-coral">12</b> · summarizer calls <b class="t-coral">12</b> · cache reused <b class="t-coral">1 request</b> at a time</p>
+    </div>
+    <div class="cells"></div>
+  </div>
+
+  <div class="lane" id="cp-cache-b" style="top:438px">
+    <div class="lh">
+      <p class="nm t-green">agent-message</p>
+      <p class="vd" style="--c: var(--green)">default</p>
+      <p class="ro">prefix rewrites <b class="t-green">1 per task</b> · summarizer calls <b class="t-green">4</b> · cache reused <b class="t-green">for a whole batch</b></p>
+    </div>
+    <div class="cells"></div>
+  </div>
+
+  <p class="anno g" data-only="3 4"><span class="sq" style="background:rgba(127,227,164,.55);border-color:#7fe3a4"></span>the summaries are cached too, and they stay cached for the whole batch</p>
+  <p class="anno a" data-only="4"><span class="sq" style="background:transparent;border-color:var(--amber)"></span>…and each batch starts from a higher floor: <b class="t-amber">2.6k → 3.2k → 3.8k</b> of prefix that never changes again</p>
+
+  <div class="rule" data-at="5">
+    <p class="big">One rewrite per batch, <span class="t-green">amortised over the batch</span>.</p>
+    <p class="modes">batch it: <span class="hook">agent-message</span> <span class="hook">agentic-auto</span></p>
+  </div>
+
+  <div class="captions">
+    <p data-only="0">A cache hit needs the earlier prefix to be <b>byte-identical</b></p>
+    <p data-only="1">Prune every turn and the prefix never gets to sit still</p>
+    <p data-only="2">Prune once per task: one rewrite, then a long clean run</p>
+    <p data-only="3">The summaries land <b>inside</b> the new cached prefix</p>
+    <p data-only="4">Every batch starts from a higher floor: the cache <b>builds up</b></p>
+    <p data-only="5">Lossy summary, lossless index, <b>and</b> a cache that survives</p>
+  </div>
+  <aside class="notes">
+    This is the slide that explains why the default mode batches instead of pruning eagerly. Token numbers are illustrative; the rewrite counts follow straight from the mode definitions.
+    [0] The rule providers give us: a cache hit needs the earlier prompt prefix to be byte-identical. Append to the end and you keep the hit. Change something earlier and the provider recomputes from the point of the change onward, and pays to write that new prefix into the cache. That is exactly what pruning does: it edits earlier messages. The extension's README says it plainly: pruning too often saves in-context tokens while still hurting latency and cost.
+    [1] every-turn flushes inside turn_end, after every tool-using turn. Four tasks of three tool turns means twelve rewrites and twelve summarizer calls, and pi awaits each one, so it sits in the critical path of the turn. Look at the pattern: the prefix is never left alone for more than one request, so the cache never earns anything back. The mode guidance in the code says exactly this: "Debugging only. Prunes after every tool turn, which is easiest to inspect but churns provider prompt caches the most."
+    [2] agent-message, the default: flush once, on the first assistant message with no tool calls. One rewrite per task instead of one per turn. The request right after the flush is the one that pays, and it is the cheapest one to pay for, because it is the small pruned request: about 3,000 tokens instead of 14,000. Then the rest of that task appends on top of it and hits the cache every time.
+    [3] Here is the part people miss. The summaries are not outside the cache. After the flush, the new, shorter prefix, summaries included, is what gets written to the cache, and those green blocks are then read from cache for the whole rest of the batch.
+    [4] And it compounds. Each batch's floor sits higher than the last, because the summaries from earlier batches are already cached and never change again. So over a long horizon you are not fighting the cache, you are climbing a staircase: rewrite once, re-cache small, reuse for a whole batch, repeat. The cache builds up fine. That is the opposite of every-turn, which resets before the cache is worth anything.
+    [5] So the guidance is: batch the prune. agent-message batches per task, on-context-tag per milestone, agentic-auto lets the model pick the boundary, and its system prompt says to aim at 8 to 12 related tool calls and warns that calling context_prune after every 2 or 3 hurts prompt-cache efficiency.
+    Worth saying out loud: no pruning at all is perfectly cache-friendly, because it only ever appends. The reason we prune anyway is the other three costs from the problem slide: attention, the window, and re-reading a 30,000-token prefix on every single request.
+  </aside>
+  <script>
+  (function () {
+    const N = 16, PITCH = 92, BASE = 84, SCALE = 7.4, BH_AX = 112, BH = 90;
+    /* Cached-prefix size (k tokens) carried into each request, and where the prefix got rewritten.
+       Illustrative: ~2.5k system+prompt, ~3k of tool output per turn, ~0.3k of summary per task. */
+    const LANES = {
+      'cp-cache-a': {
+        cached: [0, 2.5, 2.7, 2.9, 3.1, 3.2, 3.4, 3.6, 3.8, 3.9, 4.1, 4.3, 4.5, 4.6, 4.8, 5.0],
+        bust: [0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1],
+        col: '#ff6f7d', axis: false, floors: [],
+      },
+      'cp-cache-b': {
+        cached: [0, 2.5, 5.5, 8.5, 2.6, 3.1, 6.1, 9.1, 3.2, 3.7, 6.7, 9.7, 3.8, 4.3, 7.3, 10.3],
+        bust: [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+        col: '#7fe3a4', axis: true, floors: [4, 8, 12],
+      },
+    };
+    const y = k => BASE - k * SCALE;
+
+    Object.entries(LANES).forEach(([id, L]) => {
+      const lane = document.getElementById(id), cells = lane.querySelector('.cells');
+      for (let i = 0; i < N; i++) {
+        const c = document.createElement('div');
+        c.className = 'cell ' + (i === 0 ? 'cold' : L.bust[i] ? 'bust' : 'hit');
+        c.style.left = (i * PITCH) + 'px';
+        c.style.transitionDelay = (i * 28) + 'ms';
+        c.innerHTML = `<span class="r">R${i + 1}</span>`;
+        cells.appendChild(c);
+        const z = document.createElement('span');
+        z.className = 'zap' + (i === 0 ? ' cold' : '');
+        z.style.left = (i * PITCH) + 'px';
+        z.style.transitionDelay = (i * 28) + 'ms';
+        z.textContent = i === 0 ? 'cold' : L.bust[i] ? '⚡' : '';
+        cells.appendChild(z);
+      }
+      /* step area: the cached prefix each request can reuse */
+      let d = `M0,${BASE}`;
+      for (let i = 0; i < N; i++) d += ` L${i * PITCH},${y(L.cached[i])} L${(i + 1) * PITCH},${y(L.cached[i])}`;
+      d += ` L${N * PITCH},${BASE} Z`;
+      const H = L.axis ? BH_AX : BH;
+      const chips = L.floors.map(i =>
+        `<rect class="grow" x="${i * PITCH + 5}" y="${y(L.cached[i]) + 4}" width="${PITCH * 4 - 22}" height="13" rx="4"
+           fill="rgba(127,227,164,.55)" stroke="#7fe3a4" stroke-width="2" opacity="0"/>`).join('');
+      const notes = L.floors.length
+        ? `<path class="grow fl" d="M${4 * PITCH + 8},${y(2.6) - 3} L${8 * PITCH + 8},${y(3.2) - 3} L${12 * PITCH + 8},${y(3.8) - 3} L${N * PITCH - 6},${y(4.1) - 3}"
+             stroke="#ffb454" stroke-width="3" stroke-dasharray="9 7" fill="none" opacity="0"/>`
+          + L.floors.map(i => `<text class="grow fl" x="${i * PITCH + 8}" y="${y(L.cached[i]) - 10}" font-size="20" fill="#ffb454" opacity="0">${L.cached[i].toFixed(1)}k</text>`).join('')
+        : '';
+      const axis = L.axis
+        ? `<text x="0" y="${BASE + 26}" font-size="20">cached prefix carried into each request</text>
+           <text x="${N * PITCH}" y="${BASE + 26}" font-size="20" text-anchor="end">0 → 10k tokens</text>` : '';
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', 'band');
+      svg.setAttribute('viewBox', `0 0 ${N * PITCH} ${H}`);
+      svg.setAttribute('width', N * PITCH); svg.setAttribute('height', H);
+      svg.innerHTML =
+        `<path d="${d}" fill="${L.col}2e" stroke="${L.col}" stroke-width="3" stroke-linejoin="round"/>
+         <line x1="0" y1="${BASE}" x2="${N * PITCH}" y2="${BASE}" stroke="#262c3b" stroke-width="2"/>
+         ${axis}${chips}${notes}`;
+      lane.appendChild(svg);
+    });
+
+    Deck.onStep('cp-cache', (s, sec) => {
+      const a = sec.querySelector('#cp-cache-a'), b = sec.querySelector('#cp-cache-b');
+      a.classList.toggle('shown', s >= 1);
+      b.classList.toggle('shown', s >= 2);
+      a.classList.toggle('off', s >= 3);
+      b.querySelectorAll('.grow').forEach(g => {
+        g.style.opacity = (g.classList.contains('fl') ? s >= 4 : s >= 3) ? 1 : 0;
+      });
+    });
+  })();
+  </script>
+</section>
+
+<!-- =================================================================== -->
 <section id="cp-modes" class="stepper" data-steps="4">
   <style>
     #cp-modes .btns { position: absolute; left: 64px; top: 160px; display: flex; gap: 12px; }
@@ -861,8 +1069,8 @@ Turn: 0
     #cp-modes .slider input { width: 320px; accent-color: var(--teal); }
     #cp-modes .slider b { font-family: var(--mono); font-size: 18pt; color: var(--green); font-weight: 500; white-space: nowrap; }
   </style>
-  <p class="kicker">pruneOn · when does the flush fire?</p>
-  <h2>Five modes, one trade-off: cache vs size</h2>
+  <p class="kicker">pruneOn · where do you put the rewrite?</p>
+  <h2>Five modes, same trade-off: how often</h2>
   <div class="btns">
     <button class="btn" data-m="0">agent-message<span class="def">default</span></button>
     <button class="btn" data-m="1">every-turn</button>
@@ -887,14 +1095,14 @@ Turn: 0
     <b data-save></b>
   </div>
   <aside class="notes">
-    Same session, eight events: prompt, two tool turns, an answer, another prompt, two more tool turns, an answer. The green lines show when the flush fires. Every flush rewrites earlier context, so the provider's cached prefix is lost from that point.
+    Same session, eight events: prompt, two tool turns, an answer, another prompt, two more tool turns, an answer. The green lines show when the flush fires, and each one is a prefix rewrite: the staircase you just saw. Reading this slide is now just counting green lines.
     [0] agent-message, the default: flush on message_end when the assistant replies with no tool calls. Once per task, two flushes here. Savings start with the next prompt.
     [1] every-turn: flush inside turn_end after every tool turn. Leanest context, but four prefix rewrites. The code's own guidance calls it "Debugging only".
     [2] on-context-tag: flush when the model calls context_checkpoint (or legacy context_tag), which comes from the separate pi-context extension; caught in tool_execution_end.
     [3] on-demand: nothing happens until you type /pruner now. That's the mode I use for the live demo, because /pruner now shows a progress widget and delivers at runtime.
     [4] agentic-auto: the model gets a context_prune tool, extra system-prompt guidance via before_agent_start, and a pruner-note with the unpruned count on the last tool result. With only five calls a well-behaved model won't prune; the guidance says roughly 8 to 12 related calls.
     Delivery: agent-message and every-turn write summaries straight to the session (session delivery), the other three use pi.sendMessage with deliverAs steer (runtime delivery). Caveat: session delivery may not show the summary to the live agent until reload or tree navigation.
-    The slider is illustrative: the 11,000 raw tokens versus about 270 summary tokens, times how many later requests re-send them. It ignores caching discounts and summarizer cost.
+    The slider is illustrative: the 11,000 raw tokens versus about 270 summary tokens, times how many later requests re-send them. It is the size axis only: it ignores cache-read discounts and the summarizer's own cost, which is why the previous slide exists.
   </aside>
   <script>
   (function () {
@@ -903,8 +1111,8 @@ Turn: 0
     const EV = [['user', 'U1', 'prompt'], ['tool', 'T0', 'read, bash'], ['tool', 'T1', 'grep'], ['text', 'T2', 'answer'],
                 ['user', 'U2', 'prompt'], ['tool', 'T3', 'edit'], ['tool', 'T4', 'npm test'], ['text', 'T5', 'answer']];
     const MODES = [
-      { flush: [3, 7], trigger: 'message_end', delivery: 'session', trade: 'Once per task, after the final answer. Savings start next prompt.' },
-      { flush: [1, 2, 5, 6], trigger: 'turn_end', delivery: 'session', trade: 'Leanest context, most cache busts. The code says “Debugging only”.' },
+      { flush: [3, 7], trigger: 'message_end', delivery: 'session', trade: 'Once per task: rebuild the prefix once, then reuse it all batch.' },
+      { flush: [1, 2, 5, 6], trigger: 'turn_end', delivery: 'session', trade: 'Leanest context, a rebuild every turn. The code says “Debugging only”.' },
       { flush: [6], labels: { 6: 'context_checkpoint' }, trigger: 'tool_execution_end', delivery: 'runtime', trade: 'Model marks a checkpoint (needs the pi-context extension).' },
       { flush: [7], labels: { 7: '/pruner now' }, trigger: '/pruner now', delivery: 'runtime', trade: 'You decide. Best for demos: progress widget, runtime delivery.' },
       { flush: [], notes: { 1: 2, 2: 3, 5: 4, 6: 5 }, trigger: 'context_prune tool', delivery: 'runtime', trade: 'The model decides, nudged after ~8–12 calls. Here: too few to prune.' },
@@ -995,8 +1203,8 @@ Turn: 0
     </div>
     <div class="e" data-at="5">
       <h3>Cache-friendly</h3>
-      <p>Batch per task. Unchanged? Return <code>undefined</code>.</p>
-      <div class="vis"><span class="pill" style="--c:var(--amber)">cache ↺ ×1 per task</span></div>
+      <p>One rebuild per task, then the shorter prefix sits still.</p>
+      <div class="vis"><span class="pill" style="--c:var(--amber)">↺ ×1 per task</span><span class="muted">then</span><span class="pill" style="--c:var(--green)">hit, hit, hit…</span></div>
     </div>
     <div class="e" data-at="6">
       <h3>Refs survive restarts</h3>
@@ -1010,7 +1218,7 @@ Turn: 0
     [2] If the summarizer call fails (auth, unknown model, provider error) you get a toast, the batches are restored to pending, and the frontier doesn't advance. Cancelling with Esc in agentic-auto behaves the same, without the error toast.
     [3] All state (index, stats, frontier) is rebuilt from sessionManager.getBranch() on session_start and session_tree. If you navigate back to before a prune, those IDs aren't indexed on that branch, so the raw results come back automatically.
     [4] DEFAULT_CONFIG.enabled is false, so you opt in with /pruner on. Settings live in ~/.pi/agent/context-prune/settings.json.
-    [5] Prompt cache: the default mode rewrites the prefix once per task, the context hook returns undefined when nothing changed, and the agentic-auto reminder only touches the last tool result.
+    [5] Prefix cache: three separate pieces of care. The default mode rewrites once per task; the context hook returns undefined when nothing changed, so an unchanged request is sent untouched; and the agentic-auto pruner-note is appended to the last tool result only, never persisted, so only the tail of the prefix moves.
     [6] Short refs like t1 are stored in the summary's details, so after a restart the aliases are re-registered and numbering continues from the max.
   </aside>
 </section>
@@ -1079,6 +1287,7 @@ Turn: 0
     [1] That's the lesson of this extension. The context hook lets you decide, on every request, what the model sees. Here: summaries instead of stale tool output.
     [2] And none of it is destructive. The session file keeps every original, plus an index the model can query. You can branch, reload, turn the extension off, and the truth is still there.
     [3] Four ingredients: capture at turn_end, filter in context, a side LLM call through pi's own model registry, and a recovery tool. No fork of the agent.
+    Close the arc of the three walkthroughs: speedometer observed the loop, checklist added to it, context-prune rewrote it. Same extension API, three very different amounts of power.
     Live demo (if time): run /pruner on, then /pruner prune-on on-demand. Ask something that reads a couple of files and runs tests. Run /pruner now to watch the progress widget, which uses runtime delivery, then /pruner tree to browse the summaries and pruned calls (Ctrl-O opens a full summary) and /pruner stats for summarizer tokens and cost.
     Before the demo, rebuild the extension from source (npm run build), since the local dist bundle is older than the latest commit.
   </aside>
