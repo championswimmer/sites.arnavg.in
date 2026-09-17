@@ -25,50 +25,60 @@
 
 <section id="bl-math" class="stepper" data-steps="3">
   <style>
-    #bl-math .eq { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 34px 0 30px; flex-wrap: wrap; }
-    #bl-math .pill { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px 26px; text-align: center; transition: all .4s var(--ease); opacity: .35; }
-    #bl-math .pill.on { opacity: 1; }
-    #bl-math .pill b { display: block; font-family: var(--head); font-size: 34pt; margin: 0; }
-    #bl-math .pill span { font-family: var(--mono); font-size: 15pt; color: var(--muted); }
-    #bl-math .op { font-family: var(--head); font-size: 40pt; color: var(--muted); margin: 0; }
-    #bl-math table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 19pt; }
-    #bl-math th { font-family: var(--mono); font-size: 15pt; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; text-align: left; padding: 8px 14px; border-bottom: 1px solid var(--line); }
-    #bl-math td { padding: 10px 14px; border-bottom: 1px solid var(--line); }
-    #bl-math td:last-child { font-family: var(--mono); color: var(--coral); }
+    #bl-math .stack { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 30px 0 10px; }
+    #bl-math .ri { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px 22px 18px; text-align: center; opacity: .35; transition: all .4s var(--ease); }
+    #bl-math .ri.on { opacity: 1; transform: translateY(-6px); }
+    #bl-math .ri.cpu.on { border-color: var(--amber); } #bl-math .ri.ram.on { border-color: var(--coral); } #bl-math .ri.disk.on { border-color: var(--violet); }
+    #bl-math .ri .e { font-size: 44pt; margin: 0; }
+    #bl-math .ri b { display: block; font-family: var(--head); font-size: 26pt; margin: 6px 0 2px; }
+    #bl-math .ri .per { font-family: var(--mono); font-size: 15pt; color: var(--muted); margin: 0; }
+    #bl-math .ri .big { font-family: var(--head); font-size: 40pt; font-weight: 700; margin: 8px 0 0; }
+    #bl-math .tot { text-align: center; margin-top: 16px; }
   </style>
-  <p class="kicker">the math, illustrated</p>
-  <h2>500 devs → <span class="t-coral">thousands of VMs</span></h2>
-  <div class="eq">
-    <div class="pill" data-at="1"><b>500</b><span>developers</span></div><p class="op" data-at="1">×</p>
-    <div class="pill" data-at="2"><b>3–4</b><span>sessions each</span></div><p class="op" data-at="2">≈</p>
-    <div class="pill" data-at="3" style="border-color: var(--coral)"><b class="t-coral">~2,000</b><span>live sandboxes</span></div>
+  <p class="kicker">the math, per piece</p>
+  <h2>One session burns <span class="t-coral">CPU + RAM + disk</span></h2>
+  <div class="stack">
+    <div class="ri cpu" data-at="1"><p class="e">🔥</p><b>CPU</b><p class="per">2 vCPU &times; ~$25 / mo</p><p class="big t-amber">~$50</p><p class="per">per session / mo &middot; ~$200 per user (&times;4) &middot; ~$100k fleet</p></div>
+    <div class="ri ram" data-at="2"><p class="e">🧠</p><b>RAM</b><p class="per">4 GiB &times; ~$7 / mo</p><p class="big t-coral">~$28</p><p class="per">per session / mo &middot; ~$112 per user (&times;4) &middot; ~$56k fleet</p></div>
+    <div class="ri disk" data-at="3"><p class="e">💾</p><b>Disk</b><p class="per">40 GiB &times; ~$0.10 / mo</p><p class="big t-violet">~$4</p><p class="per">per session / mo &middot; ~$16 per user (&times;4) &middot; ~$8k fleet</p></div>
   </div>
-  <table data-at="3">
-    <tr><th>fleet</th><th>math</th><th>compute / mo</th></tr>
-    <tr><td>1,500 × 4 GiB</td><td class="muted">1,500 × 4 × ~$7</td><td>~$42k</td></tr>
-    <tr><td><b>2,000 × 4 GiB</b></td><td class="muted">2,000 × 4 × ~$7</td><td><b>~$56k</b></td></tr>
-    <tr><td>2,000 × 8 GiB</td><td class="muted">2,000 × 8 × ~$7</td><td>~$112k</td></tr>
-  </table>
+  <div class="tot" data-at="3">
+    <p class="lead" style="margin:0">~$82 per session &middot; ~$328 per user &middot; <span class="t-coral">~$164k / mo</span> for 500 devs &times; 4 sessions</p>
+    <p class="muted small" style="margin:6px 0 0">Illustrative floor pricing, always-on, before egress and logging. The $56k receipt was RAM alone.</p>
+  </div>
+  <div class="captions">
+    <p data-only="0">The receipt slide counted RAM only. Here is the rest.</p>
+    <p data-only="1">CPUs: two vCPUs per session, ~$50 a month each — the biggest line.</p>
+    <p data-only="2">RAM: four gigs per session, ~$28 — the $56k you already saw.</p>
+    <p data-only="3">Disks: forty gigs of checkout per session, ~$4 — small each, $8k at fleet scale. <b>Total ~$164k/mo.</b></p>
+  </div>
   <aside class="notes">
-    Click through the equation. Five hundred developers times three to four concurrent sessions is fifteen hundred to two thousand live sandboxes — the speaker rounds up to thousands.
-    Floor pricing: a 4-gig cloud VM is about thirty dollars a month, roughly seven dollars per gig-month. Four gigs is the plausible minimum for an agent with a repo, language server and tools.
-    The table is illustrative compute-only, before disks, egress and logging — and every figure assumes always-on.
+    This slide must not repeat the receipt — it dissects it. Click through CPU, then RAM, then disk.
+    Per session, always-on: about fifty dollars of vCPU, twenty-eight of RAM, four of disk — roughly eighty-two dollars per session per month.
+    Multiply by four sessions per user: about three hundred twenty-eight dollars per user. Multiply by five hundred users: on the order of one hundred sixty-four thousand a month.
+    The punchline: the fifty-six thousand on the previous slide was RAM alone. CPUs roughly double it again, and disks add a third line item nobody budgets.
   </aside>
 </section>
 
 <section id="bl-burn" class="stepper" data-steps="4">
   <style>
-    #bl-burn .bar { margin: 0 0 26px; }
+    #bl-burn .bar { margin: 0 0 22px; }
     #bl-burn .bar .lbl { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 16pt; color: var(--muted); margin-bottom: 8px; }
-    #bl-burn .track { height: 64px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; }
-    #bl-burn .seg { height: 100%; width: 0; transition: width 1s var(--ease); display: grid; place-items: center; font-family: var(--mono); font-size: 16pt; }
+    #bl-burn .track { height: 60px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; }
+    #bl-burn .seg { height: 100%; width: 0; transition: width 1s var(--ease); display: grid; place-items: center; font-family: var(--mono); font-size: 15pt; white-space: nowrap; }
     #bl-burn.s1 .w1 { width: 22%; } #bl-burn.s2 .w1 { width: 22%; } #bl-burn.s3 .w1 { width: 22%; } #bl-burn.s4 .w1 { width: 22%; }
     #bl-burn.s2 .w2 { width: 26%; } #bl-burn.s3 .w2 { width: 26%; } #bl-burn.s4 .w2 { width: 26%; }
     #bl-burn.s3 .w3 { width: 27%; } #bl-burn.s4 .w3 { width: 27%; }
     #bl-burn.s4 .w4 { width: 25%; }
     #bl-burn .w1 { background: rgba(127,227,164,.75); color: #06130c; }
     #bl-burn .w2, #bl-burn .w3, #bl-burn .w4 { background: rgba(255,111,125,.7); color: #1c0609; }
-    #bl-burn .take { text-align: center; margin-top: 10px; margin-bottom: 110px; min-height: 70px; }
+    #bl-burn .week { margin: 6px 0 0; }
+    #bl-burn .week .track { height: 54px; }
+    #bl-burn .wk-a { background: rgba(127,227,164,.75); color: #06130c; }
+    #bl-burn .wk-b { background: rgba(255,111,125,.7); color: #1c0609; }
+    #bl-burn.s3 .wk-a { width: 6%; } #bl-burn.s4 .wk-a { width: 6%; }
+    #bl-burn.s3 .wk-b { width: 0%; } #bl-burn.s4 .wk-b { width: 94%; }
+    #bl-burn .take { text-align: center; margin-top: 12px; margin-bottom: 110px; min-height: 70px; }
   </style>
   <p class="kicker">where the money goes</p>
   <h2>You wait. Your VM <span class="t-coral">still bills</span>.</h2>
@@ -78,19 +88,27 @@
       <div class="seg w1">▸ run</div><div class="seg w2">read</div><div class="seg w3">think</div><div class="seg w4">review</div>
     </div>
   </div>
+  <div class="bar week" data-at="3">
+    <div class="lbl"><span>one session's week — you close the laptop, it stays on</span><span>168 h</span></div>
+    <div class="track">
+      <div class="seg wk-a">~10h active</div><div class="seg wk-b">nights + weekend, billed</div>
+    </div>
+  </div>
   <div class="take" data-at="4">
-    <p class="lead" style="margin:0">You pay for <span class="t-coral">RAM</span> while you <span class="t-green">read and think</span>.</p>
+    <p class="lead" style="margin:0">Paused overnight and over the weekend? <span class="t-coral">Still billed</span>, unless something parks it.</p>
   </div>
   <div class="captions">
     <p data-only="0">An agent session is idle most of its life.</p>
-    <p data-only="1">Minutes of real compute…</p>
-    <p data-only="2">…then reading, thinking…</p>
-    <p data-only="3">…reviewing diffs, switching tasks. All billed.</p>
-    <p data-only="4">At 75% idle, ~$42k of the $56k is <b>waiting money</b>.</p>
+    <p data-only="1">Minutes of real compute per hour…</p>
+    <p data-only="2">…then reading, thinking, reviewing diffs. All billed.</p>
+    <p data-only="3">Worse: sessions sit <b>paused-by-you, billed-by-them</b> overnight and all weekend.</p>
+    <p data-only="4">At 75% idle, ~$42k of the $56k RAM line is <b>waiting money</b> — before nights and weekends.</p>
   </div>
   <aside class="notes">
-    Advance the bar segment by segment: a few minutes of real compute, then long stretches of the human reading, thinking, reviewing diffs, switching tasks — and the VM bills through all of it, from launch until stopped.
-    At seventy-five percent idle, about forty-two of the fifty-six thousand is waiting money. The fix is not cheaper VMs; it is not paying for waiting at all.
+    Advance the hour bar first: a few minutes of real compute, then long stretches of the human reading, thinking, reviewing diffs — and the VM bills through all of it, from launch until stopped.
+    Then reveal the week bar: roughly ten active hours against a hundred-and-sixty-eight-hour week. Nights, weekends, holidays — sessions nobody closed keep billing because nothing parked them.
+    At seventy-five percent idle inside working hours, about forty-two of the fifty-six thousand RAM line is waiting money — and the overnight and weekend tail makes it worse.
+    The fix is not cheaper VMs; it is not paying for waiting at all.
   </aside>
 </section>
 

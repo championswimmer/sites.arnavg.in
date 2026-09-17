@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Building Your Coding Harness (15-min cut)</title>
+<meta name="description" content="A 15-minute cut of the interactive talk: how a coding harness works, pi's lifecycle hooks, and three real extensions built on them.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
+<style>
+/* ============================================================
+   THEME TOKENS — semantic colours used by every section
+   amber  = pi core / harness      teal   = events & hooks
+   violet = extension code          blue   = model / provider
+   coral  = tokens, cost, blocked   green  = saved, success
+   ============================================================ */
+:root {
+  --bg: #0d0f15;
+  --panel: #161a24;
+  --panel-2: #1e2331;
+  --line: #2d3346;
+  --text: #eef1f7;
+  --muted: #a3acbf;
+  --amber: #ffb454;
+  --teal: #3fdcd6;
+  --violet: #b9a2ff;
+  --blue: #74b9ff;
+  --coral: #ff6f7d;
+  --green: #7fe3a4;
+  --head: "Space Grotesk", "Inter", Helvetica, sans-serif;
+  --body: "Inter", Helvetica, Arial, sans-serif;
+  --mono: "JetBrains Mono", Menlo, Consolas, monospace;
+  --ease: cubic-bezier(.2,.8,.2,1);
+}
+html, body { background: var(--bg); }
+.reveal-viewport { background: radial-gradient(1200px 700px at 85% -10%, #1b2132 0%, var(--bg) 60%); }
+.reveal { font-family: var(--body); font-size: 22pt; color: var(--text); }
+.reveal .slides { text-align: left; }
+.reveal .slides section { padding: 36px 64px; box-sizing: border-box; height: 100%; }
+.reveal .slides section.stack { padding: 0; }
+
+/* ---------- typography (never below 15pt anywhere) ---------- */
+.reveal h1, .reveal h2, .reveal h3, .reveal h4 { font-family: var(--head); color: var(--text); text-transform: none; letter-spacing: -0.01em; margin: 0 0 18px; line-height: 1.08; }
+.reveal h1 { font-size: 64pt; font-weight: 700; }
+.reveal h2 { font-size: 38pt; font-weight: 700; }
+.reveal h3 { font-size: 26pt; font-weight: 600; }
+.reveal h4 { font-size: 21pt; font-weight: 600; }
+.reveal p, .reveal li { font-size: 22pt; line-height: 1.35; color: var(--text); margin: 0 0 12px; }
+.reveal ul, .reveal ol { margin: 0 0 0 1.1em; }
+.reveal li { margin-bottom: 10px; }
+.reveal strong { color: var(--amber); font-weight: 600; }
+.reveal em { color: var(--teal); font-style: normal; }
+.reveal code { font-family: var(--mono); font-size: 0.9em; color: var(--teal); background: rgba(63,220,214,.08); padding: 1px 8px; border-radius: 6px; }
+.reveal a { color: var(--teal); }
+.kicker { font-family: var(--mono); font-size: 15pt !important; letter-spacing: .14em; text-transform: uppercase; color: var(--teal) !important; margin-bottom: 8px !important; }
+.muted { color: var(--muted) !important; }
+.t-amber { color: var(--amber) !important; } .t-teal { color: var(--teal) !important; } .t-violet { color: var(--violet) !important; }
+.t-blue { color: var(--blue) !important; } .t-coral { color: var(--coral) !important; } .t-green { color: var(--green) !important; }
+.lead { font-size: 28pt !important; line-height: 1.3 !important; }
+.huge { font-family: var(--head); font-size: 88pt !important; font-weight: 700; line-height: 1 !important; }
+.small { font-size: 17pt !important; }
+.center { text-align: center; }
+
+/* ---------- code blocks ---------- */
+.reveal pre { width: 100%; margin: 0; box-shadow: none; font-size: 17pt; line-height: 1.45; }
+.reveal pre code { font-family: var(--mono); background: var(--panel); color: var(--text); padding: 20px 26px; border-radius: 14px; border: 1px solid var(--line); max-height: none; font-size: 1em; }
+.reveal .hljs { background: var(--panel); }
+.reveal pre code .hljs-ln-numbers { color: var(--muted); }
+.code-label { font-family: var(--mono); font-size: 15pt !important; color: var(--muted) !important; margin: 0 0 6px !important; }
+
+/* ---------- common components ---------- */
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px 26px; }
+.card h3, .card h4 { margin-bottom: 8px; }
+.card p:last-child { margin-bottom: 0; }
+.card.amber { border-color: color-mix(in srgb, var(--amber) 55%, transparent); }
+.card.teal { border-color: color-mix(in srgb, var(--teal) 55%, transparent); }
+.card.violet { border-color: color-mix(in srgb, var(--violet) 55%, transparent); }
+.card.blue { border-color: color-mix(in srgb, var(--blue) 55%, transparent); }
+.card.coral { border-color: color-mix(in srgb, var(--coral) 55%, transparent); }
+.card.green { border-color: color-mix(in srgb, var(--green) 55%, transparent); }
+
+/* event / hook chip */
+.hook { display: inline-block; font-family: var(--mono); font-size: 16pt; color: var(--teal); background: rgba(63,220,214,.1); border: 1px solid rgba(63,220,214,.45); border-radius: 999px; padding: 4px 14px; white-space: nowrap; transition: all .35s var(--ease); }
+.hook.hot { background: var(--teal); color: #041413; box-shadow: 0 0 0 6px rgba(63,220,214,.18), 0 0 28px rgba(63,220,214,.5); }
+.hook.mut::after { content: " ✎"; color: var(--amber); }
+.hook.hot.mut::after { color: #041413; }
+
+/* terminal window mock (pi TUI) */
+.term { background: #0a0c11; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; font-family: var(--mono); font-size: 17pt; }
+.term .bar { display: flex; gap: 8px; align-items: center; padding: 10px 14px; background: #141824; border-bottom: 1px solid var(--line); }
+.term .bar i { width: 13px; height: 13px; border-radius: 50%; background: #ff5f57; display: block; }
+.term .bar i:nth-child(2) { background: #febc2e; } .term .bar i:nth-child(3) { background: #28c840; }
+.term .bar b { margin-left: 10px; color: var(--muted); font-weight: 400; font-size: 15pt; }
+.term .body { padding: 16px 20px; line-height: 1.5; }
+.term .body p { font-family: var(--mono); font-size: 17pt; margin: 0 0 4px; }
+.term .status { border-top: 1px solid var(--line); padding: 8px 20px; color: var(--muted); font-size: 15pt; display: flex; gap: 26px; }
+
+/* caption bar that changes per step */
+.captions { position: absolute; left: 64px; right: 64px; bottom: 28px; min-height: 56px; }
+.captions > p { position: absolute; left: 0; right: 0; bottom: 0; margin: 0 !important; font-family: var(--head); font-size: 26pt !important; color: var(--text); }
+.captions > p b { color: var(--amber); font-weight: 600; }
+
+/* step dots (auto-rendered by engine when .dots exists) */
+.dots { display: flex; gap: 10px; }
+.dots span { width: 14px; height: 14px; border-radius: 50%; background: var(--line); transition: background .3s; }
+.dots span.on { background: var(--teal); }
+
+/* section divider */
+section.divider { display: flex !important; flex-direction: column; justify-content: center; }
+section.divider h1 { font-size: 80pt; }
+section.divider .num { font-family: var(--mono); color: var(--teal); font-size: 22pt; margin-bottom: 18px; }
+
+/* clickable things are obviously clickable */
+.clickable, [data-click] { cursor: pointer; }
+button.btn { font-family: var(--mono); font-size: 16pt; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; cursor: pointer; transition: all .2s; }
+button.btn:hover { border-color: var(--teal); color: var(--teal); }
+button.btn.active { background: var(--teal); border-color: var(--teal); color: #041413; }
+
+/* ============================================================
+   STEP ENGINE — declarative state tied to the presenter's clicker
+   <section class="stepper" data-steps="5">  → adds 5 invisible fragments
+   [data-at="3"]      visible (class .on) once step >= 3
+   [data-only="2 3"]  visible only while step is 2 or 3
+   [data-hot="2"]     gets class .hot while step == 2  (not hidden)
+   section gets classes s1..sN (reached) and data-step="N" (current)
+   ============================================================ */
+.reveal [data-at], .reveal [data-only] { transition: opacity .45s var(--ease), transform .45s var(--ease); }
+.reveal [data-at]:not(.on), .reveal [data-only]:not(.on) { opacity: 0; pointer-events: none; }
+.reveal [data-only]:not(.on) { transform: translateY(8px); }
+.reveal .step-frag { display: none !important; }
+
+/* the progress bar / controls tuned for dark */
+.reveal .progress { color: var(--teal); height: 5px; }
+.reveal .controls { color: var(--teal); }
+.reveal .slide-number a { text-decoration: none; }
+.reveal .slide-number { right: 90px; bottom: 14px; background: transparent; color: var(--muted); font-family: var(--mono); font-size: 13pt; }
+</style>
+<script>
+/* Deck: tiny helper API for part scripts. Parts call Deck.onStep(id, fn) / Deck.onEnter(id, fn). */
+window.Deck = (function () {
+  const stepFns = {}, enterFns = {}, leaveFns = {};
+  const add = (m, id, fn) => { (m[id] = m[id] || []).push(fn); };
+  function stepOf(sec) { return sec.querySelectorAll('.step-frag.visible').length; }
+  function apply(sec) {
+    if (!sec) return;
+    const n = +sec.dataset.steps || 0, s = stepOf(sec);
+    sec.dataset.step = s;
+    for (let k = 1; k <= n; k++) sec.classList.toggle('s' + k, k <= s);
+    sec.querySelectorAll('[data-at]').forEach(el => el.classList.toggle('on', s >= +el.dataset.at));
+    sec.querySelectorAll('[data-only]').forEach(el => el.classList.toggle('on', el.dataset.only.split(/[ ,]+/).map(Number).includes(s)));
+    sec.querySelectorAll('[data-hot]').forEach(el => el.classList.toggle('hot', el.dataset.hot.split(/[ ,]+/).map(Number).includes(s)));
+    sec.querySelectorAll('.dots').forEach(d => {
+      if (d.children.length !== n) d.innerHTML = '<span></span>'.repeat(n);
+      [...d.children].forEach((c, i) => c.classList.toggle('on', i < s));
+    });
+    (stepFns[sec.id] || []).forEach(fn => { try { fn(s, sec); } catch (e) { console.error(e); } });
+  }
+  function prepare() {
+    document.querySelectorAll('section.stepper').forEach(sec => {
+      const n = +sec.dataset.steps || 0;
+      for (let k = 0; k < n; k++) {
+        const f = document.createElement('i');
+        f.className = 'fragment step-frag';
+        f.dataset.fragmentIndex = k;
+        sec.appendChild(f);
+      }
+    });
+  }
+  return {
+    onStep: (id, fn) => add(stepFns, id, fn),
+    onEnter: (id, fn) => add(enterFns, id, fn),
+    onLeave: (id, fn) => add(leaveFns, id, fn),
+    prepare, apply,
+    _enter(sec) { if (sec) (enterFns[sec.id] || []).forEach(fn => { try { fn(sec); } catch (e) { console.error(e); } }); },
+    _leave(sec) { if (sec) (leaveFns[sec.id] || []).forEach(fn => { try { fn(sec); } catch (e) { console.error(e); } }); },
+  };
+})();
+</script>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+
+<!-- ===== part: 50-context-prune.html ===== -->
+<!-- ===================================================================
+     05 · pi-context-prune (extension 3 of 3, the most involved one)
+     Slides: cp-divider, cp-problem, cp-hooks, cp-walk, cp-recover, cp-code
+     Shared metaphor: the context window as a vertical stack of message
+     blocks (height ~ tokens), a token meter, and a vault (session index).
+     Shared CSS + the CP helper live in the divider section below, so
+     cp-divider must stay in the deck.
+     =================================================================== -->
+<section id="cp-divider" class="divider">
+  <style>
+    /* ---------- shared cp-* components (scoped to cp- sections) ---------- */
+    section[id^="cp-"] .cp-scene { position: absolute; left: 64px; top: 172px; width: 1472px; height: 625px; }
+    section[id^="cp-"] .cp-blk { position: absolute; left: 0; top: 0; width: 0; height: 0; opacity: 0; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 0 12px; border-radius: 8px; border: 2px solid var(--c); background: color-mix(in srgb, var(--c) 20%, #10131b); overflow: hidden; white-space: nowrap;
+      transition: left .75s var(--ease), top .75s var(--ease), width .75s var(--ease), height .75s var(--ease), opacity .5s var(--ease), box-shadow .4s, border-color .4s; }
+    section[id^="cp-"] .cp-blk .l { font-family: var(--body); font-size: 16pt; flex: 1; overflow: hidden; text-overflow: ellipsis; color: var(--text); line-height: 1; }
+    section[id^="cp-"] .cp-blk .n { font-family: var(--mono); font-size: 16pt; color: var(--c); line-height: 1; }
+    section[id^="cp-"] .cp-blk .tag { font-family: var(--mono); font-size: 15pt; font-weight: 700; background: var(--green); color: #06140b; border-radius: 6px; padding: 2px 8px; line-height: 1; display: none; }
+    section[id^="cp-"] .cp-blk.idx .tag { display: inline-block; }
+    section[id^="cp-"] .cp-blk.sys, section[id^="cp-"] .cp-blk.user { --c: var(--muted); }
+    section[id^="cp-"] .cp-blk.sys { background: #1b2030; }
+    section[id^="cp-"] .cp-blk.asst { --c: var(--blue); }
+    section[id^="cp-"] .cp-blk.call { --c: var(--violet); }
+    section[id^="cp-"] .cp-blk.res { --c: var(--coral); }
+    section[id^="cp-"] .cp-blk.sum { --c: var(--green); }
+    section[id^="cp-"] .cp-blk.glow { box-shadow: 0 0 0 5px color-mix(in srgb, var(--c) 30%, transparent), 0 0 26px color-mix(in srgb, var(--c) 55%, transparent); }
+    section[id^="cp-"] .cp-blk.ghost { border-style: dashed; background: color-mix(in srgb, var(--c) 10%, #10131b); }
+    section.cp-noanim *, section.cp-noanim { transition: none !important; }
+
+    section[id^="cp-"] .cp-meter { position: absolute; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); overflow: hidden; }
+    section[id^="cp-"] .cp-meter .fill { position: absolute; left: 0; right: 0; top: 0; height: 0; background: var(--green); transition: height .85s var(--ease), background-color .5s; }
+    section[id^="cp-"] .cp-mhead { position: absolute; display: flex; align-items: baseline; gap: 14px; white-space: nowrap; }
+    section[id^="cp-"] .cp-mhead .lab { font-family: var(--mono); font-size: 16pt; color: var(--muted); }
+    section[id^="cp-"] .cp-mhead .num { font-family: var(--head); font-size: 32pt; font-weight: 700; transition: color .5s; }
+    section[id^="cp-"] .cp-mhead .unit { font-size: 17pt; color: var(--muted); }
+    section[id^="cp-"] .cp-mhead .delta { font-family: var(--head); font-size: 32pt; font-weight: 700; color: var(--green); }
+
+    section[id^="cp-"] .cp-card { position: absolute; box-sizing: border-box; background: var(--panel); border: 2px solid var(--line); border-radius: 14px; padding: 14px 20px; }
+    section[id^="cp-"] .cp-card.green { border-color: color-mix(in srgb, var(--green) 60%, transparent); }
+    section[id^="cp-"] .cp-card.coral { border-color: color-mix(in srgb, var(--coral) 60%, transparent); }
+    section[id^="cp-"] .cp-card.teal { border-color: color-mix(in srgb, var(--teal) 60%, transparent); }
+    section[id^="cp-"] .cp-card.violet { border-color: color-mix(in srgb, var(--violet) 60%, transparent); }
+    section[id^="cp-"] .cp-card.blue { border-color: color-mix(in srgb, var(--blue) 60%, transparent); border-style: dashed; }
+    section[id^="cp-"] .cp-card p { font-size: 20pt; margin: 0 0 6px; line-height: 1.3; }
+    section[id^="cp-"] .cp-card .ttl { font-family: var(--mono); font-size: 17pt; color: var(--teal); margin: 0 0 8px; }
+    section[id^="cp-"] .cp-mono { font-family: var(--mono); font-size: 16pt; line-height: 1.42; white-space: pre; color: var(--text); margin: 0; }
+    section[id^="cp-"] .cp-mono .k { color: var(--violet); } section[id^="cp-"] .cp-mono .s { color: var(--green); }
+    section[id^="cp-"] .cp-mono .c { color: var(--muted); } section[id^="cp-"] .cp-mono .f { color: var(--blue); }
+    section[id^="cp-"] .cp-mono .p { color: var(--amber); } section[id^="cp-"] .cp-mono .r { color: var(--coral); }
+    section[id^="cp-"] .cp-ref { display: inline-block; font-family: var(--mono); font-size: 16pt; font-weight: 700; background: var(--green); color: #06140b; border-radius: 6px; padding: 1px 9px; line-height: 1.25; }
+    section[id^="cp-"] .cp-status { font-family: var(--mono); font-size: 16pt; color: var(--muted); background: #0a0c11; border: 1px solid var(--line); border-radius: 8px; padding: 4px 12px; white-space: nowrap; }
+    section[id^="cp-"] .cp-status b { color: var(--amber); font-weight: 500; }
+
+    /* vault panel (session index) */
+    section[id^="cp-"] .cp-vault { position: absolute; box-sizing: border-box; background: var(--panel); border: 2px solid color-mix(in srgb, var(--green) 50%, transparent); border-radius: 16px; padding: 14px 18px; overflow: hidden; transition: left .7s var(--ease), width .7s var(--ease); }
+    section[id^="cp-"] .cp-vault h4 { font-size: 22pt; margin: 0 0 2px; white-space: nowrap; }
+    section[id^="cp-"] .cp-vault .sub { font-size: 16pt; color: var(--muted); margin: 0 0 6px; white-space: nowrap; }
+    section[id^="cp-"] .cp-vrow { display: flex; align-items: center; gap: 10px; background: var(--panel-2); border-left: 5px solid var(--coral); border-radius: 8px; padding: 8px 12px; margin-top: 10px; white-space: nowrap; transition: box-shadow .4s, opacity .45s var(--ease); }
+    section[id^="cp-"] .cp-vrow span { font-size: 17pt; }
+    section[id^="cp-"] .cp-vrow .ch { margin-left: auto; font-family: var(--mono); font-size: 16pt; color: var(--coral); }
+    section[id^="cp-"] .cp-vrow.glow { box-shadow: 0 0 0 4px rgba(127,227,164,.35), 0 0 24px rgba(127,227,164,.45); }
+
+    /* the divider itself */
+    #cp-divider h1 { font-size: 84pt; }
+    #cp-divider .sub { font-size: 30pt; color: var(--muted); margin: 0; max-width: 900px; }
+    #cp-divider .mini { position: absolute; right: 120px; top: 50%; transform: translateY(-50%); width: 360px; height: 520px; }
+    #cp-divider .mini div { position: absolute; left: 0; right: 0; border-radius: 8px; border: 2px solid; }
+  </style>
+  <p class="num">05 / pi-context-prune</p>
+  <h1>pi-context-prune</h1>
+  <p class="sub">Rewrite <span class="t-teal">what the model sees</span> on every request.<br>Keep <span class="t-green">the truth</span> on disk.</p>
+  <div class="mini" aria-hidden="true">
+    <div style="top:0;height:70px;border-color:var(--muted);background:#1b2030"></div>
+    <div style="top:80px;height:26px;border-color:var(--violet);background:rgba(185,162,255,.2)"></div>
+    <div style="top:116px;height:80px;border-color:var(--coral);background:rgba(255,111,125,.12);border-style:dashed;opacity:.45"></div>
+    <div style="top:206px;height:160px;border-color:var(--coral);background:rgba(255,111,125,.12);border-style:dashed;opacity:.45"></div>
+    <div style="top:376px;height:30px;border-color:var(--green);background:rgba(127,227,164,.22)"></div>
+    <div style="top:416px;height:26px;border-color:var(--blue);background:rgba(116,185,255,.2)"></div>
+  </div>
+  <aside class="notes">
+    [~0:15] Last one, and the most involved. Speedometer only watched, checklist added a tool. This one rewrites what the
+    model sees on every request, keeps the saved session untouched, and gives the model a tool to get things back.
+    The picture on the right is the visual language from here on: the context window as a stack of messages, height roughly
+    proportional to tokens. Coral is tool output, green is a summary, violet is a tool call.
+  </aside>
+  <script>
+  /* CP: shared helpers for the context-prune section (stack layout, meter, number tweening) */
+  window.CP = (function () {
+    const fmt = n => Math.round(n).toLocaleString('en-US');
+    const SPECS = {
+      sys: { role: 'sys',  tok: 2500, label: 'system prompt + tools' },
+      u1:  { role: 'user', tok: 15,   label: 'you: why is the login test failing?' },
+      a0:  { role: 'call', tok: 60,   label: 'tool calls: read · bash' },
+      r1:  { role: 'res',  tok: 3000, label: 'result: read src/auth.ts', tag: 't1' },
+      r2:  { role: 'res',  tok: 6000, label: 'result: npm test log', tag: 't2' },
+      a1:  { role: 'call', tok: 40,   label: 'tool call: grep' },
+      r3:  { role: 'res',  tok: 2000, label: 'result: grep token src/', tag: 't3' },
+      s0:  { role: 'sum',  tok: 180,  label: 'summary turn 0 · t1 t2' },
+      s1:  { role: 'sum',  tok: 90,   label: 'summary turn 1 · t3' },
+      a2:  { role: 'asst', tok: 250,  label: 'answer: exp in s vs ms' },
+      u2:  { role: 'user', tok: 10,   label: 'you: OK, fix it.' },
+    };
+    function blocks(host, ids, extra) {
+      const all = Object.assign({}, SPECS, extra || {});
+      return ids.map(id => {
+        const b = Object.assign({ id }, all[id]);
+        let el = host.querySelector(`.cp-blk[data-id="${id}"]`);
+        if (!el) {
+          el = document.createElement('div');
+          el.className = 'cp-blk ' + b.role;
+          el.dataset.id = id;
+          el.innerHTML = `<span class="l">${b.label}</span>${b.tag ? `<span class="tag">${b.tag}</span>` : ''}<span class="n">${b.nlabel || fmt(b.tok)}</span>`;
+          host.appendChild(el);
+        }
+        b.el = el;
+        return b;
+      });
+    }
+    function place(el, p) {
+      el.style.left = p.x + 'px'; el.style.top = p.y + 'px';
+      el.style.width = p.w + 'px'; el.style.height = p.h + 'px';
+      el.style.opacity = p.o;
+    }
+    /* Lay out a vertical stack. vis = ids visible; o.away = {id: {x,y,w,h}} placement for hidden blocks. */
+    function stack(list, vis, o) {
+      let y = o.y;
+      const pos = {};
+      list.forEach(b => {
+        const h = Math.max(o.min, Math.round(b.tok / o.scale));
+        if (vis.includes(b.id)) {
+          place(b.el, { x: o.x, y, w: o.w, h, o: 1 });
+          pos[b.id] = { y, h };
+          y += h + o.gap;
+        } else {
+          const a = (o.away && o.away[b.id]) || {};
+          place(b.el, { x: a.x ?? o.x, y: a.y ?? y, w: a.w ?? o.w, h: a.h ?? 0, o: 0 });
+        }
+      });
+      return { pos, bottom: y };
+    }
+    function tween(el, to, dur) {
+      if (!el) return;
+      const from = el._v == null ? to : el._v;
+      el._v = to;
+      cancelAnimationFrame(el._raf);
+      if (from === to || !dur) { el.textContent = fmt(to); return; }
+      const t0 = performance.now();
+      const tick = now => {
+        const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+        el.textContent = fmt(from + (to - from) * e);
+        if (k < 1) el._raf = requestAnimationFrame(tick);
+      };
+      el._raf = requestAnimationFrame(tick);
+    }
+    function meter(sec, tok, max, h) {
+      const fill = sec.querySelector('.cp-meter .fill');
+      const num = sec.querySelector('.cp-mhead .num');
+      const col = tok < 5000 ? 'var(--green)' : tok < 10000 ? 'var(--amber)' : 'var(--coral)';
+      if (fill) { fill.style.height = Math.round(Math.min(1, tok / max) * h) + 'px'; fill.style.backgroundColor = col; }
+      if (num) { num.style.color = col; tween(num, tok, sec._cpInit ? 900 : 0); }
+    }
+    /* run a render once without transitions (first paint on entering) */
+    function render(sec, fn) {
+      if (!sec._cpInit) {
+        sec.classList.add('cp-noanim'); fn(); void sec.offsetWidth; sec.classList.remove('cp-noanim');
+        sec._cpInit = true;
+      } else fn();
+    }
+    function gotoStep(sec, k) {
+      const i = Reveal.getIndices(sec);
+      Reveal.slide(i.h, i.v, k - 1);
+    }
+    return { fmt, blocks, stack, place, tween, meter, render, gotoStep };
+  })();
+  </script>
+</section>
+
+<section id="cp-problem" class="stepper" data-steps="5">
+  <style>
+    #cp-problem .cp-scene { top: 176px; }
+    #cp-problem .sent { position: absolute; left: 470px; font-family: var(--mono); font-size: 16pt; color: var(--coral); white-space: nowrap; transition: top .75s var(--ease), opacity .4s; }
+    #cp-problem .callouts { position: absolute; left: 700px; top: 0; width: 772px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+    #cp-problem .co { background: var(--panel); border: 2px solid var(--c); border-radius: 16px; padding: 18px 22px; min-height: 150px; box-sizing: border-box; }
+    #cp-problem .co h4 { font-size: 26pt; color: var(--c); margin: 0 0 6px; }
+    #cp-problem .co p { font-size: 21pt; margin: 0; line-height: 1.3; }
+    #cp-problem .reqs { position: absolute; left: 700px; top: 90px; width: 772px; }
+    #cp-problem .reqs p { font-size: 20pt; color: var(--muted); margin: 0 0 8px; }
+    #cp-problem .reqrow { display: flex; gap: 22px; align-items: flex-end; height: 400px; }
+    #cp-problem .req { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+    #cp-problem .req .bar { width: 100%; border-radius: 8px 8px 0 0; background: var(--coral); transition: height .75s var(--ease), opacity .4s; }
+    #cp-problem .req .bar.base { background: var(--muted); border-radius: 0; }
+    #cp-problem .req span { font-family: var(--mono); font-size: 16pt; color: var(--muted); margin-top: 6px; }
+  </style>
+  <p class="kicker">the problem</p>
+  <h2>Tool output piles up, and gets re-sent</h2>
+  <div class="cp-scene">
+    <div class="cp-mhead" style="left:0;top:0"><span class="lab">request input</span><span class="num">2,515</span><span class="unit">tokens</span></div>
+    <div class="cp-meter" style="left:0;top:62px;width:40px;height:560px"><div class="fill"></div></div>
+    <div class="stackhost"></div>
+    <p class="sent" data-k="r1"></p><p class="sent" data-k="r2"></p><p class="sent" data-k="r3"></p>
+    <div class="callouts">
+      <div class="co" style="--c: var(--coral)" data-at="4"><h4>Cost</h4><p>The 6,000-token test log is paid for on every later request</p></div>
+      <div class="co" style="--c: var(--amber)" data-at="4"><h4>Attention</h4><p>One useful line, buried in 11,000 tokens</p></div>
+      <div class="co" style="--c: var(--violet)" data-at="5"><h4>Window</h4><p>Pushes toward lossy auto-compaction</p></div>
+      <div class="co" style="--c: var(--teal)" data-at="5"><h4>Cache</h4><p>Rewriting old messages busts the prompt cache</p></div>
+    </div>
+    <div class="reqs" data-only="0 1 2 3">
+      <p>input tokens per request</p>
+      <div class="reqrow">
+        <div class="req"><div class="bar" data-r="0"></div><span>req 1</span></div>
+        <div class="req"><div class="bar" data-r="1"></div><span>req 2</span></div>
+        <div class="req"><div class="bar" data-r="2"></div><span>req 3</span></div>
+        <div class="req"><div class="bar" data-r="3"></div><span>req 4</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="captions">
+    <p data-only="0">Request 1: system prompt + question</p>
+    <p data-only="1"><b>read</b> + <b>npm test</b>: +9,000 tokens</p>
+    <p data-only="2"><b>grep</b>: +2,000</p>
+    <p data-only="3">Your next message drags it all along</p>
+    <p data-only="4 5">Paid again on <b>every</b> later request</p>
+  </div>
+  <aside class="notes">
+    [~0:40] Go fast: they know the whole array is re-sent. Token counts here and on the next slides are illustrative (about 4 chars per token); the mechanics are exact.
+    [0–3] "Why is the login test failing?" read + npm test add 9,000 tokens, grep adds 2,000, and by "OK, fix it" request 4 is 13,875 tokens. The test log has now gone out three times.
+    [4] Cost: old tool output times every later request. Attention: the one useful fact is buried.
+    [5] It pushes you toward lossy auto-compaction. And the twist: rewriting old messages busts the prompt cache, so you can't just prune constantly. Keep that in mind.
+  </aside>
+  <script>
+  (function () {
+    const ORDER = ['sys', 'u1', 'a0', 'r1', 'r2', 'a1', 'r3', 'a2', 'u2'];
+    const VIS = [['sys', 'u1'], ['sys', 'u1', 'a0', 'r1', 'r2'], ['sys', 'u1', 'a0', 'r1', 'r2', 'a1', 'r3'], ORDER];
+    const TOK = [2515, 11575, 13615, 13875];
+    const SENT = { r1: [0, 1, 2, 3], r2: [0, 1, 2, 3], r3: [0, 0, 1, 2] };
+    Deck.onStep('cp-problem', (step, sec) => {
+      const scene = sec.querySelector('.cp-scene');
+      const list = CP.blocks(scene.querySelector('.stackhost'), ORDER);
+      const s = Math.min(step, 3);
+      CP.render(sec, () => {
+        const { pos } = CP.stack(list, VIS[s], { x: 60, y: 62, w: 400, scale: 37, min: 30, gap: 6 });
+        CP.meter(sec, TOK[s], 14000, 560);
+        sec.querySelectorAll('.sent').forEach(el => {
+          const k = el.dataset.k, n = SENT[k][s], p = pos[k];
+          el.style.opacity = p ? 1 : 0;
+          if (p) { el.style.top = (p.y + p.h / 2 - 34) + 'px'; }
+          el.textContent = n ? `sent ${n}×` : '';
+        });
+        sec.querySelectorAll('.req .bar').forEach(b => {
+          const r = +b.dataset.r;
+          b.style.height = r <= s ? Math.round(TOK[r] / 14000 * 360) + 'px' : '0px';
+          b.style.opacity = r <= s ? 1 : 0;
+        });
+      });
+    });
+  })();
+  </script>
+</section>
+
+<section id="cp-hooks" class="stepper" data-steps="7">
+  <style>
+    #cp-hooks .lane { position: absolute; left: 64px; width: 1472px; box-sizing: border-box; display: flex; align-items: center; gap: 18px; }
+    #cp-hooks .lane .lname { font-family: var(--mono); font-size: 16pt; color: var(--muted); width: 150px; flex: none; }
+    #cp-hooks .arr { font-size: 26pt; color: var(--muted); }
+    #cp-hooks .box { font-family: var(--mono); font-size: 17pt; border: 2px solid var(--line); border-radius: 12px; padding: 10px 16px; color: var(--muted); background: var(--panel); white-space: nowrap; display: flex; align-items: center; gap: 12px; }
+    #cp-hooks .box.llm { border-color: color-mix(in srgb, var(--blue) 60%, transparent); color: var(--blue); }
+    #cp-hooks .box.cmd { border-color: color-mix(in srgb, var(--violet) 60%, transparent); color: var(--violet); transition: all .35s var(--ease); }
+    #cp-hooks .box.cmd.hot, #cp-hooks .toolchip.hot { background: var(--violet); color: #140d24; box-shadow: 0 0 0 6px rgba(185,162,255,.2), 0 0 28px rgba(185,162,255,.55); }
+    #cp-hooks .toolchip { font-family: var(--mono); font-size: 16pt; color: var(--violet); border: 1px solid var(--violet); border-radius: 999px; padding: 4px 14px; transition: all .35s var(--ease); }
+    #cp-hooks .loop { position: absolute; left: 64px; top: 390px; width: 1472px; height: 130px; box-sizing: border-box; border: 2px dashed color-mix(in srgb, var(--amber) 55%, transparent); border-radius: 22px; display: flex; align-items: center; gap: 14px; padding: 0 26px; }
+    #cp-hooks .loop .lname { position: absolute; left: 22px; top: -16px; background: var(--bg); padding: 0 10px; font-family: var(--mono); font-size: 16pt; color: var(--amber); }
+    #cp-hooks .hook { cursor: pointer; }
+    #cp-hooks .job { position: absolute; left: 64px; top: 560px; width: 1472px; height: 170px; }
+    #cp-hooks .job > div { position: absolute; inset: 0; background: var(--panel); border: 2px solid color-mix(in srgb, var(--teal) 50%, transparent); border-radius: 18px; padding: 20px 28px; box-sizing: border-box; }
+    #cp-hooks .job h3 { font-family: var(--mono); font-size: 28pt; color: var(--teal); margin: 0 0 8px; }
+    #cp-hooks .job p { font-size: 26pt; margin: 0; }
+    #cp-hooks .job .src { position: absolute; right: 28px; top: 26px; font-family: var(--mono); font-size: 16pt; color: var(--muted); }
+    #cp-hooks .also { position: absolute; left: 64px; top: 750px; font-size: 17pt; color: var(--muted); margin: 0; }
+  </style>
+  <p class="kicker">the hooks it uses</p>
+  <h2>Seven touch points, one extension</h2>
+  <div class="lane" style="top:176px">
+    <span class="lname">session</span>
+    <span class="hook" data-hot="1" data-go="1">session_start</span>
+    <span class="hook" data-hot="1" data-go="1">session_tree</span>
+    <span class="muted" style="font-size:18pt">startup · reload · /tree navigation</span>
+  </div>
+  <div class="lane" style="top:268px">
+    <span class="lname">each prompt</span>
+    <span class="box cmd" data-hot="7" data-go="7">/pruner</span>
+    <span class="muted" style="font-size:18pt">or</span>
+    <span class="box">user prompt</span>
+    <span class="arr">→</span>
+    <span class="hook mut" data-hot="2" data-go="2">before_agent_start</span>
+    <span class="arr">↓</span>
+  </div>
+  <div class="loop">
+    <span class="lname">agent loop · every turn</span>
+    <span class="hook mut" data-hot="3" data-go="3">context</span>
+    <span class="arr">→</span>
+    <span class="box llm">LLM</span>
+    <span class="arr">→</span>
+    <span class="hook" data-hot="5" data-go="5">message_end</span>
+    <span class="arr">→</span>
+    <span class="box">tools <span class="toolchip" data-hot="6" data-go="6">context_tree_query</span></span>
+    <span class="arr">→</span>
+    <span class="hook" data-hot="4" data-go="4">turn_end</span>
+    <span class="arr">↺</span>
+  </div>
+  <div class="job">
+    <div data-only="0"><h3>summarise → index → recover by ref</h3><p>Summaries go to the model. Originals go to an index. A tool pages them back.</p></div>
+    <div data-only="1"><span class="src">index.ts:394 · :425</span><h3>session_start · session_tree</h3><p>Same trick as checklist: rebuild the index from <code>getBranch()</code>.</p></div>
+    <div data-only="2"><span class="src">index.ts:562</span><h3>before_agent_start ✎</h3><p>agentic-auto only: append pruning guidance to the system prompt.</p></div>
+    <div data-only="3"><span class="src">index.ts:524</span><h3>context ✎</h3><p>Before every LLM call: drop tool results that already have a summary.</p></div>
+    <div data-only="4"><span class="src">index.ts:434</span><h3>turn_end</h3><p>Capture this turn's tool calls and results as a pending batch.</p></div>
+    <div data-only="5"><span class="src">index.ts:507</span><h3>message_end</h3><p>Final answer with no tool calls? Flush: summarise pending batches.</p></div>
+    <div data-only="6"><span class="src">src/query-tool.ts</span><h3>tool: context_tree_query</h3><p>The model fetches an original back by its short ref, like <code>t2</code>.</p></div>
+    <div data-only="7"><span class="src">src/commands.ts</span><h3>/pruner</h3><p><code>on</code> · <code>prune-on</code> · <code>now</code> · <code>tree</code> · <code>stats</code> · <code>settings</code></p></div>
+  </div>
+  <p class="also">also: <code>tool_execution_end</code> (on-context-tag) · <code>agent_end</code> (status only) · <code>context_prune</code> tool (agentic-auto)</p>
+  <aside class="notes">
+    [~0:50] The idea in one line: once a task is done, a side LLM call summarises the old tool output, the originals go into an index in the session that's never sent, and the model can page any original back by a short ref. Lossy summary, lossless recovery. Here it is on the loop; ✎ marks hooks whose return value changes what pi does. Hooks are clickable.
+    [1] session_start / session_tree: same trick as checklist. Index, stats and frontier are rebuilt from the current branch.
+    [2] before_agent_start: agentic-auto mode only. Adds system-prompt guidance on when to call context_prune.
+    [3] context: the important one. Before every LLM call, drop tool results that already have a summary. This request only.
+    [4] turn_end: capture the turn's calls and results as a pending batch. Nothing summarised yet.
+    [5] message_end: default mode. A final answer with no tool calls means the task is done, so flush.
+    [6] context_tree_query: the recovery tool.
+    [7] /pruner command. The footer line lists the rest; skip it unless asked.
+  </aside>
+  <script>
+  (function () {
+    const sec = document.getElementById('cp-hooks');
+    sec.querySelectorAll('[data-go]').forEach(el => el.addEventListener('click', e => {
+      e.stopPropagation();
+      const k = +el.dataset.go;
+      CP.gotoStep(sec, +sec.dataset.step === k ? 0 : k);
+    }));
+  })();
+  </script>
+</section>
+
+<section id="cp-walk" class="stepper" data-steps="10">
+  <style>
+    #cp-walk h2 { font-size: 36pt; }
+    #cp-walk .ticker { position: absolute; right: 64px; top: 40px; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+    #cp-walk .ticker .row { display: flex; gap: 12px; align-items: center; }
+    #cp-walk .ticker .lab { font-family: var(--mono); font-size: 16pt; color: var(--muted); }
+    #cp-walk .ticker .req { font-family: var(--mono); font-size: 16pt; color: var(--blue); border: 1px solid color-mix(in srgb, var(--blue) 50%, transparent); border-radius: 999px; padding: 4px 14px; }
+    #cp-walk .cp-scene { top: 168px; height: 630px; }
+    #cp-walk .stage { position: absolute; left: 516px; top: 0; width: 836px; height: 630px; }
+    #cp-walk.s7 .stage .narrow { width: 540px; }
+    #cp-walk .cp-vault { left: 1382px; top: 0; width: 90px; height: 630px; }
+    #cp-walk.s7 .cp-vault { left: 1086px; width: 386px; }
+    #cp-walk .cp-vault .closed { position: absolute; left: 18px; top: 20px; writing-mode: vertical-rl; font-family: var(--mono); font-size: 18pt; color: var(--green); white-space: nowrap; transition: opacity .3s; }
+    #cp-walk.s7 .cp-vault .closed { opacity: 0; }
+    #cp-walk .cp-vault .open { opacity: 0; transition: opacity .4s .3s; width: 350px; }
+    #cp-walk.s7 .cp-vault .open { opacity: 1; }
+    #cp-walk .kv { display: flex; justify-content: space-between; gap: 16px; font-size: 20pt; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    #cp-walk .kv:last-child { border-bottom: 0; }
+    #cp-walk .kv .v { font-family: var(--mono); font-size: 18pt; }
+    #cp-walk .bars .row { margin: 6px 0 12px; }
+    #cp-walk .bars .row p { font-size: 18pt; margin: 0 0 4px; }
+    #cp-walk .bars .bar { position: relative; height: 22px; border-radius: 6px; background: rgba(255,111,125,.28); border: 1px solid var(--coral); }
+    #cp-walk .bars .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 34px; background: var(--blue); border-radius: 5px 0 0 5px; }
+    #cp-walk .outp { border-top: 2px solid color-mix(in srgb, var(--green) 50%, transparent); margin-top: 8px; padding-top: 10px; }
+    #cp-walk .outp p { font-size: 18pt; margin: 0 0 4px; }
+    #cp-walk .mini { display: flex; gap: 14px; }
+    #cp-walk .mini > div { flex: 1; background: var(--panel-2); border-left: 5px solid var(--coral); border-radius: 10px; padding: 12px 16px; }
+    #cp-walk .mini p { margin: 0; font-size: 20pt; }
+    #cp-walk .disk p { font-family: var(--mono); font-size: 16pt; margin: 0; padding: 5px 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; white-space: nowrap; }
+    #cp-walk .disk p:last-child { border-bottom: 0; }
+    #cp-walk .disk .ok { color: var(--green); }
+    #cp-walk .disk .res { color: var(--coral); }
+    #cp-walk .big77 { font-family: var(--head); font-size: 96pt; font-weight: 700; color: var(--green); line-height: 1; margin: 0; }
+  </style>
+  <p class="kicker">one task, step by step · default mode: agent-message</p>
+  <h2>Watch the context window</h2>
+  <div class="ticker">
+    <div class="row"><span class="cp-status" data-status>prune: ON (On agent message)</span></div>
+    <div class="row">
+      <span class="lab">hook:</span>
+      <span class="hook mut" data-hot="0 8 9">context</span>
+      <span class="hook" data-hot="2 3">turn_end</span>
+      <span class="hook" data-hot="4 5 6 7">message_end</span>
+      <span class="req" data-req>request 1</span>
+    </div>
+  </div>
+
+  <div class="cp-scene">
+    <div class="cp-mhead" style="left:0;top:4px"><span class="lab" data-mlab>request 1</span><span class="num">2,515</span><span class="unit">tok</span><span class="delta" data-at="9">−77%</span></div>
+    <div class="cp-meter" style="left:0;top:62px;width:44px;height:566px"><div class="fill"></div></div>
+    <div class="stackhost"></div>
+
+    <div class="stage">
+      <!-- 0 -->
+      <div class="cp-card teal" style="left:0;top:62px;width:620px" data-only="0">
+        <p class="ttl">context · request 1</p>
+        <p>Index is empty, so the handler returns <code>undefined</code>.</p>
+        <p class="muted">The model sees everything, unchanged.</p>
+      </div>
+      <!-- 1 -->
+      <div class="cp-card coral" style="left:0;top:62px;width:680px" data-only="1">
+        <p class="ttl">turn 0 · tools run in parallel</p>
+        <div class="kv"><span><code>read</code> src/auth.ts</span><span class="v t-coral">12,000 chars ≈ 3,000 tok</span></div>
+        <div class="kv"><span><code>bash</code> npm test</span><span class="v t-coral">24,000 chars ≈ 6,000 tok</span></div>
+      </div>
+      <!-- 2 -->
+      <div class="cp-card teal" style="left:0;top:62px;width:836px" data-only="2">
+        <p class="ttl">turn_end → captureBatch() → pendingBatches</p>
+<div class="cp-mono">{ <span class="p">turnIndex</span>: <span class="f">0</span>,
+  <span class="p">timestamp</span>: <span class="f">1789650000000</span>,
+  <span class="p">assistantText</span>: <span class="s">"Let me look at the auth module…"</span>,
+  <span class="p">toolCalls</span>: [
+    { <span class="p">toolCallId</span>: <span class="s">"toolu_01AuthRead"</span>, <span class="p">toolName</span>: <span class="s">"read"</span>,
+      <span class="p">args</span>: { path: <span class="s">"src/auth.ts"</span> },
+      <span class="p">resultText</span>: <span class="r">"import jwt from…"</span> <span class="c">/* 12,000 chars */</span>,
+      <span class="p">isError</span>: <span class="k">false</span> },
+    { <span class="p">toolCallId</span>: <span class="s">"toolu_01NpmTest"</span>, <span class="p">toolName</span>: <span class="s">"bash"</span>,
+      <span class="p">args</span>: { command: <span class="s">"npm test"</span> },
+      <span class="p">resultText</span>: <span class="r">"&gt; jest…"</span> <span class="c">/* 24,000 chars */</span>,
+      <span class="p">isError</span>: <span class="k">false</span> } ] }</div>
+      </div>
+      <!-- 3,4: pending tray -->
+      <div class="cp-card teal" style="left:0;top:62px;width:836px" data-only="3">
+        <p class="ttl">turn_end (turn 1) · batch captured, not summarised</p>
+        <p>Why wait? Every rewrite of old context busts the prompt cache.</p>
+      </div>
+      <div class="cp-card violet" style="left:0;top:62px;width:836px" data-only="4">
+        <p class="ttl">message_end · the answer</p>
+        <div class="kv"><span>role</span><span class="v">assistant ✓</span></div>
+        <div class="kv"><span>toolCall blocks</span><span class="v">0 ✓</span></div>
+        <div class="kv"><span>so the task is done</span><span class="v t-amber">flushPending({ delivery: "session" })</span></div>
+      </div>
+      <div class="cp-card" style="left:0;top:330px;width:836px" data-only="3 4">
+        <p class="ttl" style="color:var(--muted)">pendingBatches</p>
+        <div class="mini">
+          <div><p>turn 0 · 2 tool calls</p><p class="t-coral" style="font-family:var(--mono);font-size:17pt">36.0k chars</p></div>
+          <div><p>turn 1 · 1 tool call</p><p class="t-coral" style="font-family:var(--mono);font-size:17pt">8.0k chars</p></div>
+        </div>
+        <p class="muted" style="font-size:17pt;margin-top:12px">pruner: 2 turns queued, will summarize on agent's next text response</p>
+      </div>
+      <!-- 5,6: summarizers -->
+      <p class="ttl" style="position:absolute;left:0;top:10px;margin:0;font-family:var(--mono);font-size:17pt;color:var(--blue)" data-only="5 6">summarizeBatches(): one LLM call per batch, in parallel</p>
+      <div class="cp-card blue bars" style="left:0;top:56px;width:836px" data-only="5 6">
+        <p class="ttl" style="color:var(--blue)">summarizer · batch turn 0</p>
+        <div class="row"><p><code>read</code> src/auth.ts · sees first <b class="t-blue">2,000</b> of 12,000 chars</p><div class="bar" style="width:380px"><i></i></div></div>
+        <div class="row"><p><code>bash</code> npm test · sees first <b class="t-blue">2,000</b> of 24,000 chars</p><div class="bar" style="width:760px"><i></i></div></div>
+        <div class="outp" data-at="6">
+          <p><span class="t-green">•</span> read src/auth.ts: <code>verifyToken()</code> checks <code>exp &lt; Date.now()</code></p>
+          <p><span class="t-green">•</span> bash npm test: 41 passed, <b class="t-coral">1 failed</b> · refs <span class="cp-ref">t1</span> <span class="cp-ref">t2</span></p>
+        </div>
+      </div>
+      <div class="cp-card blue bars" style="left:0;top:432px;width:836px" data-only="5 6">
+        <p class="ttl" style="color:var(--blue)">summarizer · batch turn 1</p>
+        <div class="row"><p><code>bash</code> grep · sees first <b class="t-blue">2,000</b> of 8,000 chars</p><div class="bar" style="width:253px"><i></i></div></div>
+        <div class="outp" data-at="6">
+          <p><span class="t-green">•</span> grep: expiry compared at src/auth.ts:42 · ref <span class="cp-ref">t3</span></p>
+        </div>
+      </div>
+      <!-- 7: persisted -->
+      <div class="cp-card green" style="left:0;top:62px;width:540px" data-only="7">
+        <p class="ttl" style="color:var(--green)">custom_message ×2</p>
+        <p><code>context-prune-summary</code></p>
+        <p class="muted">sent to the model, hidden in the UI</p>
+      </div>
+      <div class="cp-card" style="left:0;top:250px;width:540px;border-color:var(--muted)" data-only="7">
+        <p class="ttl" style="color:var(--muted)">custom ×2 → vault</p>
+        <p><code>context-prune-index</code></p>
+        <p class="muted">full originals · never sent</p>
+      </div>
+      <div class="cp-card" style="left:0;top:438px;width:540px" data-only="7">
+        <p class="muted" style="margin:0">+ frontier + stats entries</p>
+        <p class="t-amber" style="margin:0">context is <b>still</b> 13,615 tokens</p>
+      </div>
+      <!-- 8: context hook runs -->
+      <div class="cp-card teal" style="left:0;top:62px;width:540px" data-only="8">
+        <p class="ttl">pi.on("context") · request 4</p>
+        <div class="kv"><span>event.messages</span><span class="v">deep copy</span></div>
+        <div class="kv"><span>indexed</span><span class="v"><span class="cp-ref">t1</span> <span class="cp-ref">t2</span> <span class="cp-ref">t3</span></span></div>
+        <div class="kv"><span>without pruning</span><span class="v t-coral">13,875 tok</span></div>
+      </div>
+      <!-- 9: the filter -->
+      <div class="cp-card teal" style="left:0;top:62px;width:540px" data-only="9">
+        <p class="ttl">pruneMessages()</p>
+<div class="cp-mono">messages.<span class="f">filter</span>((msg) =&gt;
+  !(msg.role === <span class="s">"toolResult"</span> &amp;&amp;
+    indexer.<span class="f">isSummarized</span>(
+      msg.toolCallId)))</div>
+      </div>
+      <div style="position:absolute;left:0;top:300px;width:540px" data-only="9">
+        <p class="big77">−77%</p>
+        <p style="font-size:24pt;margin:6px 0 10px">13,875 → <b class="t-green">3,160</b> tokens</p>
+        <p class="muted" style="font-size:17pt;margin:0">Tool calls stay. pi-ai adds tiny "No result provided" stubs for them.</p>
+      </div>
+      <!-- 10: on disk -->
+      <div class="cp-card green disk" style="left:0;top:62px;width:540px" data-only="10">
+        <p class="ttl" style="color:var(--green);border:0;font-size:17pt">session file · nothing deleted</p>
+        <p><span>user · login test?</span><span class="ok">✓</span></p>
+        <p><span>assistant · read, bash</span><span class="ok">✓</span></p>
+        <p class="res"><span>toolResult · auth.ts 12k</span><span class="ok">✓</span></p>
+        <p class="res"><span>toolResult · npm test 24k</span><span class="ok">✓</span></p>
+        <p><span>assistant · grep</span><span class="ok">✓</span></p>
+        <p class="res"><span>toolResult · grep 8k</span><span class="ok">✓</span></p>
+        <p class="t-green"><span>+ summaries, index, frontier</span><span>new</span></p>
+        <p><span>assistant · answer</span><span class="ok">✓</span></p>
+        <p><span>user · OK, fix it.</span><span class="ok">✓</span></p>
+      </div>
+    </div>
+
+    <div class="cp-vault">
+      <span class="closed">vault (session index)</span>
+      <div class="open">
+        <h4 class="t-green">Vault</h4>
+        <p class="sub">session index · not sent</p>
+        <div class="cp-vrow" data-v="t1"><span class="cp-ref">t1</span><span>read auth.ts</span><span class="ch">12.0k</span></div>
+        <div class="cp-vrow" data-v="t2"><span class="cp-ref">t2</span><span>npm test</span><span class="ch">24.0k</span></div>
+        <div class="cp-vrow" data-v="t3"><span class="cp-ref">t3</span><span>grep</span><span class="ch">8.0k</span></div>
+        <p class="sub" style="margin-top:16px">chars of full output, by ref</p>
+        <div class="cp-card" style="position:static;margin-top:18px;padding:12px 16px">
+          <p class="muted" style="font-size:16pt;margin:0">frontier: after <span class="cp-ref">t3</span></p>
+          <p class="muted" style="font-size:16pt;margin:4px 0 0">summarizer ↑1.8k ↓270 $0.001</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="captions">
+    <p data-only="0">Request 1: nothing to prune</p>
+    <p data-only="1">Two tools return 9,000 tokens</p>
+    <p data-only="2"><b>turn_end</b>: capture the batch, don't prune yet</p>
+    <p data-only="3">grep adds 2,000. Queue it too.</p>
+    <p data-only="4"><b>message_end</b>: final answer, so flush</p>
+    <p data-only="5">One summarizer call per batch, in parallel</p>
+    <p data-only="6">Summaries come back with short refs</p>
+    <p data-only="7">Originals go to the index. Nothing removed yet.</p>
+    <p data-only="8">Next prompt: <b>context</b> builds request 4</p>
+    <p data-only="9">One filter: 13,875 → 3,160 tokens</p>
+    <p data-only="10">On disk, every raw result is still there</p>
+  </div>
+  <div class="dots" style="position:absolute;right:190px;bottom:44px"></div>
+  <aside class="notes">
+    [~1:30] The core slide: keep a steady click rhythm, about 8 seconds a step. Token counts are illustrative; events, field names and ordering are exact. Default mode, agent-message.
+    [0] Request 1. context runs, the index is empty, it returns undefined: nothing changes.
+    [1] read and bash run in parallel: 12,000 and 24,000 chars land in context.
+    [2] turn_end: captureBatch builds this object (call IDs, args, full result text) and queues it. No summary yet.
+    [3] Why wait? Every rewrite of old messages busts the prompt cache, so the default batches the whole task. grep's turn is queued too.
+    [4] The model answers in plain text. message_end sees an assistant message with zero tool calls: task done, flush.
+    [5] One summarizer call per batch, in parallel. Active model by default, or a cheap one you configure. Each result is cut to its first 2,000 chars.
+    [6] Summaries come back with short refs: t1, t2 for turn 0, t3 for turn 1.
+    [7] Two session entries: the summary as a custom_message the model sees but the UI hides, and an index entry with the full originals that pi never sends. The context is still just as big.
+    [8] "OK, fix it." context gets a deep copy of the messages for request 4.
+    [9] One filter drops every toolResult whose ID is indexed. Tool-call blocks stay as anchors. 13,875 becomes about 3,160: 77% smaller.
+    Caveat if asked: in session-delivery modes the summary may only reach the live agent after a reload or /tree; raw results are dropped immediately either way. For a live demo use /pruner prune-on on-demand and /pruner now, which deliver at runtime.
+    [10] The session file was never rewritten. Every raw result is still on disk. Pruning is a view, not a delete.
+  </aside>
+  <script>
+  (function () {
+    const ORDER = ['sys', 'u1', 'a0', 'r1', 'r2', 'a1', 'r3', 's0', 's1', 'a2', 'u2'];
+    const V0 = ['sys', 'u1'], V1 = V0.concat(['a0', 'r1', 'r2']), V3 = V1.concat(['a1', 'r3']), V4 = V3.concat(['a2']), V8 = V4.concat(['u2']);
+    const V9 = ['sys', 'u1', 'a0', 'a1', 's0', 's1', 'a2', 'u2'];
+    const VIS = [V0, V1, V1, V3, V4, V4, V4, V4, V8, V9, V9];
+    const TOK = [2515, 11575, 11575, 13615, 13615, 13615, 13615, 13615, 13875, 3160, 3160];
+    const MLAB = ['request 1', 'request 2', 'request 2', 'request 3', 'request 3', 'request 3', 'request 3', 'request 3', 'request 4 · unpruned', 'request 4 · pruned', 'request 4 · pruned'];
+    const REQ = ['request 1', 'turn 0 · tools', 'turn 0 done', 'turn 1 done', 'turn 2 · answer', 'flushing', 'flushing', 'flushed', 'request 4', 'request 4', 'on disk'];
+    const STATUS = ['prune: ON (On agent message)', 'prune: ON (On agent message)', 'prune: <b>1 pending</b>', 'prune: <b>2 pending</b>', 'prune: <b>2 pending</b>',
+      'prune: <b>summarizing…</b>', 'prune: <b>summarizing…</b>', 'prune: ON │ <b>↑1.8k ↓270 $0.001</b>', 'prune: ON │ <b>↑1.8k ↓270 $0.001</b>', 'prune: ON │ <b>↑1.8k ↓270 $0.001</b>', 'prune: ON │ <b>↑1.8k ↓270 $0.001</b>'];
+    Deck.onStep('cp-walk', (s, sec) => {
+      const scene = sec.querySelector('.cp-scene');
+      const list = CP.blocks(scene.querySelector('.stackhost'), ORDER);
+      CP.render(sec, () => {
+        const away = { r1: { x: 300, h: 0 }, r2: { x: 300, h: 0 }, r3: { x: 300, h: 0 } };
+        if (s < 9) { away.s0 = { x: 700, y: 300 }; away.s1 = { x: 700, y: 340 }; }
+        const { pos } = CP.stack(list, VIS[s], { x: 64, y: 62, w: 416, scale: 37, min: 30, gap: 6, away });
+        list.forEach(b => {
+          b.el.classList.toggle('idx', s >= 7 && !!b.tag);
+          b.el.classList.toggle('glow', (s === 9 && b.role === 'sum') || (s === 2 && (b.id === 'r1' || b.id === 'r2')) || (s === 3 && b.id === 'r3') || (s === 4 && b.id === 'a2'));
+        });
+        if (s >= 9) { list.filter(b => b.tag).forEach(b => b.el.style.top = (pos.a1 ? pos.a1.y : 200) + 'px'); }
+        CP.meter(sec, TOK[s], 14000, 566);
+        sec.querySelector('[data-mlab]').textContent = MLAB[s];
+        sec.querySelector('[data-req]').textContent = REQ[s];
+        sec.querySelector('[data-status]').innerHTML = STATUS[s];
+        sec.querySelectorAll('.cp-vrow').forEach(r => { r.classList.toggle('glow', s === 7); });
+      });
+    });
+  })();
+  </script>
+</section>
+
+<section id="cp-recover" class="stepper" data-steps="3">
+  <style>
+    #cp-recover .ticker { position: absolute; right: 64px; top: 52px; display: flex; gap: 12px; align-items: center; }
+    #cp-recover .ticker .lab { font-family: var(--mono); font-size: 16pt; color: var(--muted); }
+    #cp-recover .tool { font-family: var(--mono); font-size: 16pt; color: var(--violet); border: 1px solid var(--violet); border-radius: 999px; padding: 4px 14px; transition: all .35s var(--ease); }
+    #cp-recover .tool.hot { background: var(--violet); color: #140d24; box-shadow: 0 0 0 6px rgba(185,162,255,.2), 0 0 28px rgba(185,162,255,.55); }
+    #cp-recover .cp-scene { top: 168px; height: 630px; }
+    #cp-recover .cp-vault { left: 1086px; top: 0; width: 386px; height: 360px; }
+    #cp-recover .stage { position: absolute; left: 516px; top: 0; width: 540px; height: 630px; }
+  </style>
+  <p class="kicker">recovery · lossy summary, lossless escape hatch</p>
+  <h2>Page the original back in</h2>
+  <div class="ticker"><span class="lab">tool:</span><span class="tool" data-hot="1 2">context_tree_query</span></div>
+  <div class="cp-scene">
+    <div class="cp-mhead" style="left:0;top:4px"><span class="lab">context</span><span class="num">3,160</span><span class="unit">tok</span></div>
+    <div class="cp-meter" style="left:0;top:62px;width:44px;height:566px"><div class="fill"></div></div>
+    <div class="stackhost"></div>
+    <div class="stage">
+      <div class="cp-card green" style="left:0;top:62px;width:540px" data-only="0">
+        <p class="ttl" style="color:var(--green)">summary turn 0 says</p>
+        <p>npm test: 41 passed, <b class="t-coral">1 failed</b></p>
+        <p class="muted">…but which assertion, which line? The summarizer only saw the first 2,000 chars.</p>
+      </div>
+      <div class="cp-card violet" style="left:0;top:62px;width:540px" data-only="1">
+        <p class="ttl" style="color:var(--violet)">model emits a tool call</p>
+<div class="cp-mono">{ <span class="p">"name"</span>: <span class="s">"context_tree_query"</span>,
+  <span class="p">"arguments"</span>: {
+    <span class="p">"toolCallIds"</span>: [<span class="s">"t2"</span>] } }</div>
+        <p class="muted" style="font-size:17pt;margin-top:12px">accepts short refs or full toolCallIds</p>
+      </div>
+      <div class="cp-card coral" style="left:0;top:62px;width:540px" data-only="2 3">
+<div class="cp-mono"><span class="p">## toolRef: t2</span>
+Tool: bash
+Args: { "command": "npm test" }
+Status: OK
+Turn: 0
+
+<span class="r"> FAIL src/login.test.ts</span>
+  ● login › rejects expired token
+    Expected: 401   Received: 200
+      at src/login.test.ts:57:24
+<span class="c">…full 24,000 chars</span></div>
+      </div>
+      <div class="cp-card" style="left:0;top:470px;width:540px" data-only="3">
+        <p style="font-size:19pt;margin:0">Next flush summarises it again, with a new ref (e.g. <span class="cp-ref">t4</span>)</p>
+      </div>
+    </div>
+    <div class="cp-vault">
+      <h4 class="t-green">Vault</h4>
+      <p class="sub">session index · not sent</p>
+      <div class="cp-vrow"><span class="cp-ref">t1</span><span>read auth.ts</span><span class="ch">12.0k</span></div>
+      <div class="cp-vrow" data-v="t2"><span class="cp-ref">t2</span><span>npm test</span><span class="ch">24.0k</span></div>
+      <div class="cp-vrow"><span class="cp-ref">t3</span><span>grep</span><span class="ch">8.0k</span></div>
+      <p class="sub" style="margin-top:14px">copied back, not moved</p>
+    </div>
+    <div class="cp-card" style="left:1086px;top:390px;width:386px" data-at="1">
+      <p class="muted" style="font-size:17pt;margin:0">capped like built-in tools: 2,000 lines / 50 KB (<code>truncateHead</code>)</p>
+    </div>
+  </div>
+  <div class="captions">
+    <p data-only="0">The summary is lossy. That's fine.</p>
+    <p data-only="1">The model asks for <b>t2</b> by ref</p>
+    <p data-only="2">The full test log comes back</p>
+    <p data-only="3">Hot context, cold storage, one tool between</p>
+  </div>
+  <aside class="notes">
+    [~0:30] Illustrative token counts.
+    [0] The summary says one test failed, but the summarizer only saw the first 2,000 chars and the detail is near the end.
+    [1] So the model calls context_tree_query with t2, the ref it read in the summary. The tool is always registered.
+    [2] It gets the full stored log back as a new tool result, capped like built-in tools. Now it sees "Expected 401, received 200" at line 57.
+    [3] That's a new tool result, so the next flush summarises it again with a new ref. Hot context, cold storage.
+  </aside>
+  <script>
+  (function () {
+    const ORDER = ['sys', 'u1', 'a0', 'a1', 's0', 's1', 'a2', 'u2', 'q', 'rb'];
+    const EXTRA = { q: { role: 'call', tok: 40, label: 'tool call: context_tree_query t2' },
+                    rb: { role: 'res', tok: 6000, label: 'result: t2 npm test log' } };
+    const BASE = ['sys', 'u1', 'a0', 'a1', 's0', 's1', 'a2', 'u2'];
+    const VIS = [BASE, BASE.concat(['q']), BASE.concat(['q', 'rb']), BASE.concat(['q', 'rb'])];
+    const TOK = [3160, 3200, 9200, 9200];
+    Deck.onStep('cp-recover', (s, sec) => {
+      const list = CP.blocks(sec.querySelector('.stackhost'), ORDER, EXTRA);
+      CP.render(sec, () => {
+        CP.stack(list, VIS[s], { x: 64, y: 62, w: 416, scale: 37, min: 30, gap: 6, away: { rb: { x: 1086, y: 148, w: 386, h: 54 } } });
+        list.forEach(b => b.el.classList.toggle('glow', (s === 1 && b.id === 'q') || (s === 2 && b.id === 'rb')));
+        CP.meter(sec, TOK[s], 14000, 566);
+        sec.querySelector('[data-v="t2"]').classList.toggle('glow', s === 1 || s === 2);
+      });
+    });
+  })();
+  </script>
+</section>
+
+<section id="cp-code" class="stepper" data-steps="4">
+  <style>
+    #cp-code .cols { display: grid; grid-template-columns: 800px 640px; gap: 32px; margin-top: 8px; }
+    #cp-code .code { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; margin-bottom: 18px; }
+    #cp-code .ln { font-family: var(--mono); font-size: 17pt; line-height: 1.5; white-space: pre; color: var(--text); border-radius: 6px; transition: opacity .35s, background .35s; }
+    #cp-code .ln .k { color: var(--violet); } #cp-code .ln .s { color: var(--green); } #cp-code .ln .c { color: var(--muted); } #cp-code .ln .f { color: var(--blue); } #cp-code .ln .p { color: var(--amber); }
+    #cp-code[data-step="1"] .ln:not([data-hl~="1"]),
+    #cp-code[data-step="2"] .ln:not([data-hl~="2"]),
+    #cp-code[data-step="3"] .ln:not([data-hl~="3"]),
+    #cp-code[data-step="4"] .ln:not([data-hl~="4"]) { opacity: .28; }
+    #cp-code[data-step="1"] .ln[data-hl~="1"], #cp-code[data-step="2"] .ln[data-hl~="2"],
+    #cp-code[data-step="3"] .ln[data-hl~="3"], #cp-code[data-step="4"] .ln[data-hl~="4"] { background: rgba(63,220,214,.12); }
+    #cp-code .punch { position: absolute; left: 64px; bottom: 44px; font-family: var(--head); font-size: 34pt; margin: 0; }
+  </style>
+  <p class="kicker">the core code</p>
+  <h2>The pruning step is one filter</h2>
+  <div class="cols">
+    <div>
+      <p class="code-label">src/pruner.ts</p>
+      <div class="code">
+<div class="ln" data-hl="2"><span class="k">export function</span> <span class="f">pruneMessages</span>(messages, indexer) {</div>
+<div class="ln" data-hl="2">  <span class="k">return</span> messages.<span class="f">filter</span>((msg) =&gt;</div>
+<div class="ln" data-hl="2">    !(msg.role === <span class="s">"toolResult"</span> &amp;&amp;</div>
+<div class="ln" data-hl="2">      indexer.<span class="f">isSummarized</span>(msg.toolCallId)));</div>
+<div class="ln">}</div>
+      </div>
+      <p class="code-label">index.ts:524 (trimmed)</p>
+      <div class="code">
+<div class="ln" data-hl="1 3 4">pi.<span class="f">on</span>(<span class="s">"context"</span>, <span class="k">async</span> (event, _ctx) =&gt; {</div>
+<div class="ln" data-hl="3">  <span class="k">if</span> (!currentConfig.value.enabled) <span class="k">return</span> undefined;</div>
+<div class="ln" data-hl="2">  <span class="k">const</span> pruned = <span class="f">pruneMessages</span>(event.messages, indexer);</div>
+<div class="ln" data-hl="3">  <span class="k">if</span> (pruned.length === event.messages.length)</div>
+<div class="ln" data-hl="3">    <span class="k">return</span> undefined;          <span class="c">// nothing changed</span></div>
+<div class="ln" data-hl="4">  <span class="k">return</span> { messages: pruned }; <span class="c">// this request only</span></div>
+<div class="ln" data-hl="1 3 4">});</div>
+      </div>
+    </div>
+    <div>
+      <p class="code-label">index.ts (bodies elided)</p>
+      <div class="code">
+<div class="ln"><span class="k">export default function</span> (pi) {</div>
+<div class="ln">  pi.<span class="f">on</span>(<span class="s">"session_start"</span>, …);</div>
+<div class="ln">  pi.<span class="f">on</span>(<span class="s">"session_tree"</span>, …);</div>
+<div class="ln">  pi.<span class="f">on</span>(<span class="s">"turn_end"</span>, …);    <span class="c">// capture</span></div>
+<div class="ln">  pi.<span class="f">on</span>(<span class="s">"message_end"</span>, …); <span class="c">// flush</span></div>
+<div class="ln" data-hl="1">  pi.<span class="f">on</span>(<span class="s">"context"</span>, …);     <span class="c">// filter</span></div>
+<div class="ln">  pi.<span class="f">on</span>(<span class="s">"before_agent_start"</span>, …);</div>
+<div class="ln">  <span class="f">registerQueryTool</span>(pi, indexer);</div>
+<div class="ln">  <span class="f">registerContextPruneTool</span>(pi, …);</div>
+<div class="ln">  <span class="f">registerCommands</span>(pi, …);</div>
+<div class="ln">}</div>
+      </div>
+    </div>
+  </div>
+  <p class="punch" data-at="4">The model sees <span class="t-green">a summary</span>. The session keeps <span class="t-amber">everything</span>.</p>
+  <aside class="notes">
+    [~0:40] Excerpts from pi-context-prune 1.4.0, lightly trimmed (the agentic-auto reminder in the context handler is cut).
+    [0] Right: the whole extension's shape. One function, a handful of pi.on calls, two tools, a command.
+    [1] The one that matters: context.
+    [2] The whole pruning algorithm is one filter: drop toolResults whose ID is in the index.
+    [3] Early exits return undefined: disabled, or nothing to drop. Untouched messages keep the prompt cache stable.
+    [4] Otherwise return new messages, for this request only. The model sees a summary; the session keeps everything; no fork of pi. That's the lesson.
+    One breath, only if time: five flush modes trade cache hits against context size (default once per task, every-turn is leanest but busts the cache most, plus on-demand /pruner now and model-driven ones). If a summary would be bigger than the raw output the batch is skipped, and if the summarizer fails the batches go back to pending.
+  </aside>
+</section>
+
+
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+<script>
+Deck.prepare();
+Reveal.initialize({
+  width: 1600, height: 900, margin: 0.03, minScale: 0.2, maxScale: 2.5,
+  hash: true, controls: true, progress: true, center: false,
+  slideNumber: 'c/t', transition: 'fade', transitionSpeed: 'fast', backgroundTransition: 'none',
+  plugins: [RevealNotes, RevealHighlight],
+}).then(() => {
+  const cur = () => Reveal.getCurrentSlide();
+  Deck.apply(cur()); Deck._enter(cur());
+  Reveal.on('slidechanged', e => { Deck._leave(e.previousSlide); Deck.apply(e.currentSlide); Deck._enter(e.currentSlide); });
+  Reveal.on('fragmentshown', () => Deck.apply(cur()));
+  Reveal.on('fragmenthidden', () => Deck.apply(cur()));
+});
+</script>
+</body>
+</html>

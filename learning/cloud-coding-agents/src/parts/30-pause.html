@@ -72,7 +72,7 @@
   </div>
   <aside class="notes">
     The lifecycle in four clicks. Running bills CPU and RAM. Pause writes the memory file, state file and disk delta to storage and frees the host — try the pause button, the card freezes.
-    Parked state costs storage pennies. Resume mmaps the memory file and faults pages in on demand — try resume, it wakes in about a second. Caveat for the Q&A: vsock resets across restore, so network handles must be re-established.
+    Parked state costs storage pennies. Resume maps the memory file back and faults pages in on demand — try resume; small agent VMs typically wake in about a second (restore time grows with memory and vCPUs, no official SLA). Caveat for the Q&A: vsock resets across restore, so network handles must be re-established.
   </aside>
   <script>
   (function () {
@@ -96,13 +96,14 @@
   <div class="stats">
     <div class="stat" data-at="1"><b class="t-green">&lt;125ms</b><span>boot a new microVM</span></div>
     <div class="stat" data-at="2"><b class="t-teal">&lt;5MiB</b><span>VMM overhead each</span></div>
-    <div class="stat" data-at="3"><b class="t-violet">~1s</b><span>snapshot resume</span></div>
+    <div class="stat" data-at="3"><b class="t-violet">~1s</b><span>resume, small VMs*</span></div>
   </div>
   <div class="captions">
     <p data-only="0">Firecracker was built for exactly this density.</p>
     <p data-only="1">A fresh microVM boots in <b>under 125 milliseconds</b>.</p>
     <p data-only="2">Each one costs <b>under 5 MiB</b> of host overhead.</p>
-    <p data-only="3">Resume faults pages in on demand. <b>About a second</b>, even with thousands parked.</p>
+    <p data-only="3">Resume faults pages in on demand. <b>About a second</b> for small agent VMs — restore time grows with VM size.</p>
+  <p class="muted small" data-at="3">* Firecracker publishes boot ≤125 ms and ≤5 MiB overhead; restore speed is workload-dependent.</p>
   </div>
   <aside class="notes">
     Why microVMs and not plain containers or full VMs. Firecracker's advertised numbers: under 125 milliseconds to boot, under 5 megabytes of VMM overhead per VM, snapshot restore around a second via mmap plus userfaultfd on-demand paging.

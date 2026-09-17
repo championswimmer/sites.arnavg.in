@@ -1,0 +1,128 @@
+<!-- ===================================================================
+     Outro (no divider)
+     Slides: out-zero (the 4th hook kind, intercept: the only tool_call
+     demo in the deck), out-thanks (install lines + Q&A)
+     =================================================================== -->
+<section id="out-zero" class="stepper" data-steps="4">
+  <style>
+    #out-zero .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; margin-top: 28px; }
+    #out-zero .stage { display: flex; flex-direction: column; gap: 14px; }
+    #out-zero .stage h3 { font-size: 30pt; margin: 0; display: flex; align-items: baseline; gap: 14px; }
+    #out-zero .stage h3 span { font-family: var(--mono); color: var(--teal); font-size: 24pt; }
+    #out-zero .term { min-height: 500px; }
+    #out-zero .term .body p { font-size: 19pt; white-space: pre; line-height: 1.45; }
+    #out-zero .tag { display: inline-block; font-family: var(--mono); font-size: 16pt; padding: 4px 12px; border-radius: 8px; margin-top: 4px; }
+    #out-zero .tag.green { color: var(--green); background: rgba(127,227,164,.12); }
+    #out-zero .blocked { color: var(--coral); }
+    #out-zero .share { position: absolute; right: 64px; bottom: 64px; display: flex; gap: 20px; align-items: center; }
+    #out-zero .share p { margin: 0; font-size: 24pt; }
+    #out-zero .share code { font-size: 22pt; }
+    #out-zero .arc { position: absolute; right: 64px; top: 40px; display: flex; gap: 10px; align-items: center; margin: 0; }
+    #out-zero .arc span { font-family: var(--mono); font-size: 16pt; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 14px; }
+    #out-zero .arc span.now { color: #061a19; background: var(--teal); border-color: var(--teal); font-weight: 700; }
+    #out-zero .k { color: var(--violet); } #out-zero .s { color: var(--green); } #out-zero .c { color: var(--muted); }
+  </style>
+  <p class="kicker">zero → live</p>
+  <p class="arc" aria-label="four kinds of hook"><span>observe</span><span>add tools</span><span>rewrite context</span><span class="now">4 · intercept</span></p>
+  <h2>No build. No fork. No restart.</h2>
+  <div class="row">
+    <div class="stage" data-at="1">
+      <h3><span>1</span>Write a .ts file</h3>
+      <div class="term">
+        <div class="bar"><i></i><i></i><i></i><b>~/.pi/agent/extensions/guard.ts</b></div>
+        <div class="body">
+<p><span class="k">export default</span> (pi) => {</p>
+<p>  pi.on(<span class="s">"tool_call"</span>, (e) => {</p>
+<p>    <span class="k">if</span> (isToolCallEventType(</p>
+<p>          <span class="s">"bash"</span>, e) &amp;&amp;</p>
+<p>        e.input.command</p>
+<p>          .includes(<span class="s">"rm -rf"</span>))</p>
+<p>      <span class="k">return</span> { block: <span class="k">true</span>,</p>
+<p>        reason: <span class="s">"nope"</span> };</p>
+<p>  });</p>
+<p>};</p>
+        </div>
+      </div>
+    </div>
+    <div class="stage" data-at="2">
+      <h3><span>2</span>Type /reload</h3>
+      <div class="term">
+        <div class="bar"><i></i><i></i><i></i><b>pi</b></div>
+        <div class="body">
+<p>&gt; /reload</p>
+<p class="c">  session_shutdown</p>
+<p class="c">    reason: "reload"</p>
+<p class="c">  session_start</p>
+<p class="c">    reason: "reload"</p>
+<p> </p>
+<p><span class="tag green">✓ guard.ts loaded</span></p>
+        </div>
+      </div>
+    </div>
+    <div class="stage" data-at="3">
+      <h3><span>3</span>It's live</h3>
+      <div class="term">
+        <div class="bar"><i></i><i></i><i></i><b>pi</b></div>
+        <div class="body">
+<p>&gt; clean the build dir</p>
+<p> </p>
+<p class="c">● bash</p>
+<p>  rm -rf ./dist</p>
+<p class="blocked">  ✗ Blocked: nope</p>
+<p> </p>
+<p class="c">The command was blocked,</p>
+<p class="c">so I'll delete files</p>
+<p class="c">individually instead…</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="share" data-at="4">
+    <p class="muted">Share it:</p>
+    <p><code>pi install npm:your-extension</code></p>
+  </div>
+  <aside class="notes">
+    [~0:40] Recap the arc in one breath (top-right chips): speedometer observed, checklist added a tool, context-prune rewrote the context. The fourth kind of hook is intercept: stop something before it happens. That's the tool_call hook, and it's also how fast you go from zero to live.
+    [1] One TypeScript file in ~/.pi/agent/extensions. Loaded through jiti, so no compile step. (Trimmed: the real file imports isToolCallEventType.)
+    [2] /reload: session_shutdown, then session_start, same session. No file watcher, you trigger it.
+    [3] The model tries rm -rf, tool_call returns block, and the model gets the reason back and adapts. If a tool_call handler throws, the call is blocked too: it fails safe.
+    [4] Share it with pi install npm: or git:, like all three extensions today.
+  </aside>
+</section>
+
+<section id="out-thanks">
+  <style>
+    #out-thanks .grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 60px; margin-top: 30px; align-items: start; }
+    #out-thanks .inst { display: flex; flex-direction: column; gap: 18px; }
+    #out-thanks .inst .card p { margin: 0; }
+    #out-thanks .inst .card .name { font-family: var(--head); font-size: 26pt; font-weight: 600; margin-bottom: 6px; }
+    #out-thanks .inst .card code { font-size: 18pt; }
+    #out-thanks .big { font-family: var(--head); font-size: 96pt; font-weight: 700; line-height: 1; margin: 0 0 20px; }
+    #out-thanks .inst .meta { font-size: 24pt; margin: 8px 0 0; }
+    #out-thanks .links p { font-size: 24pt; margin-bottom: 14px; }
+  </style>
+  <p class="kicker">try them tonight</p>
+  <div class="grid">
+    <div class="inst">
+      <div class="card blue"><p class="name">pi-speedometer</p><p><code>pi install npm:@championswimmer/pi-speedometer</code></p></div>
+      <div class="card violet"><p class="name">pi-checklist</p><p><code>pi install npm:pi-checklist</code></p></div>
+      <div class="card green"><p class="name">pi-context-prune</p><p><code>pi install npm:pi-context-prune</code></p></div>
+      <p class="meta">Or just ask pi to write one. <span class="muted">Its docs teach it how.</span></p>
+    </div>
+    <div>
+      <p class="big">Thanks!</p>
+      <div class="links">
+        <p><span class="muted">pi</span> &nbsp;github.com/earendil-works/pi</p>
+        <p><span class="muted">code</span> &nbsp;github.com/championswimmer</p>
+        <p><span class="muted">slides</span> &nbsp;sites.arnavg.in/learning/<br>building-your-coding-harness</p>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">
+    [Q&amp;A] All three are on npm; these are the real package names, in the order we saw them.
+    Last line: pi's extension docs open with "pi can create extensions, ask it to build one", and its system prompt points the model at those docs. So open pi, describe the behaviour, and it writes the .ts file for you to /reload.
+    Leave this slide up during Q&amp;A.
+    Likely questions: Does it work with any model? Yes, pi is provider-agnostic, and hooks don't care which model is behind them. Is it safe? Extensions run with your full permissions, so only install ones you trust. How does this compare with Claude Code hooks? Those are shell commands at fixed points, while pi extensions are in-process TypeScript with typed events and return values.
+  </aside>
+</section>
+

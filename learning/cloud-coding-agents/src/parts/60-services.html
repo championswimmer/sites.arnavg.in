@@ -1,5 +1,5 @@
 <!-- ============================================================
-     60 / Where to run it — Railway spotlight + enterprise grid
+     60 / Where to run it — Railway side-project + six hosts
      ids: sv-divider, sv-rail, sv-ent, sv-bill
      ============================================================ -->
 
@@ -12,13 +12,14 @@
   </style>
   <div>
     <p class="num">06 / Where to run it</p>
-    <h1>Start on Railway.<br>Scale anywhere.</h1>
-    <p class="sub">A sandbox per task tonight; enterprise fleets on Monday.</p>
+    <h1>Try it on a <span class="t-amber">side project.</span></h1>
+    <p class="sub">Sandboxes and cloud agents — both on Railway.</p>
   </div>
   <div class="stack" aria-hidden="true"><div class="c">Sandbox.create()</div><div class="c">.checkpoint("ready")</div><div class="c">.fork() → 50 tasks</div></div>
   <aside class="notes">
-    Stop six: where to run all of this. Two answers. Tonight, on Railway: a sandbox per task, checkpointed once, fanned out per agent, billed per second.
-    Monday, at enterprise scale: the RAM-preserving and snapshot-restart fleets from the service grid. Same ideas from section five, different logos on the invoice.
+    Stop six: where to run all of this. Start with a side project on Railway, which has both doors: short-lived sandboxes, one per task, and persistent
+    cloud agents, one dev machine you return to. Both come with coding agents preinstalled and per-second metering. Then the service grid: six hosted
+    options built on the same ideas from section five, different logos on the invoice.
   </aside>
 </section>
 
@@ -33,28 +34,31 @@
     #sv-rail .st code { font-size: 15pt; display: inline-block; margin-top: 8px; }
     #sv-rail .honest { text-align: center; margin-top: 16px; }
   </style>
-  <p class="kicker">tonight: Railway sandboxes</p>
-  <h2>One sandbox per task</h2>
+  <p class="kicker">side project on Railway: two doors, same building</p>
+  <h2>Sandboxes per task, agents that persist</h2>
   <div class="grid">
-    <div class="st" data-at="1"><p class="n">1</p><b>Create</b><span>An isolated Linux VM inside your environment.</span><br><code>Sandbox.create()</code></div>
-    <div class="st" data-at="2"><p class="n">2</p><b>Reach back</b><span>Private networking hits your Postgres and Redis.</span><br><code>PRIVATE → db, cache, APIs</code></div>
-    <div class="st" data-at="3"><p class="n">3</p><b>Checkpoint</b><span>Save the setup once as a bootable disk snapshot.</span><br><code>checkpoint("ready")</code></div>
-    <div class="st" data-at="4"><p class="n">4</p><b>Fan out</b><span>One sandbox per agent, test, or worker. Destroy when done.</span><br><code>per-second billing · Hobby 50, Pro 100</code></div>
+    <div class="st" data-at="1"><p class="n">1</p><b>Cloud agent</b><span>Your dev machine in the cloud. Claude, Codex, OpenCode preinstalled.</span><br><code>railway code --claude</code></div>
+    <div class="st" data-at="2"><p class="n">2</p><b>Sandboxes</b><span>One throwaway Linux VM per task, beside your Postgres and Redis.</span><br><code>Sandbox.create() · --private-network</code></div>
+    <div class="st" data-at="3"><p class="n">3</p><b>Checkpoint &amp; fork</b><span>Clone the repo once, install once, snapshot it — boot every task from there.</span><br><code>checkpoint("repo-ready") → fork()</code></div>
+    <div class="st" data-at="4"><p class="n">4</p><b>Metered per second</b><span>CPU + RAM while running. Sleep the agent, destroy the sandbox, stop paying.</span><br><code>railway ca sleep · sandbox.destroy()</code></div>
   </div>
-  <p class="honest muted small" data-at="4">Honest trade: checkpoints save disk, not live RAM. Destroyed sandboxes bill nothing.</p>
+  <p class="honest muted small" data-at="4">Honest trade: checkpoints save disk, not live RAM. Sleep keeps files, stops processes. Destroyed sandboxes bill nothing.</p>
   <div class="captions">
-    <p data-only="0">The side-project loop, end to end.</p>
-    <p data-only="1">Create: a Linux VM inside your environment.</p>
-    <p data-only="2">It reaches your database over the private network.</p>
-    <p data-only="3">Checkpoint once you like the setup. Templates cache it.</p>
-    <p data-only="4">Then fan out. Destroy when done; <b>the meter stops</b>.</p>
+    <p data-only="0">Two ways in — pick per side project.</p>
+    <p data-only="1"><b>Cloud agent:</b> SSH or desktop app in, credentials carried, files persist, sleep when done.</p>
+    <p data-only="2"><b>Sandboxes:</b> an isolated VM per task, on the private network with your real services.</p>
+    <p data-only="3"><b>Checkpoint once,</b> then fork per task. The repo-review demo fans out one sandbox per agent.</p>
+    <p data-only="4">Both meter <b>per second</b>. Sleep or destroy, <b>the meter stops</b>.</p>
   </div>
   <aside class="notes">
-    Walk the four clicks. Create gives you an isolated Linux VM scoped to your Railway environment — Docker, coding agents and CLIs come preinstalled, and you can even SSH in.
-    Reach back is the point most people miss: flip on private networking and the sandbox talks to your real Postgres, Redis and internal APIs. Your agent tests against reality, not mocks.
-    Checkpoint saves that working setup as a named bootable disk snapshot; templates cache the recipe for about a week. The documented example fans out one sandbox per agent from a repo-ready checkpoint.
-    Fan out is the loop: one sandbox per task, agent, test or worker — fifty at once on Hobby, a hundred on Pro per environment — metered per second on CPU and memory actually used, and destroying one stops billing cold.
-    Say the honest trade out loud: checkpoints preserve disk, not live RAM. For side projects that is exactly the right trade.
+    Walk the four clicks. One: a cloud agent is a persistent dev machine — railway code with Claude, Codex or OpenCode, six harnesses preinstalled in the image,
+    credentials carried from your laptop, files on disk across disconnects, sleep to stop compute while keeping files.
+    Two: sandboxes are the opposite shape — short-lived isolated Linux VMs, one per task, optionally on the project's private network so the agent tests
+    against your real Postgres, Redis and internal APIs instead of mocks.
+    Three: amortise setup — clone once, install once, sign agents in once, checkpoint the disk as repo-ready, then create or fork one sandbox per task from it.
+    Railway's own repo-review demo does exactly this: one sandbox per agent, in parallel.
+    Four: both bill per second on CPU and memory actually used. Sleep the agent or destroy the sandbox and billing stops.
+    Say the honest trade out loud: checkpoints preserve disk, not live RAM. Sleep keeps files but stops processes. For a side project that is exactly the right trade.
   </aside>
 </section>
 
@@ -76,7 +80,7 @@
     #sv-ent #svOut { font-size: 19pt; margin: 10px 0 0; }
     #sv-ent #svOut:empty { display: none; }
   </style>
-  <p class="kicker">Monday: the enterprise grid. Click any platform</p>
+  <p class="kicker">six hosted options. Click any platform</p>
   <h2>Which keep RAM, which start fresh?</h2>
   <div class="grid">
     <div class="p ram" data-p="e2b" data-at="1"><b>E2B ★</b><span>Firecracker · pause()</span><br><span class="fit">RAM + fs · ~1s resume</span></div>
@@ -91,18 +95,18 @@
     <p data-only="0">Six services, two shapes.</p>
     <p data-only="1"><b>RAM-preserving:</b> E2B, Daytona VMs and Fly keep memory.</p>
     <p data-only="2"><b>Snapshot-restart:</b> the rest restore files into a fresh session.</p>
-    <p data-only="3">Railway, previous slide: checkpoint and fork per environment.</p>
+    <p data-only="3">Railway, previous slide: cloud agents plus checkpoint-and-fork sandboxes.</p>
   </div>
   <aside class="notes">
     Let the audience click cards; details appear below. Step 1 lights up the RAM-preserving row: E2B pauses the live VM with memory included and resumes in about a second, paused free;
     Daytona VM sandboxes preserve memory on pause and bill disk-only while parked; Fly suspends the whole VM including RAM and wakes in hundreds of milliseconds.
     Step 2 covers snapshot-restart: Vercel stop auto-snapshots the filesystem with tiered timeouts; Cloudflare backs directories up to R2 with a 3-day default TTL and restores them as an overlay;
-    Modal snapshots become restorable clones. Step 3 points back: Railway did checkpoint and fork per environment on the previous slide — start there tonight.
+    Modal snapshots become restorable clones. Step 3 points back: Railway did cloud agents plus checkpoint-and-fork sandboxes on the previous slide — start with a side project there.
   </aside>
   <script>
   (function () {
     const D = {
-      e2b: '<b>E2B:</b> pausable Firecracker microVMs. Timeout action <b>kill or pause + autoResume</b>; 1h Hobby / 24h Pro continuous run. Per-second while running, <b>paused free</b>. Concurrency to tens of thousands on Enterprise.',
+      e2b: '<b>E2B:</b> pausable Firecracker microVMs. Timeout action <b>kill or pause + autoResume</b>; 1h Hobby / 24h Pro continuous run. Per-second while running, <b>paused free</b>. Concurrency to tens of thousands at scale.',
       daytona: '<b>Daytona:</b> containers by default, <b>VM sandboxes</b> for agents. VM auto-pause 60 min default. PAYG reserved vCPU/RAM/disk; <b>paused = disk only</b>, archived containers free.',
       fly: '<b>Fly Machines:</b> Machines API, suspend via Firecracker snapshots, resume in <b>hundreds of ms</b>. Snapshots can be discarded on deploy or maintenance. Running = CPU/RAM preset; suspended = storage only.',
       vercel: '<b>Vercel Sandbox:</b> <b>stop() auto-snapshots the filesystem</b>; resume = new session from snapshot. 5 min default timeout, 45 min Hobby / 24 h Pro+. Billed active CPU + provisioned memory + creations + snapshot storage.',

@@ -1,0 +1,418 @@
+<!-- ============================================================
+     02 / Pi's lifecycle — everything is an event
+     ids: lc-divider, lc-loop, lc-extension
+     Shared helpers live on window.LC (defined in lc-divider's script).
+     ============================================================ -->
+
+<section id="lc-divider" class="divider">
+  <style>
+    /* ---------- shared lc-* components (scoped by id prefix) ---------- */
+    [id^="lc-"] .lc-code { font-family: var(--mono); font-size: 16pt; line-height: 1.55; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 0; white-space: pre; color: #f8f8f2; overflow: hidden; }
+    [id^="lc-"] .lc-code .ln { display: block; padding: 0 22px; border-left: 4px solid transparent; transition: background .35s var(--ease), opacity .35s var(--ease), border-color .35s; min-height: 1.55em; }
+    [id^="lc-"] .lc-code.has-hl .ln { opacity: .42; }
+    [id^="lc-"] .lc-code.has-hl .ln.hl { opacity: 1; background: rgba(185,162,255,.13); border-left-color: var(--violet); }
+    [id^="lc-"] .lc-code .k { color: #f92672; } [id^="lc-"] .lc-code .s { color: #e6db74; }
+    [id^="lc-"] .lc-code .f { color: #a6e22e; } [id^="lc-"] .lc-code .c { color: #8a93a8; } [id^="lc-"] .lc-code .n { color: #ae81ff; }
+    [id^="lc-"] .hook.lc-api { color: var(--violet); background: rgba(185,162,255,.1); border-color: rgba(185,162,255,.5); }
+    [id^="lc-"] .hook[data-ev] { cursor: pointer; }
+    [id^="lc-"] .hook[data-ev]:hover { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(63,220,214,.18); }
+    [id^="lc-"] .lc-hint { font-family: var(--mono); font-size: 15pt; color: var(--muted); }
+    [id^="lc-"] .lc-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; }
+    [id^="lc-"] .lc-head h2 { margin-bottom: 14px; }
+
+    /* inspector panel */
+    [id^="lc-"] .lc-insp { position: absolute; top: 150px; right: 64px; width: 640px; min-height: 360px; background: #10131b; border: 1px solid var(--teal); border-radius: 18px; padding: 24px 28px; box-shadow: 0 30px 80px rgba(0,0,0,.6), 0 0 0 6px rgba(63,220,214,.08); z-index: 20; opacity: 0; transform: translateX(30px); pointer-events: none; transition: all .35s var(--ease); overflow: hidden; }
+    [id^="lc-"] .lc-insp.left { right: auto; left: 64px; }
+    [id^="lc-"] .lc-insp.open { opacity: 1; transform: none; pointer-events: auto; }
+    [id^="lc-"] .lc-insp .x { position: absolute; top: 16px; right: 18px; font-family: var(--mono); font-size: 18pt; background: var(--panel-2); color: var(--muted); border: 1px solid var(--line); border-radius: 10px; width: 44px; height: 44px; cursor: pointer; }
+    [id^="lc-"] .lc-insp .grp { font-family: var(--mono); font-size: 15pt; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+    [id^="lc-"] .lc-insp .nm { font-family: var(--mono); font-size: 28pt; color: var(--teal); margin: 0 0 12px; font-weight: 500; }
+    [id^="lc-"] .lc-insp .badge { display: inline-block; font-family: var(--mono); font-size: 15pt; border-radius: 8px; padding: 4px 12px; margin: 0 0 16px; border: 1px solid var(--line); color: var(--muted); }
+    [id^="lc-"] .lc-insp .badge.mut { color: #1a1206; background: var(--amber); border-color: var(--amber); }
+    [id^="lc-"] .lc-insp .badge.inplace { color: var(--amber); border-color: var(--amber); }
+    [id^="lc-"] .lc-insp .row { margin: 0 0 14px; }
+    [id^="lc-"] .lc-insp .lbl { font-family: var(--mono); font-size: 15pt; color: var(--muted); margin: 0 0 2px; text-transform: uppercase; letter-spacing: .08em; }
+    [id^="lc-"] .lc-insp .val { font-size: 18pt; line-height: 1.35; margin: 0; color: var(--text); }
+    [id^="lc-"] .lc-insp .val.mono { font-family: var(--mono); font-size: 16pt; color: #e6e9f2; }
+
+    /* tab strip used by the three return-value slides */
+    [id^="lc-"] .lc-tabs { display: flex; gap: 10px; }
+    [id^="lc-"] .lc-tabs button { font-family: var(--mono); font-size: 15pt; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 6px 16px; cursor: pointer; }
+    [id^="lc-"] .lc-tabs button.cur { color: #1a1206; background: var(--amber); border-color: var(--amber); }
+
+    /* ---------- divider ---------- */
+    #lc-divider h1 { font-size: 80pt; margin-bottom: 24px; }
+    #lc-divider .sub { font-family: var(--head); font-size: 30pt; color: var(--muted); margin: 0; max-width: 860px; line-height: 1.2; }
+    #lc-divider .tape { position: absolute; right: 30px; top: 0; bottom: 0; width: 560px; overflow: hidden; -webkit-mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent); mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent); }
+    #lc-divider .tape .col { display: flex; flex-direction: column; gap: 18px; align-items: flex-start; animation: lcTape 36s linear infinite; }
+    #lc-divider .tape .hook { font-size: 20pt; background: #0f1b1f; }
+    #lc-divider .tape .hook:nth-child(3n+2) { margin-left: 50px; }
+    #lc-divider .tape .hook:nth-child(3n) { margin-left: 100px; }
+    @keyframes lcTape { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+  </style>
+  <div>
+    <p class="num">02 / Pi's lifecycle</p>
+    <h1>Everything<br>is an event</h1>
+    <p class="sub">Every step of pi's loop announces itself.<br>Your code can <span class="t-teal">listen</span> or <span class="t-amber">step in</span>.</p>
+  </div>
+  <div class="tape" aria-hidden="true">
+    <div class="col">
+      <span class="hook mut">input</span><span class="hook mut">before_agent_start</span><span class="hook">agent_start</span>
+      <span class="hook">turn_start</span><span class="hook mut">context</span><span class="hook mut">before_provider_request</span>
+      <span class="hook">message_start</span><span class="hook">message_update</span><span class="hook mut">message_end</span>
+      <span class="hook">tool_execution_start</span><span class="hook mut">tool_call</span><span class="hook mut">tool_result</span>
+      <span class="hook">turn_end</span><span class="hook">agent_end</span><span class="hook">session_start</span>
+      <span class="hook mut">input</span><span class="hook mut">before_agent_start</span><span class="hook">agent_start</span>
+      <span class="hook">turn_start</span><span class="hook mut">context</span><span class="hook mut">before_provider_request</span>
+      <span class="hook">message_start</span><span class="hook">message_update</span><span class="hook mut">message_end</span>
+      <span class="hook">tool_execution_start</span><span class="hook mut">tool_call</span><span class="hook mut">tool_result</span>
+      <span class="hook">turn_end</span><span class="hook">agent_end</span><span class="hook">session_start</span>
+    </div>
+  </div>
+  <aside class="notes">
+    [~0:10] Every stage of that loop fires a named, typed event in pi. An extension is just code that subscribes to them: some events you can only listen to, others let you step in.
+  </aside>
+  <script>
+  (function () {
+    /* ---- event facts, from research/01 section 2 (pi v0.85.1) ---- */
+    const E = {
+      project_trust: ['Startup', 'At startup, before project-local extensions load', 'cwd (limited ctx)', "{ trusted: 'yes' | 'no' | 'undecided', remember? }. Required. The first yes/no wins.", 1],
+      resources_discover: ['Startup', 'After session_start, and again on /reload', "cwd, reason: 'startup' | 'reload'", '{ skillPaths?, promptPaths?, themePaths? }, merged across extensions', 1],
+      session_start: ['Session', 'A session starts, loads, reloads or is replaced', "reason: 'startup' | 'reload' | 'new' | 'resume' | 'fork'", null, 0],
+      session_info_changed: ['Session', '/name, RPC or pi.setSessionName()', 'name', null, 0],
+      session_before_switch: ['Session', 'Before /new or /resume', "reason: 'new' | 'resume', targetSessionFile?", '{ cancel? }', 1],
+      session_before_fork: ['Session', 'Before /fork or /clone', "entryId, position: 'before' | 'at'", '{ cancel?, skipConversationRestore? }', 1],
+      session_before_compact: ['Session', 'Before manual or automatic compaction', 'preparation, branchEntries, reason, willRetry, signal', '{ cancel?, compaction? }: supply your own summary', 1],
+      session_compact: ['Session', 'After compaction succeeds', 'compactionEntry, fromExtension, reason, willRetry', null, 0],
+      session_compact_failed: ['Session', 'Compaction fails or is aborted', 'reason, errorMessage?, aborted, willRetry', null, 0],
+      session_before_tree: ['Session', 'Before /tree navigation', 'preparation { targetId, oldLeafId, entriesToSummarize, … }, signal', '{ cancel?, summary?, customInstructions?, label? }', 1],
+      session_tree: ['Session', 'After /tree navigation', 'newLeafId, oldLeafId, summaryEntry?', null, 0],
+      session_shutdown: ['Session', 'Before the runtime is torn down: quit, /reload, new, resume, fork', 'reason, targetSessionFile?', null, 0],
+      input: ['Input', 'After extension /commands are checked, before skill and template expansion', "text, images?, source: 'interactive' | 'rpc' | 'extension'", "{ action: 'continue' } | { action: 'transform', text } | { action: 'handled' }. Handled means no LLM call.", 1],
+      user_bash: ['Input', 'The user runs !cmd or !!cmd', 'command, excludeFromContext, cwd', '{ operations?, result? }. The first result wins.', 1],
+      before_agent_start: ['Agent / turn', 'After the prompt is expanded, before the loop starts', 'prompt, images?, systemPrompt (chained), systemPromptOptions', '{ message?, systemPrompt? }. The system prompt applies to this run only.', 1],
+      agent_start: ['Agent / turn', 'Start of a low-level run', 'none', null, 0],
+      turn_start: ['Agent / turn', 'Start of each turn. Turn 0 fires before the user message events.', 'turnIndex, timestamp', null, 0],
+      turn_end: ['Agent / turn', 'After the assistant message and all its tool results', 'turnIndex, message, toolResults[]', null, 0],
+      agent_end: ['Agent / turn', 'The low-level run ends (pi may still retry or compact)', 'messages: every new message from this run', null, 0],
+      agent_settled: ['Agent / turn', 'Nothing left to run: no retry, compaction or follow-up', 'none', null, 0],
+      message_start: ['Message', 'A user, custom, assistant or toolResult message begins', 'message', null, 0],
+      message_update: ['Message', 'Every assistant stream delta: text, thinking, toolcall', 'message (partial), assistantMessageEvent', null, 0],
+      message_end: ['Message', 'A message is finalized, before it is written to JSONL', 'message', '{ message? } with the same role. Replaces it in state and in the session file.', 1],
+      tool_execution_start: ['Tool', 'Per tool call, before arguments are prepared and validated', 'toolCallId, toolName, args', null, 0],
+      tool_call: ['Tool', 'After validation, before execute()', 'toolName, toolCallId, input (edit in place to patch args)', '{ block?, reason?, terminate? }. The first block wins. A throw also blocks.', 1],
+      tool_execution_update: ['Tool', 'Each onUpdate(partial) from execute()', 'toolCallId, toolName, args, partialResult', null, 0],
+      tool_result: ['Tool', 'After execute() finishes. Only for calls that actually ran.', 'toolName, input, content, details, isError', '{ content?, details?, isError? }: patches chain like middleware', 1],
+      tool_execution_end: ['Tool', 'The tool is finalized. Parallel mode: completion order.', 'toolCallId, toolName, result, isError', null, 0],
+      context: ['Provider / context', 'Before every LLM call', 'messages (a deep copy)', '{ messages? }. Chained. The session file is untouched.', 1],
+      before_provider_headers: ['Provider / context', 'Once per request, when auth headers are assembled', 'headers', 'Return value ignored. Mutate event.headers in place; null deletes a header.', 2],
+      before_provider_request: ['Provider / context', 'The provider payload is built, just before it is sent', 'payload (e.g. an Anthropic Messages body)', 'Any non-undefined value replaces the payload', 1],
+      after_provider_response: ['Provider / context', 'The HTTP response arrives, before its stream is read', 'status, headers', null, 0],
+      model_select: ['Model & UI', '/model, Ctrl+P cycling, or restore', "model, previousModel, source: 'set' | 'cycle' | 'restore'", null, 0],
+      thinking_level_select: ['Model & UI', 'The thinking level changes', 'level, previousLevel', null, 0],
+      ui_prompt_start: ['Model & UI', 'A ctx.ui dialog opens (select, confirm, input…). Not awaited.', 'reason, kind, title?', null, 0],
+      ui_prompt_end: ['Model & UI', 'The outer dialog closes', 'reason, kind, title?', null, 0],
+    };
+    const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    /* ---- tiny TS highlighter with per-line spans ---- */
+    const KW = /^(import|export|default|function|return|const|if|async|await|type|from|true|false|new)$/;
+    function highlightLine(line) {
+      const re = /(\/\/.*$)|("(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`)|(\b\d+\b)|([A-Za-z_$][\w$]*)(?=\s*\()|([A-Za-z_$][\w$]*)/g;
+      let out = '', last = 0, m;
+      while ((m = re.exec(line))) {
+        out += esc(line.slice(last, m.index));
+        if (m[1]) out += '<span class="c">' + esc(m[1]) + '</span>';
+        else if (m[2]) out += '<span class="s">' + esc(m[2]) + '</span>';
+        else if (m[3]) out += '<span class="n">' + m[3] + '</span>';
+        else if (m[4]) out += KW.test(m[4]) ? '<span class="k">' + m[4] + '</span>' : '<span class="f">' + m[4] + '</span>';
+        else out += KW.test(m[5]) ? '<span class="k">' + m[5] + '</span>' : esc(m[5]);
+        last = re.lastIndex;
+      }
+      return out + esc(line.slice(last));
+    }
+    function renderCode(el) {
+      if (el.dataset.ready) return;
+      let lines = el.textContent.replace(/^\n+|\s+$/g, '').split('\n');
+      const ind = Math.min(...lines.filter(l => l.trim()).map(l => l.match(/^ */)[0].length));
+      lines = lines.map(l => l.slice(ind));
+      el.innerHTML = lines.map((l, i) => '<span class="ln" data-n="' + (i + 1) + '">' + (highlightLine(l) || ' ') + '</span>').join('');
+      el.dataset.ready = 1;
+    }
+    /* data-hl="1:4 2:4-6,8" → highlight lines per step */
+    function codeStep(sec, step) {
+      sec.querySelectorAll('.lc-code[data-hl]').forEach(el => {
+        const map = {};
+        el.dataset.hl.trim().split(/\s+/).forEach(tok => { const [s, r] = tok.split(':'); map[s] = r; });
+        const set = new Set();
+        (map[step] || '').split(',').filter(Boolean).forEach(r => { const [a, b] = r.split('-').map(Number); for (let i = a; i <= (b || a); i++) set.add(i); });
+        el.classList.toggle('has-hl', set.size > 0);
+        el.querySelectorAll('.ln').forEach(ln => ln.classList.toggle('hl', set.has(+ln.dataset.n)));
+      });
+    }
+    function inspect(sec, name) {
+      const f = E[name]; if (!f) return;
+      const p = sec.querySelector('.lc-insp');
+      if (p.classList.contains('open') && p.dataset.ev === name) { p.classList.remove('open'); return; }
+      p.dataset.ev = name;
+      const badge = f[4] === 1 ? '<span class="badge mut">✎ its return value can change the outcome</span>'
+        : f[4] === 2 ? '<span class="badge inplace">✎ mutate in place</span>'
+        : '<span class="badge">observe only</span>';
+      p.innerHTML = '<button class="x" aria-label="close">✕</button>' +
+        '<p class="grp">' + esc(f[0]) + ' event</p><p class="nm">' + esc(name) + '</p>' + badge +
+        '<div class="row"><p class="lbl">fires</p><p class="val">' + esc(f[1]) + '</p></div>' +
+        '<div class="row"><p class="lbl">payload</p><p class="val mono">' + esc(f[2]) + '</p></div>' +
+        '<div class="row"><p class="lbl">can return</p><p class="val mono">' + esc(f[3] || 'nothing (return value ignored)') + '</p></div>';
+      p.classList.add('open');
+      sec.querySelectorAll('.hook[data-ev]').forEach(h => h.classList.toggle('lc-sel', h.dataset.ev === name));
+    }
+    function wireInspector(sec) {
+      sec.addEventListener('click', e => {
+        const chip = e.target.closest('.hook[data-ev]');
+        const p = sec.querySelector('.lc-insp');
+        if (chip) {
+          e.stopPropagation();
+          const r = chip.getBoundingClientRect(), sr = sec.getBoundingClientRect();
+          p.classList.toggle('left', (r.left + r.width / 2 - sr.left) / sr.width > 0.5);
+          inspect(sec, chip.dataset.ev); return;
+        }
+        if (e.target.closest('.x') || !e.target.closest('.lc-insp')) {
+          if (p.classList.contains('open')) { e.stopPropagation(); p.classList.remove('open'); sec.querySelectorAll('.lc-sel').forEach(h => h.classList.remove('lc-sel')); }
+        }
+      });
+    }
+    function wireTabs(sec) {
+      sec.querySelectorAll('.lc-tabs button[data-go]').forEach(b => b.addEventListener('click', e => {
+        e.stopPropagation();
+        const t = document.getElementById(b.dataset.go);
+        if (t) Reveal.slide(Reveal.getIndices(t).h);
+      }));
+    }
+    window.LC = { E, renderCode, codeStep, inspect, wireInspector, wireTabs };
+  })();
+  </script>
+</section>
+
+<section id="lc-loop" class="stepper" data-steps="10">
+  <style>
+    #lc-loop { --gx: 46px; --gy: 104px; }
+    #lc-loop .dia { position: relative; display: grid; grid-template-columns: 332px 1fr 400px 346px; grid-template-rows: auto auto; column-gap: var(--gx); row-gap: var(--gy); margin-top: 8px; }
+    #lc-loop .st { position: relative; background: var(--panel); border: 2px solid var(--line); border-radius: 16px; padding: 10px 14px 16px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; transition: border-color .4s, box-shadow .4s, background .4s; }
+    #lc-loop .st h4 { font-family: var(--head); font-size: 24pt; margin: 0 0 2px; color: var(--text); }
+    #lc-loop .st h4 small { font-family: var(--mono); font-size: 15pt; color: var(--muted); font-weight: 400; margin-left: 6px; }
+    #lc-loop .st.on { border-color: var(--amber); background: #1f1c17; box-shadow: 0 0 0 6px rgba(255,180,84,.12), 0 0 40px rgba(255,180,84,.18); }
+    #lc-loop .st .hook { font-size: 17pt; padding: 3px 12px; }
+    #lc-loop .st.provider h4 { color: var(--blue); }
+    /* grid placement */
+    #lc-loop .input { grid-column: 1; grid-row: 1; } #lc-loop .context { grid-column: 2; grid-row: 1; }
+    #lc-loop .provider { grid-column: 3; grid-row: 1; } #lc-loop .stream { grid-column: 4; grid-row: 1; }
+    #lc-loop .done { grid-column: 1; grid-row: 2; } #lc-loop .tend { grid-column: 2; grid-row: 2; }
+    #lc-loop .tres { grid-column: 3; grid-row: 2; } #lc-loop .tcall { grid-column: 4; grid-row: 2; }
+    /* arrows */
+    #lc-loop .ar { position: absolute; background: var(--line); transition: background .4s, box-shadow .4s; }
+    #lc-loop .ar::after { content: ""; position: absolute; border: 11px solid transparent; }
+    #lc-loop .ar.r { left: 100%; top: 50%; width: var(--gx); height: 4px; margin-top: -2px; }
+    #lc-loop .ar.r::after { right: -8px; top: -9px; border-left-color: inherit; border-left: 13px solid var(--line); }
+    #lc-loop .ar.l { right: 100%; top: 50%; width: var(--gx); height: 4px; margin-top: -2px; }
+    #lc-loop .ar.l::after { left: -8px; top: -9px; border-right: 13px solid var(--line); }
+    #lc-loop .ar.d { top: 100%; left: 50%; height: var(--gy); width: 4px; margin-left: -2px; }
+    #lc-loop .ar.d::after { bottom: -8px; left: -9px; border-top: 13px solid var(--line); }
+    #lc-loop .ar.u { bottom: 100%; left: 50%; height: var(--gy); width: 4px; margin-left: -2px; }
+    #lc-loop .ar.u::after { top: -8px; left: -9px; border-bottom: 13px solid var(--line); }
+    #lc-loop .ar.on { background: var(--amber); box-shadow: 0 0 14px rgba(255,180,84,.6); }
+    #lc-loop .ar.r.on::after { border-left-color: var(--amber); } #lc-loop .ar.l.on::after { border-right-color: var(--amber); }
+    #lc-loop .ar.d.on::after { border-top-color: var(--amber); } #lc-loop .ar.u.on::after { border-bottom-color: var(--amber); }
+    #lc-loop .lab { position: absolute; font-family: var(--mono); font-size: 15pt; color: var(--muted); white-space: nowrap; transition: color .4s; }
+    #lc-loop .lab.on { color: var(--amber); }
+    #lc-loop .lab.loop { left: calc(50% + 16px); bottom: calc(100% + 38px); font-size: 16pt; }
+    #lc-loop .turn { font-family: var(--mono); font-size: 18pt; color: #1a1206; background: var(--amber); border-radius: 8px; padding: 3px 14px; opacity: 0; transition: opacity .3s; }
+    #lc-loop .turn.on { opacity: 1; }
+    #lc-loop .hook.lc-sel { outline: 3px solid var(--text); outline-offset: 2px; }
+    #lc-loop.mutmode .st .hook { opacity: .35; }
+    #lc-loop.mutmode .st .hook.mut { opacity: 1; background: var(--amber); color: #1a1206; border-color: var(--amber); box-shadow: 0 0 0 5px rgba(255,180,84,.18), 0 0 24px rgba(255,180,84,.45); }
+    #lc-loop.mutmode .st .hook.mut::after { color: #1a1206; }
+    #lc-loop .session { font-size: 16pt !important; }
+  </style>
+  <div class="lc-head">
+    <div>
+      <p class="kicker">the loop, with its hooks</p>
+      <h2>Every stage fires events</h2>
+    </div>
+    <div style="display:flex; gap:22px; align-items:center; margin-bottom:18px;">
+      <span class="turn">turn 0</span>
+      <span class="lc-hint">✎ can change the outcome · click a chip</span>
+    </div>
+  </div>
+  <div class="dia">
+    <div class="st input" data-st="input"><h4>Input</h4>
+      <span class="hook session" data-ev="session_start" data-k="session_start">session_start</span>
+      <span class="hook mut" data-ev="input" data-k="input">input</span>
+      <span class="hook mut" data-ev="before_agent_start" data-k="before_agent_start">before_agent_start</span>
+      <span class="hook" data-ev="agent_start" data-k="agent_start">agent_start</span>
+      <i class="ar r" data-a="i-c"></i>
+    </div>
+    <div class="st context" data-st="context"><h4>Context</h4>
+      <span class="hook" data-ev="turn_start" data-k="turn_start">turn_start</span>
+      <span class="hook mut" data-ev="context" data-k="context">context</span>
+      <i class="ar r" data-a="c-p"></i>
+    </div>
+    <div class="st provider" data-st="provider"><h4>Provider <small>(model)</small></h4>
+      <span class="hook" data-ev="before_provider_headers" data-k="before_provider_headers">before_provider_headers</span>
+      <span class="hook mut" data-ev="before_provider_request" data-k="before_provider_request">before_provider_request</span>
+      <span class="hook" data-ev="after_provider_response" data-k="after_provider_response">after_provider_response</span>
+      <i class="ar r" data-a="p-s"></i>
+    </div>
+    <div class="st stream" data-st="stream"><h4>Stream</h4>
+      <span class="hook" data-ev="message_start" data-k="message_start">message_start</span>
+      <span class="hook" data-ev="message_update" data-k="message_update">message_update</span>
+      <span class="hook mut" data-ev="message_end" data-k="message_end">message_end</span>
+      <i class="ar d" data-a="s-t"></i>
+    </div>
+    <div class="st done" data-st="done"><h4>Done</h4>
+      <span class="hook" data-ev="agent_end" data-k="agent_end">agent_end</span>
+      <span class="hook" data-ev="agent_settled" data-k="agent_settled">agent_settled</span>
+    </div>
+    <div class="st tend" data-st="tend"><h4>Turn end</h4>
+      <span class="hook" data-ev="turn_end" data-k="turn_end">turn_end</span>
+      <i class="ar u" data-a="loop"></i>
+      <span class="lab loop" data-a="loop">↺ tools ran: loop</span>
+      <i class="ar l" data-a="t-d"></i>
+    </div>
+    <div class="st tres" data-st="tres"><h4>Tool results</h4>
+      <span class="hook mut" data-ev="tool_result" data-k="tool_result">tool_result</span>
+      <span class="hook" data-ev="tool_execution_end" data-k="tool_execution_end">tool_execution_end</span>
+      <span class="hook mut" data-ev="message_end" data-k="message_end_tr">message_end</span>
+      <i class="ar l" data-a="r-e"></i>
+    </div>
+    <div class="st tcall" data-st="tcall"><h4>Tool calls</h4>
+      <span class="hook" data-ev="tool_execution_start" data-k="tool_execution_start">tool_execution_start</span>
+      <span class="hook mut" data-ev="tool_call" data-k="tool_call">tool_call</span>
+      <span class="hook" data-ev="tool_execution_update" data-k="tool_execution_update">tool_execution_update</span>
+      <i class="ar l" data-a="c-r"></i>
+    </div>
+  </div>
+  <div class="lc-insp"></div>
+  <div class="captions">
+    <p data-only="0">Pi's agent loop. Each stage fires <b>named, typed events</b>.</p>
+    <p data-only="1"><b>Input</b>: the prompt arrives. The run hasn't started yet.</p>
+    <p data-only="2"><b>Context</b>: a turn starts; you can rewrite what the model sees.</p>
+    <p data-only="3"><b>Provider</b>: headers, the raw request payload, the response.</p>
+    <p data-only="4"><b>Stream</b>: one <code>message_update</code> per delta.</p>
+    <p data-only="5"><b>Tool calls</b>: inspect, patch or <b>block</b> before execution.</p>
+    <p data-only="6"><b>Tool results</b>: patch the output before the model reads it.</p>
+    <p data-only="7">Tools ran, so the loop goes <b>round again</b>.</p>
+    <p data-only="8">Turn 1: the model sees the results and answers in text.</p>
+    <p data-only="9">No tool calls: <b>turn_end → agent_end → agent_settled</b>.</p>
+    <p data-only="10"><b>14 of 36</b> events take a return value <b>✎</b>. Handlers chain in load order.</p>
+  </div>
+  <aside class="notes">
+    [~1:30] Same loop as before, now with pi's real event names. Chips glow as they fire; click any chip for its payload and what it can return.
+    Step 1, Input: input can transform or swallow the prompt; before_agent_start can inject a message or change this run's system prompt.
+    Step 2, Context: context gets a deep copy of the messages before every LLM call. Rewrite it and the model sees something else; the session file is untouched.
+    Step 3, Provider: before_provider_request can see or replace the exact payload.
+    Step 4, Stream: a message_update per delta; message_end can replace the final message before it's saved.
+    Step 5, Tool calls: tool_call runs after validation, before execute. This is where you block.
+    Step 6, Tool results: tool_result patches the output before the model reads it.
+    Steps 7–9: tools ran, so round again; turn 1 just answers, so turn_end, agent_end, agent_settled.
+    Step 10: two kinds of hook. Observe: return nothing. Intervene: return a value. 14 of pi's 36 events can change the outcome that way; eight are on this loop. Handlers run one at a time, awaited, in extension load order, and results chain: the next handler sees the previous one's change (for tool_call, the first block wins). A slow handler slows the loop, even on message_update.
+  </aside>
+  <script>
+  (function () {
+    const sec = document.getElementById('lc-loop');
+    LC.wireInspector(sec);
+    const P = [
+      { st: [], hot: [], ar: [] },
+      { st: ['input'], hot: ['session_start', 'input', 'before_agent_start', 'agent_start'], ar: [], t: 0 },
+      { st: ['context'], hot: ['turn_start', 'context'], ar: ['i-c'], t: 0 },
+      { st: ['provider'], hot: ['before_provider_headers', 'before_provider_request', 'after_provider_response'], ar: ['c-p'], t: 0 },
+      { st: ['stream'], hot: ['message_start', 'message_update', 'message_end'], ar: ['p-s'], t: 0 },
+      { st: ['tcall'], hot: ['tool_execution_start', 'tool_call', 'tool_execution_update'], ar: ['s-t'], t: 0 },
+      { st: ['tres'], hot: ['tool_result', 'tool_execution_end', 'message_end_tr'], ar: ['c-r'], t: 0 },
+      { st: ['tend'], hot: ['turn_end'], ar: ['r-e', 'loop'], t: 0 },
+      { st: ['context', 'provider', 'stream'], hot: ['turn_start', 'context', 'before_provider_request', 'message_update', 'message_end'], ar: ['loop', 'c-p', 'p-s'], t: 1 },
+      { st: ['tend', 'done'], hot: ['turn_end', 'agent_end', 'agent_settled'], ar: ['t-d'], t: 1 },
+      { st: [], hot: [], ar: [], mut: true },
+    ];
+    Deck.onStep('lc-loop', (s) => {
+      const p = P[s] || P[0];
+      sec.querySelectorAll('.st').forEach(el => el.classList.toggle('on', p.st.includes(el.dataset.st)));
+      sec.querySelectorAll('.st .hook').forEach(el => el.classList.toggle('hot', p.hot.includes(el.dataset.k)));
+      sec.querySelectorAll('[data-a]').forEach(el => el.classList.toggle('on', p.ar.includes(el.dataset.a)));
+      const t = sec.querySelector('.turn');
+      t.classList.toggle('on', p.t !== undefined);
+      if (p.t !== undefined) t.textContent = 'turn ' + p.t;
+      sec.classList.toggle('mutmode', !!p.mut);
+    });
+    Deck.onLeave('lc-loop', () => { sec.querySelector('.lc-insp').classList.remove('open'); });
+  })();
+  </script>
+</section>
+
+<section id="lc-extension" class="stepper" data-steps="5">
+  <style>
+    #lc-extension .grid { display: grid; grid-template-columns: 1010px 1fr; gap: 40px; margin-top: 18px; align-items: start; }
+    #lc-extension .plug { display: flex; flex-direction: column; gap: 14px; position: relative; padding-left: 34px; }
+    #lc-extension .plug::before { content: ""; position: absolute; left: 10px; top: 40px; bottom: 44px; width: 4px; border-radius: 2px; background: var(--line); }
+    #lc-extension .core { background: radial-gradient(circle at 20% 30%, #ffd08a, var(--amber) 70%); border-radius: 16px; padding: 12px 20px; margin-left: -34px; }
+    #lc-extension .core p { font-family: var(--head); font-size: 24pt; font-weight: 700; color: #1a1206; margin: 0; }
+    #lc-extension .cap { position: relative; padding: 12px 18px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); transition: all .45s var(--ease); opacity: .4; }
+    #lc-extension .cap::before { content: ""; position: absolute; left: -24px; top: 50%; width: 24px; height: 4px; background: var(--line); transition: background .4s; }
+    #lc-extension .cap h4 { font-family: var(--mono); font-size: 20pt; font-weight: 500; margin: 0 0 2px; color: var(--violet); }
+    #lc-extension .cap p { font-size: 18pt; color: var(--muted); margin: 0; line-height: 1.25; }
+    #lc-extension .cap.on { opacity: 1; border-color: var(--violet); box-shadow: 0 0 0 5px rgba(185,162,255,.14); }
+    #lc-extension .cap.on::before { background: var(--violet); }
+    #lc-extension .cap.c1 h4 { color: var(--teal); }
+    #lc-extension .cap.c1.on { border-color: var(--teal); box-shadow: 0 0 0 5px rgba(63,220,214,.14); }
+    #lc-extension .cap.c1.on::before { background: var(--teal); }
+    #lc-extension .where { display: flex; gap: 16px; align-items: center; margin-top: 18px; flex-wrap: wrap; }
+    #lc-extension .where code { font-size: 17pt; }
+    #lc-extension .where .reload { font-family: var(--mono); font-size: 18pt; color: #1a1206; background: var(--amber); border-radius: 8px; padding: 2px 12px; }
+  </style>
+  <p class="kicker">what is an extension?</p>
+  <h2>One file. One function. It gets <code style="font-size:.85em">pi</code>.</h2>
+  <div class="grid">
+    <div>
+      <p class="code-label">~/.pi/agent/extensions/hello.ts (illustrative)</p>
+      <div class="lc-code" data-hl="1:3,9 2:4-6 3:7 4:8 5:5">
+        import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+
+        export default function (pi: ExtensionAPI) {
+          pi.on("turn_end", (event, ctx) => {
+            ctx.ui.setStatus("turns", `turn ${event.turnIndex + 1}`);
+          });
+          pi.registerTool({ name: "roll_dice", /* … */ });
+          pi.registerCommand("hello", { /* … */ });
+        }
+      </div>
+      <div class="where" data-at="1">
+        <span class="small muted">drop it in</span><code>~/.pi/agent/extensions/</code><span class="small muted">or</span><code>.pi/extensions/</code><span class="small muted">then</span><span class="reload">/reload</span>
+      </div>
+    </div>
+    <div class="plug">
+      <div class="core"><p>π calls your function</p></div>
+      <div class="cap c1"><h4>pi.on(event, fn)</h4><p>hook any lifecycle event</p></div>
+      <div class="cap c2"><h4>pi.registerTool</h4><p>give the model a new tool</p></div>
+      <div class="cap c3"><h4>pi.registerCommand</h4><p>add a /slash command</p></div>
+      <div class="cap c4"><h4>ctx.ui</h4><p>footer status, widgets, dialogs</p></div>
+    </div>
+  </div>
+  <aside class="notes">
+    [~0:35] So how do you hook in? An extension is a TypeScript file whose default export is a function. pi calls it once and hands you the API.
+    Step 1: drop it in ~/.pi/agent/extensions or .pi/extensions, type /reload, it's live. No build, no fork.
+    Steps 2–5: pi.on hooks any event from the loop we just saw; registerTool gives the model a new tool; registerCommand adds a slash command; ctx.ui paints the footer, widgets and dialogs. (The file is illustrative, stitched from documented snippets.)
+    Close: three real extensions, each one level deeper. speedometer only observes, checklist adds tools, and context-prune rewrites the context.
+  </aside>
+  <script>
+  (function () {
+    const sec = document.getElementById('lc-extension');
+    sec.querySelectorAll('.lc-code').forEach(LC.renderCode);
+    Deck.onStep('lc-extension', (s) => {
+      LC.codeStep(sec, s);
+      const on = { 2: 1, 3: 2, 4: 3, 5: 4 }[s];
+      [1, 2, 3, 4].forEach(i => {
+        sec.querySelector('.cap.c' + i).classList.toggle('on', on === i || s <= 1);
+      });
+    });
+  })();
+  </script>
+</section>

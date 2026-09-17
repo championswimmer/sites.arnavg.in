@@ -1,0 +1,68 @@
+<section id="title" class="divider">
+  <style>
+    #title .pi-mark { font-family: var(--head); font-size: 150pt; font-weight: 700; line-height: .9; color: var(--amber); margin: 0 0 10px; }
+    #title h1 { font-size: 72pt; margin-bottom: 20px; }
+    #title .sub { font-size: 30pt; color: var(--muted); margin: 0; }
+    #title .orbit { position: absolute; right: 90px; top: 50%; transform: translateY(-50%); width: 520px; height: 520px; }
+    #title .orbit .ring { position: absolute; inset: 0; border: 2px dashed var(--line); border-radius: 50%; animation: titleSpin 60s linear infinite; }
+    @keyframes titleSpin { to { transform: rotate(360deg); } }
+    #title .orbit .core { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 170px; height: 170px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffd08a, var(--amber) 60%, #b86f10); display: grid; place-items: center; box-shadow: 0 0 90px rgba(255,180,84,.35); }
+    #title .orbit .core p { font-family: var(--head); font-size: 64pt; color: #1a1206; margin: 0; font-weight: 700; }
+    #title .orbit .hook { position: absolute; transform: translate(-50%,-50%); font-size: 18pt; background: #0f1b1f; }
+  </style>
+  <div style="max-width: 900px;">
+    <p class="kicker">a talk about extending AI coding agents</p>
+    <h1>Building your<br>coding harness</h1>
+    <p class="sub">Every hook in the agent loop is yours to grab.<br>Examples from <span class="t-amber">pi</span>.</p>
+  </div>
+  <div class="orbit" aria-hidden="true">
+    <div class="ring"></div>
+    <div class="core"><p>π</p></div>
+    <span class="hook" style="left:50%;top:0">tool_call</span>
+    <span class="hook" style="left:100%;top:50%">context</span>
+    <span class="hook" style="left:50%;top:100%">turn_end</span>
+    <span class="hook" style="left:0;top:50%">message_update</span>
+  </div>
+  <aside class="notes">
+    [~0:20] You all use a coding agent every day. Most of us treat its harness as fixed.
+    It isn't: in pi, changing how the agent works is a small TypeScript file, not a fork. Fourteen minutes, three real extensions.
+    Deck: arrows or clicker step through each diagram. S for notes, F for fullscreen.
+  </aside>
+</section>
+
+<section id="agenda" class="stepper" data-steps="3">
+  <style>
+    #agenda .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 40px; }
+    #agenda .card { min-height: 380px; display: flex; flex-direction: column; gap: 14px; }
+    #agenda .card .big { font-family: var(--head); font-size: 70pt; font-weight: 700; line-height: 1; margin: 0; }
+    #agenda .card h3 { font-size: 30pt; }
+    #agenda .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: auto; }
+  </style>
+  <p class="kicker">the plan</p>
+  <h2>Three stops</h2>
+  <div class="row">
+    <div class="card amber" data-at="1">
+      <p class="big t-amber">1</p>
+      <h3>What a harness does</h3>
+      <p class="muted">The loop wrapped around the model</p>
+    </div>
+    <div class="card teal" data-at="2">
+      <p class="big t-teal">2</p>
+      <h3>Pi's lifecycle</h3>
+      <p class="muted">Every step fires an event you can hook</p>
+      <div class="chips"><span class="hook">context</span><span class="hook">tool_call</span></div>
+    </div>
+    <div class="card violet" data-at="3">
+      <p class="big t-violet">3</p>
+      <h3>Three real extensions</h3>
+      <p class="muted">Observe → add tools → rewrite context</p>
+      <div class="chips"><span class="hook">speedometer</span><span class="hook">checklist</span><span class="hook">context-prune</span></div>
+    </div>
+  </div>
+  <aside class="notes">
+    [~0:25] Step 1: a quick look at what the harness does around the model.
+    Step 2: pi's lifecycle. Every stage of the loop fires an event you can hook, and some let you change the outcome.
+    Step 3: three extensions I use daily, each going one level deeper: speedometer only observes, checklist adds tools, and context-prune rewrites what the model sees.
+  </aside>
+</section>
+

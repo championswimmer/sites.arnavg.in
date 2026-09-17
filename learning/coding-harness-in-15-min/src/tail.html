@@ -1,0 +1,23 @@
+
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+<script>
+Deck.prepare();
+Reveal.initialize({
+  width: 1600, height: 900, margin: 0.03, minScale: 0.2, maxScale: 2.5,
+  hash: true, controls: true, progress: true, center: false,
+  slideNumber: 'c/t', transition: 'fade', transitionSpeed: 'fast', backgroundTransition: 'none',
+  plugins: [RevealNotes, RevealHighlight],
+}).then(() => {
+  const cur = () => Reveal.getCurrentSlide();
+  Deck.apply(cur()); Deck._enter(cur());
+  Reveal.on('slidechanged', e => { Deck._leave(e.previousSlide); Deck.apply(e.currentSlide); Deck._enter(e.currentSlide); });
+  Reveal.on('fragmentshown', () => Deck.apply(cur()));
+  Reveal.on('fragmenthidden', () => Deck.apply(cur()));
+});
+</script>
+</body>
+</html>

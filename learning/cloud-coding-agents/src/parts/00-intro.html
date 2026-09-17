@@ -41,20 +41,19 @@
 
 <section id="in-hands" class="stepper" data-steps="3">
   <style>
-    #in-hands .q { display: grid; grid-template-columns: 110px 1fr auto; gap: 30px; align-items: center; margin: 0 0 40px; }
+    #in-hands .q { display: grid; grid-template-columns: 110px 1fr; gap: 30px; align-items: center; margin: 0 0 40px; }
     #in-hands .q .n { font-family: var(--head); font-size: 64pt; font-weight: 700; color: var(--line); text-align: right; margin: 0; transition: color .4s; }
     #in-hands .q.on .n { color: var(--teal); }
     #in-hands .q p.t { font-family: var(--head); font-size: 36pt; margin: 0; line-height: 1.15; }
-    #in-hands .q .hands { font-family: var(--mono); font-size: 15pt; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 6px 18px; white-space: nowrap; margin: 0; }
-    #in-hands .q.on .hands { color: var(--teal); border-color: rgba(63,220,214,.5); }
   </style>
   <p class="kicker">three questions, honest hands</p>
   <h2 style="margin-bottom: 46px;">Keep your hand up if…</h2>
-  <div class="q" data-at="1"><p class="n">1</p><p class="t">you used an AI coding agent this week</p><p class="hands">most of us</p></div>
-  <div class="q" data-at="2"><p class="n">2</p><p class="t">you have coded <span class="t-amber">from your phone</span> while the agent ran in the cloud</p><p class="hands">fewer hands</p></div>
-  <div class="q" data-at="3"><p class="n">3</p><p class="t">at work, agents spin up with your <span class="t-teal">tickets, repo and CI</span> already wired in</p><p class="hands">almost nobody</p></div>
+  <div class="q" data-at="1"><p class="n">1</p><p class="t">you used an AI coding agent this week</p></div>
+  <div class="q" data-at="2"><p class="n">2</p><p class="t">you connect to that agent <span class="t-amber">from your phone</span> while it keeps running on your laptop</p></div>
+  <div class="q" data-at="3"><p class="n">3</p><p class="t">you can start sessions from mobile that arrive with your <span class="t-teal">repo cloned, tickets linked</span> and can deploy to prod</p></div>
   <aside class="notes">
-    Click through one question at a time and count hands out loud. Nearly everyone keeps a hand up for 1. Question 2 drops most of the room: coding from a phone while the agent runs somewhere else. Question 3 should leave almost nobody: a workplace setup where agents arrive with tickets, repo, and CI already connected.
+    Question 2 drops most of the room: staying connected to that same session from your phone, with Claude or Codex mobile, while it keeps running on your laptop. (Expect fewer hands here.)
+    Question 3 should leave almost nobody: starting sessions from mobile that begin with your repo already cloned, have access to tickets, and can deploy to prod. (Expect almost nobody.)
     That funnel is the talk. We know agents work. We barely run them in the cloud. And almost nobody has them wired into work yet. Today is about closing those two gaps.
   </aside>
 </section>
@@ -92,7 +91,7 @@
     <div class="card amber" data-at="4">
       <p class="big t-amber">5</p>
       <h3>Where to run it</h3>
-      <p class="muted">Railway tonight, fleets Monday</p>
+      <p class="muted">Side project first, six hosts</p>
     </div>
     <div class="card green" data-at="4">
       <p class="big t-green">6</p>
@@ -104,6 +103,6 @@
     Six stops. First, what an agent session actually does with its machine — the loop, running code, tools, and why it must verify by running things.
     Second, the bill: what thousands of always-on VMs cost and where the money really burns.
     Third, the two fixes: pause VMs into snapshots and resume in a second, and share one warm repo with copy-on-write.
-    Fourth, the three ideas underneath every platform. Fifth, where to run it: Railway tonight, enterprise fleets on Monday. Sixth, the whole system on one slide for Q&A.
+    Fourth, the three ideas underneath every platform. Fifth, where to run it: try it on a side project first, then six hosted options. Sixth, the whole system on one slide for Q&A.
   </aside>
 </section>

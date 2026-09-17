@@ -32,8 +32,10 @@
     #lp-loop .n5.on { border-color: var(--green); box-shadow: 0 0 22px rgba(127,227,164,.3); }
     #lp-loop .arr { display: grid; place-items: center; font-size: 28pt; color: var(--muted); opacity: .35; transition: all .4s; }
     #lp-loop .arr.on { opacity: 1; color: var(--teal); }
-    #lp-loop .back { text-align: center; font-family: var(--mono); font-size: 16pt; color: var(--violet); margin: 12px 0 0; opacity: .35; transition: opacity .4s; }
-    #lp-loop .back.on { opacity: 1; }
+    #lp-loop .loopback { margin: 14px 6px 0; opacity: .3; transition: opacity .4s; }
+    #lp-loop .loopback.on { opacity: 1; }
+    #lp-loop .loopback svg { display: block; width: 100%; height: 26px; }
+    #lp-loop .loopback .lbl { text-align: center; font-family: var(--mono); font-size: 16pt; color: var(--violet); margin: 2px 0 0; }
   </style>
   <p class="kicker">one agent session</p>
   <h2>Click through the loop</h2>
@@ -46,19 +48,35 @@
       <div class="node n4" data-at="4"><b>Repair</b><span>re-plan</span></div><div class="arr" data-at="5">→</div>
       <div class="node n5" data-at="5"><b>Handoff</b><span>PR·patch</span></div>
     </div>
-    <p class="back" data-at="4">↩ repair loops back to act until checks pass</p>
+    <div class="loopback" data-at="4"><svg viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="lpBackHead" markerWidth="9" markerHeight="7" refX="7" refY="3.5" orient="auto"><path d="M0,0 L8,3.5 L0,7 z" fill="#b9a2ff"></path></marker></defs><line x1="73" y1="11" x2="29" y2="11" stroke="#b9a2ff" stroke-width="1.4" stroke-dasharray="5 3" marker-end="url(#lpBackHead)"></line></svg><p class="lbl">repair loops back to act until checks pass</p></div>
   </div>
   <div class="captions">
     <p data-only="0">Your session runs on a VM, not just chat.</p>
-    <p data-only="1"><b>Plan:</b> model reads code, picks an approach.</p>
-    <p data-only="2"><b>Act:</b> edits files, runs commands, calls tools.</p>
-    <p data-only="3"><b>Observe:</b> stdout, exit codes, diffs come back.</p>
-    <p data-only="4"><b>Repair:</b> failures update the plan. Loop.</p>
-    <p data-only="5"><b>Handoff:</b> a PR only when checks pass.</p>
+    <p data-only="1"><b>Plan:</b> reads the ticket + the repo. Needs <b>ticket access</b> and repo read.</p>
+    <p data-only="2"><b>Act:</b> edits, runs, calls tools. Needs <b>repo write (clone)</b>, shell, MCP.</p>
+    <p data-only="3"><b>Observe:</b> reads results back. Needs <b>logs, exits, CI</b> output.</p>
+    <p data-only="4"><b>Repair:</b> reproduces on a staging-like env. Needs <b>staging / prod-ish access</b> to debug, then loops back to Act.</p>
+    <p data-only="5"><b>Handoff:</b> ships it. Needs <b>raise PR, link ticket, deploy</b> access.</p>
   </div>
+  <div id="lpAccess" class="card violet" style="margin-top:14px;min-height:64px"><p style="margin:0;font-size:19pt" id="lpAccessBody">Each highlighted box needs a permission. Watch this space.</p></div>
+  <script>
+  (function () {
+    const D = {
+      0: 'Each highlighted box needs a permission. Watch this space.',
+      1: '<b>Plan needs:</b> read the ticket (issue tracker scope) + read the repo. No write yet.',
+      2: '<b>Act needs:</b> repo write — the clone — plus shell exec and MCP tool calls.',
+      3: '<b>Observe needs:</b> logs, exit codes, diffs, CI output piped back into context.',
+      4: '<b>Repair needs:</b> staging or prod-like access to reproduce and debug — then the loopback arrow fires and Act runs again.',
+      5: '<b>Handoff needs:</b> raise the PR, link the ticket, trigger deploy. The only step that touches prod for real.'
+    };
+    if (window.Deck) Deck.onStep('lp-loop', s => { const b = document.getElementById('lpAccessBody'); if (b) b.innerHTML = D[s] || D[0]; });
+  })();
+  </script>
   <aside class="notes">
-    Walk the five clicks slowly. Plan: the model decides what to look at. Act: it edits files, runs commands, calls tools — all inside one VM that holds the repo.
-    Observe: the harness returns outputs and exit codes. Repair: the model updates its plan and loops. Handoff only happens when acceptance checks pass.
+    Walk the five clicks slowly. Plan: the model reads the ticket and the code — that step already needs ticket access plus repo read.
+    Act: it edits files, runs commands, calls tools — needs repo write, a shell, MCP. Observe: needs logs, exit codes, CI output flowing back.
+    Repair: it reproduces against a staging-like environment — needs staging or prod-ish access to debug — then follows the loopback arrow into Act again.
+    Handoff only happens when acceptance checks pass, and needs permission to raise a PR, link the ticket and deploy.
     The punchline to land: every one of those verbs needs a real machine.
   </aside>
 </section>

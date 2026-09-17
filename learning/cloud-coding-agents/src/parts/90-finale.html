@@ -61,9 +61,9 @@
       model: '🧠 <b>Model</b> (§1) plans and writes programs in code mode. Knows bash, Python, pytest already. Token-efficient, composable.',
       loop: '↻ <b>Loop</b> (§1): plan → act → observe → repair until checks pass. Lint, build, tests inside the loop: no run, no trust.',
       mcp: '◉ <b>MCP</b> (§1) is one plug shape for docs, GitHub, DBs, tickets. Local servers share the VM, so they get sandboxed too.',
-      snap: '❄️ <b>Snapshots</b> (§3): RAM + disk frozen to storage, CPU/RAM released. Resume mmaps pages back on demand, ~1 second. Firecracker: &lt;125 ms boot, &lt;5 MiB overhead.',
-      cow: '▦ <b>Warm repo</b> (§4): one checkout on the dev server, per-session OverlayFS/ZFS views. Reads shared, writes copy up. Page cache shared.',
-      bill: '⚡ <b>Where to run</b> (§5+§6). Railway: one sandbox per task, checkpoint once, destroy to stop billing. Fleets: E2B and Daytona keep RAM; the rest restart from snapshots. Parked state costs pennies.'
+      snap: '❄️ <b>Snapshots</b> (§3): memory + device state frozen to one snapshot, disk delta to another; CPU/RAM released. Resume maps pages back on demand — about a second for small VMs. Firecracker: &lt;125 ms boot, &lt;5 MiB overhead.',
+      cow: '▦ <b>Warm repo</b> (§4): one checkout per beefy devserver, per-chat microVM with its own CoW disk clone. Reads shared, writes copy up. Page cache shared.',
+      bill: '⚡ <b>Where to run</b> (§5+§6). Railway: cloud agents that sleep, sandboxes you checkpoint and destroy. Hosts: E2B and Daytona keep RAM; the rest restart from snapshots. Parked state costs pennies.'
     };
     const sec = document.getElementById('fn-full');
     sec.querySelectorAll('[data-n]').forEach(b => b.addEventListener('click', e => {
@@ -88,12 +88,12 @@
   <div class="row">
     <div class="card amber" data-at="1"><p class="big t-amber">run it</p><h3>Your agent needs a computer</h3><p class="muted">Loop, code, tests. All of it executes.</p></div>
     <div class="card violet" data-at="2"><p class="big t-violet">freeze it</p><h3>Idle time can sit in storage</h3><p class="muted">Snapshots and shared repos shrink the bill.</p></div>
-    <div class="card green" data-at="3"><p class="big t-green">rent it</p><h3>You can rent all of this</h3><p class="muted">Railway tonight, fleets on Monday.</p></div>
+    <div class="card green" data-at="3"><p class="big t-green">rent it</p><h3>You can rent all of this</h3><p class="muted">A side project first, hosted fleets next.</p></div>
   </div>
   <aside class="notes">
     Three sentences to carry out. Agents need computers: everything that makes them good — the loop, code mode, verification — is execution.
     Idle is storable: snapshots turn waiting RAM into cheap storage, and copy-on-write means repos are barely copied at all.
-    And you can rent it: pausable sandbox primitives with per-second metering already exist — start there, not with a VM fleet.
+    And you can rent it: sandboxes and cloud agents with per-second metering already exist — start with a side project, not with a VM fleet.
   </aside>
 </section>
 
