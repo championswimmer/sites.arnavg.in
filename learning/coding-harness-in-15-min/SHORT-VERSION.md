@@ -9,11 +9,12 @@ People who use AI coding agents every day, at an event sponsored by Devin/Cognit
 Vercel and Cloudflare. They know what an agent loop, tool calls and context windows are. **Don't explain
 the basics twice. Let the diagrams do the work, and keep the captions short.**
 
-## New structure (21 slides, target ≈ 14 min)
+## New structure (22 slides, target ≈ 14–15 min)
 
 | # | Part file | Slide | Budget | Notes on the cut |
 |---|-----------|-------|--------|------------------|
 | 1 | 00-intro | `title` | 0:20 | |
+| 1b | 00-intro | `hands` | 0:30 | re-added with 4 questions: agents → shared skills → scripts/hooks/MCPs → modified harness (expected %s in notes only) |
 | 2 | 00-intro | `agenda` | 0:25 | extensions now in order speedometer → checklist → context-prune (observe → add tools → rewrite context) |
 | 3 | 10-harness | `hn-loop` | 1:45 | first content slide. Absorbs `hn-model` ("the model is a text function; the harness runs the loop") |
 | 4 | 10-harness | `hn-same` | 0:45 | absorbs `hn-bridge` ("built to be bent / no fork") |
@@ -35,7 +36,7 @@ the basics twice. Let the diagrams do the work, and keep the captions short.**
 | 20 | 90-outro | `out-zero` | 0:40 | the `tool_call` block demo lives here now |
 | 21 | 90-outro | `out-thanks` | Q&A | install lines in the new order |
 
-Dropped: `hands`, `hn-divider`, `hn-model`, `hn-anatomy`, `hn-bridge`, `lc-run`, `lc-chain`, `lc-block`,
+Dropped: `hn-divider`, `hn-model`, `hn-anatomy`, `hn-bridge`, `lc-run`, `lc-chain`, `lc-block`,
 `lc-redact`, `lc-sysprompt`, `lc-catalogue`, `lc-why`, `lc-bridge`, `sp-numbers`, `sp-events`, `sp-takeaway`,
 `ck-why`, `ck-map`, `ck-tree`, `ck-takeaway`, `cp-idea`, `cp-modes`, `cp-edges`, `cp-takeaway`, `out-divider`,
 `out-ideas`, `out-meta`.

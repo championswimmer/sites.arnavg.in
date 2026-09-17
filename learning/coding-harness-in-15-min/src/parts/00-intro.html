@@ -30,6 +30,29 @@
   </aside>
 </section>
 
+<section id="hands" class="stepper" data-steps="4">
+  <style>
+    #hands .q { display: grid; grid-template-columns: 110px 1fr; gap: 30px; align-items: center; margin: 0 0 36px; }
+    #hands .q .n { font-family: var(--head); font-size: 60pt; font-weight: 700; color: var(--line); text-align: right; margin: 0; transition: color .4s; }
+    #hands .q.on .n { color: var(--amber); }
+    #hands .q p.t { font-family: var(--head); font-size: 34pt; margin: 0; line-height: 1.15; }
+  </style>
+  <p class="kicker">quick show of hands</p>
+  <h2 style="margin-bottom: 40px;">Keep your hand up if you have…</h2>
+  <div class="q" data-at="1"><p class="n">1</p><p class="t">used an AI coding agent to write code</p></div>
+  <div class="q" data-at="2"><p class="n">2</p><p class="t">written skills your coworkers or friends use</p></div>
+  <div class="q" data-at="3"><p class="n">3</p><p class="t">added scripts, hooks or your own MCPs for repeat tasks</p></div>
+  <div class="q" data-at="4"><p class="n">4</p><p class="t">modified <span class="t-amber">your coding harness</span> to fit your process</p></div>
+  <aside class="notes">
+    [~0:30] Ask everyone to raise a hand and keep it up while it's still true. One click per question, and pause for hands.
+    1: used an AI coding agent to write code. Expect about 100%.
+    2: written skills that coworkers or friends use. Expect close to 99% of hands still up.
+    3: added scripts, hooks or your own MCPs for repeatable tasks. Expect about 50%.
+    4: modified your coding harness to fit your process. Expect about 25%.
+    That last drop is what this talk is about: most people customise around the agent, few customise the harness itself.
+  </aside>
+</section>
+
 <section id="agenda" class="stepper" data-steps="3">
   <style>
     #agenda .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 40px; }

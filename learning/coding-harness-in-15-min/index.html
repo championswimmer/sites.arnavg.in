@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Building Your Coding Harness</title>
-<meta name="description" content="A speaker-led, interactive talk on how the pi coding agent exposes its whole lifecycle as hooks, and three real extensions built on them.">
+<title>Building Your Coding Harness (15-min cut)</title>
+<meta name="description" content="A 15-minute cut of the interactive talk: how a coding harness works, pi's lifecycle hooks, and three real extensions built on them.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
@@ -192,7 +192,8 @@ window.Deck = (function () {
     #title h1 { font-size: 72pt; margin-bottom: 20px; }
     #title .sub { font-size: 30pt; color: var(--muted); margin: 0; }
     #title .orbit { position: absolute; right: 90px; top: 50%; transform: translateY(-50%); width: 520px; height: 520px; }
-    #title .orbit .ring { position: absolute; inset: 0; border: 2px dashed var(--line); border-radius: 50%; animation: spin 60s linear infinite; }
+    #title .orbit .ring { position: absolute; inset: 0; border: 2px dashed var(--line); border-radius: 50%; animation: titleSpin 60s linear infinite; }
+    @keyframes titleSpin { to { transform: rotate(360deg); } }
     #title .orbit .core { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 170px; height: 170px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffd08a, var(--amber) 60%, #b86f10); display: grid; place-items: center; box-shadow: 0 0 90px rgba(255,180,84,.35); }
     #title .orbit .core p { font-family: var(--head); font-size: 64pt; color: #1a1206; margin: 0; font-weight: 700; }
     #title .orbit .hook { position: absolute; transform: translate(-50%,-50%); font-size: 18pt; background: #0f1b1f; }
@@ -211,10 +212,32 @@ window.Deck = (function () {
     <span class="hook" style="left:0;top:50%">message_update</span>
   </div>
   <aside class="notes">
-    Welcome. Everyone here has used an AI coding tool: Claude Code, Cursor, Codex, something like that.
-    Very few people have changed how the tool itself works. By the end of this talk, you'll see that doing so is a
-    30-line TypeScript file, not a fork.
-    How to run this deck: the arrow keys or clicker step through every diagram. Press S for speaker notes and F for fullscreen. You can also click the buttons on the interactive slides.
+    [~0:20] You all use a coding agent every day. Most of us treat its harness as fixed.
+    It isn't: in pi, changing how the agent works is a small TypeScript file, not a fork. Fourteen minutes, three real extensions.
+    Deck: arrows or clicker step through each diagram. S for notes, F for fullscreen.
+  </aside>
+</section>
+
+<section id="hands" class="stepper" data-steps="4">
+  <style>
+    #hands .q { display: grid; grid-template-columns: 110px 1fr; gap: 30px; align-items: center; margin: 0 0 36px; }
+    #hands .q .n { font-family: var(--head); font-size: 60pt; font-weight: 700; color: var(--line); text-align: right; margin: 0; transition: color .4s; }
+    #hands .q.on .n { color: var(--amber); }
+    #hands .q p.t { font-family: var(--head); font-size: 34pt; margin: 0; line-height: 1.15; }
+  </style>
+  <p class="kicker">quick show of hands</p>
+  <h2 style="margin-bottom: 40px;">Keep your hand up if you have…</h2>
+  <div class="q" data-at="1"><p class="n">1</p><p class="t">used an AI coding agent to write code</p></div>
+  <div class="q" data-at="2"><p class="n">2</p><p class="t">written skills your coworkers or friends use</p></div>
+  <div class="q" data-at="3"><p class="n">3</p><p class="t">added scripts, hooks or your own MCPs for repeat tasks</p></div>
+  <div class="q" data-at="4"><p class="n">4</p><p class="t">modified <span class="t-amber">your coding harness</span> to fit your process</p></div>
+  <aside class="notes">
+    [~0:30] Ask everyone to raise a hand and keep it up while it's still true. One click per question, and pause for hands.
+    1: used an AI coding agent to write code. Expect about 100%.
+    2: written skills that coworkers or friends use. Expect close to 99% of hands still up.
+    3: added scripts, hooks or your own MCPs for repeatable tasks. Expect about 50%.
+    4: modified your coding harness to fit your process. Expect about 25%.
+    That last drop is what this talk is about: most people customise around the agent, few customise the harness itself.
   </aside>
 </section>
 
@@ -243,14 +266,14 @@ window.Deck = (function () {
     <div class="card violet" data-at="3">
       <p class="big t-violet">3</p>
       <h3>Three real extensions</h3>
-      <p class="muted">Walkthroughs, one hook at a time</p>
-      <div class="chips"><span class="hook">context-prune</span><span class="hook">speedometer</span><span class="hook">checklist</span></div>
+      <p class="muted">Observe → add tools → rewrite context</p>
+      <div class="chips"><span class="hook">speedometer</span><span class="hook">checklist</span><span class="hook">context-prune</span></div>
     </div>
   </div>
   <aside class="notes">
-    First: what a coding harness is, since people rarely think of the model and the harness as separate things.
-    Second: pi's lifecycle, where every stage of the loop emits an event you can subscribe to, and some of those events let you change what happens.
-    Third: three extensions I built and use daily. context-prune shrinks old tool output, speedometer measures how fast the model streams, and checklist gives the agent a todo list.
+    [~0:25] Step 1: a quick look at what the harness does around the model.
+    Step 2: pi's lifecycle. Every stage of the loop fires an event you can hook, and some let you change the outcome.
+    Step 3: three extensions I use daily, each going one level deeper: speedometer only observes, checklist adds tools, and context-prune rewrites what the model sees.
   </aside>
 </section>
 
@@ -259,6 +282,7 @@ window.Deck = (function () {
 <!-- ===== part: 10-harness.html ===== -->
 <!-- ============================================================
      PART 10 — What a harness does   (id prefix: hn-)
+     ids: hn-loop, hn-same
      Stage vocabulary shared with part 20 (lifecycle):
      Input → Context → Provider → Stream → Tool calls → Tool results → (loop) → Done
      ============================================================ -->
@@ -381,24 +405,24 @@ window.Deck = (function () {
     <p data-only="2">The harness builds the context: <b>instructions, tools, history</b>.</p>
     <p data-only="3">It sends <b>all of it</b> to the model.</p>
     <p data-only="4">The model streams back text and a <b>tool call</b>.</p>
-    <p data-only="5">The harness runs <b>npm test</b>. The model can't.</p>
-    <p data-only="6">The output joins the context. <b>Loop.</b></p>
+    <p data-only="5">The model only asks. The <b>harness</b> runs npm test.</p>
+    <p data-only="6">Output joins the context. <b>Loop.</b></p>
     <p data-only="7">Turn 2: the model asks to <b>read</b> login.ts.</p>
     <p data-only="8">Turn 3: it asks to <b>edit</b> it.</p>
-    <p data-only="9">Turn 4: plain text, no tool calls…</p>
-    <p data-only="10">…so the loop ends. <b>One prompt, four model calls.</b></p>
+    <p data-only="9">Turn 4: no tool calls…</p>
+    <p data-only="10">…so it stops. <b>One prompt, four model calls.</b></p>
   </div>
   <aside class="notes">
-    This is the core of every coding agent. The task: "fix the failing login test". The file names, test output and the fix itself are illustrative, and the size bar has no real numbers. The loop structure is pi's real code path.
-    Step 1 (Input): you type one line. pi first checks for built-in and extension slash commands, expands skills and prompt templates, then builds the user message.
-    Step 2 (Context): the harness assembles what the model sees. The system prompt comes from buildSystemPrompt: tool snippets, guidelines, AGENTS.md context files, skills, the cwd. Then the tool definitions and the message history. The model knows only what is in this stack.
-    Step 3 (Provider): pi-ai turns that provider-neutral context into an HTTP request for Anthropic, OpenAI, Google, Bedrock or others. Note the label on the right: the whole stack is sent on every call, not just the new message.
-    Step 4 (Stream): the answer streams back as normalised events: text deltas, thinking deltas, tool-call deltas. Here it says it will run the tests and emits a tool call for bash.
-    Step 5 (Tool calls): the harness looks up the tool, validates the arguments against its schema, and runs it. pi runs multiple tool calls in parallel by default.
-    Step 6 (Tool results): the output is wrapped as a toolResult message and appended. Because there were tool calls, the loop goes back to Context and calls the model again.
-    Steps 7–8: two more laps: read the file, then edit it. Watch the context stack: the test log and the whole file are still in there, and they are re-sent on every later call. Hold that thought; the context-prune extension later in the talk deals with exactly this.
-    Step 9–10: the model replies with plain text and no tool calls, so the inner loop exits and the run is done. Between laps pi can also auto-compact if the context gets too big, and after the run it may retry an error. One prompt from you, four model calls, three tool runs, all driven by the harness.
-    Demo tip: the "auto-play loop" button steps through the whole loop on a timer; click it again to pause.
+    [~1:45] Step 0: the model on its own is just a text function: text in, text out, no state, no hands. It can't read a file or run a command. Something has to run the tools and call it again. That's the harness. Task: "fix the failing login test". Files, test output and the size bar are illustrative; the loop shape is pi's real code path.
+    Step 1: you type one line.
+    Step 2: the harness builds the context: system prompt, AGENTS.md, tool definitions, history. The model knows only what's in this stack.
+    Step 3: pi-ai turns it into a request for whichever provider you picked. The whole stack goes out on every call.
+    Step 4: the reply streams back as text plus a tool call: bash, npm test. That's a request, not an action.
+    Step 5: the harness validates the arguments and runs the tool. Multiple calls run in parallel by default.
+    Step 6: the output is appended as a toolResult, and because there were tool calls, it loops.
+    Steps 7–8: read the file, then edit it. Watch the stack: the test log and the whole file get re-sent on every later call. context-prune, the last extension, deals with exactly that.
+    Steps 9–10: plain text, no tool calls, so the loop exits. One prompt, four model calls, three tool runs, all driven by the harness.
+    Demo tip: "auto-play loop" runs it on a timer; click again to pause.
   </aside>
   <script>
   (function () {
@@ -522,38 +546,20 @@ window.Deck = (function () {
     <p data-only="3">Dial 3: when the loop ends.</p>
     <p data-only="4">Dial 4: what <b>you</b> get to see.</p>
     <p data-only="5">Dial 5: what survives the session.</p>
-    <p data-only="6">Same weights. <b>Different agent.</b></p>
+    <p data-only="6">Same weights, <b>different agent</b>. No fork needed.</p>
   </div>
   <aside class="notes">
-    Everyone compares models. Very few people compare harnesses, but the harness sets most of these dials. Both columns here send requests to the same model.
-    Dial 1, context: by default pi keeps every tool output in context until compaction summarises the older part. With the context-prune extension, outputs from a finished task are swapped for short summaries in the model's view, while the originals stay in the session.
-    Dial 2, tools: pi's defaults are read, bash, edit and write. An extension can register new tools, like the checklist extension's three tools, or block a call such as rm -rf before it runs.
-    Dial 3, stopping: by default the loop ends when the model replies without tool calls. A tool can also return terminate to end the run.
-    Dial 4, what you see: the TUI shows the transcript, editor and footer. Extensions can paint the footer and widgets: speedometer shows tokens per second, and checklist shows task progress.
-    Dial 5, what's saved: pi writes a JSONL session file shaped like a tree, and extensions can store their own state entries in that same file.
-    Step 6: nothing about the model changed. Every difference in the right column is harness code, and each one is a real extension you'll see later in this talk.
+    [~0:45] Everyone compares models; few compare harnesses. Both columns call the same model.
+    Steps 1–5, keep it quick: what the model sees (context-prune swaps finished tool output for summaries), what it can do (new tools, blocked calls), when the loop stops (a tool can terminate the run), what you see (footer meters, widgets), and what's saved (extension state in the session file).
+    Step 6: the model didn't change; every difference on the right is harness code. And pi is minimal on purpose. Its README says: adapt pi to your workflows "without having to fork and modify pi internals". Each of these is an extension file.
   </aside>
 </section>
-<!-- ============================================================ -->
-
-
-<!-- ============================================================ -->
-
-
-<!-- ============================================================ -->
-
-
-<!-- ============================================================ -->
-
-
-<!-- ============================================================ -->
 
 
 <!-- ===== part: 20-lifecycle.html ===== -->
 <!-- ============================================================
      02 / Pi's lifecycle — everything is an event
-     ids: lc-divider, lc-extension, lc-loop, lc-run, lc-chain,
-          lc-block, lc-redact, lc-sysprompt, lc-catalogue, lc-why, lc-bridge
+     ids: lc-divider, lc-loop, lc-extension
      Shared helpers live on window.LC (defined in lc-divider's script).
      ============================================================ -->
 
@@ -623,10 +629,7 @@ window.Deck = (function () {
     </div>
   </div>
   <aside class="notes">
-    Part two. We've just seen the loop every coding harness runs: input, context, the model call, streaming, tool calls, tool results, and around again.
-    Pi's key idea is that every one of those stages fires a named, typed event. An extension is just code that subscribes to those events.
-    Some events only tell you what happened. Others let you return a value that changes what happens next. Those are the ones marked with a pencil throughout this section.
-    By the end of this section you should recognise names like context, tool_call, message_update and before_agent_start when they show up in the three real extensions.
+    [~0:10] Every stage of that loop fires a named, typed event in pi. An extension is just code that subscribes to them: some events you can only listen to, others let you step in.
   </aside>
   <script>
   (function () {
@@ -859,21 +862,18 @@ window.Deck = (function () {
     <p data-only="7">Tools ran, so the loop goes <b>round again</b>.</p>
     <p data-only="8">Turn 1: the model sees the results and answers in text.</p>
     <p data-only="9">No tool calls: <b>turn_end → agent_end → agent_settled</b>.</p>
-    <p data-only="10">Every <b>✎</b> chip: return a value and pi does something different.</p>
+    <p data-only="10"><b>14 of 36</b> events take a return value <b>✎</b>. Handlers chain in load order.</p>
   </div>
   <aside class="notes">
-    This is the same loop as the previous section, now with pi's real event names attached to each stage. Click through, and chips glow as they fire. Click any chip at any time to open its inspector: when it fires, its payload, and what it can return.
-    Step 1, Input: session_start fired once when pi started. Each prompt then fires input (you can transform the text or swallow it entirely), before_agent_start (inject a message or change the system prompt for this run), then agent_start.
-    Step 2, Context: turn_start, then context, which gets a deep copy of the messages right before every LLM call. Gotcha: on turn 0, turn_start actually fires BEFORE the user message's message_start and message_end. The official docs diagram draws it the other way round, but the source is clear.
-    Step 3, Provider: before_provider_headers (mutate headers in place), before_provider_request (see or replace the exact provider payload), after_provider_response (status and headers).
-    Step 4, Stream: message_start when the stream starts, a message_update for every thinking, text or tool-call delta, and message_end when it's final. message_end can replace the message before it's written to the session file.
-    Step 5, Tool calls: tool_execution_start, then tool_call after argument validation and before execute. This is where you block things. tool_execution_update streams partial output. Tools run in parallel by default.
-    Step 6, Tool results: tool_result can patch content, details or isError, chained like middleware. Then tool_execution_end, and each toolResult message gets its own message_start and message_end.
-    Step 7: turn_end with the assistant message and all its tool results. There were tool calls, so we go round again.
-    Step 8: turn 1 goes through context, provider and stream again, now including the tool results. This time the model just answers.
-    Step 9: no tool calls, so the inner loop exits: turn_end, agent_end, and agent_settled once there's nothing left to retry or compact.
-    Step 10: the amber chips are the ones where a return value changes behaviour. 14 of the 36 events work that way; eight of them are on this loop.
-    Important: handlers run before the TUI renders the event, and before the message is persisted.
+    [~1:30] Same loop as before, now with pi's real event names. Chips glow as they fire; click any chip for its payload and what it can return.
+    Step 1, Input: input can transform or swallow the prompt; before_agent_start can inject a message or change this run's system prompt.
+    Step 2, Context: context gets a deep copy of the messages before every LLM call. Rewrite it and the model sees something else; the session file is untouched.
+    Step 3, Provider: before_provider_request can see or replace the exact payload.
+    Step 4, Stream: a message_update per delta; message_end can replace the final message before it's saved.
+    Step 5, Tool calls: tool_call runs after validation, before execute. This is where you block.
+    Step 6, Tool results: tool_result patches the output before the model reads it.
+    Steps 7–9: tools ran, so round again; turn 1 just answers, so turn_end, agent_end, agent_settled.
+    Step 10: two kinds of hook. Observe: return nothing. Intervene: return a value. 14 of pi's 36 events can change the outcome that way; eight are on this loop. Handlers run one at a time, awaited, in extension load order, and results chain: the next handler sees the previous one's change (for tool_call, the first block wins). A slow handler slows the loop, even on message_update.
   </aside>
   <script>
   (function () {
@@ -956,13 +956,10 @@ window.Deck = (function () {
     </div>
   </div>
   <aside class="notes">
-    Step 0: An extension is a TypeScript file whose default export is a function. Pi calls that function once at load time and hands it the ExtensionAPI object, which we call pi.
-    Step 1: The factory is where you wire everything up. Drop the file into ~/.pi/agent/extensions for global use, or .pi/extensions in a project (project-local ones load only once you trust the project). Type /reload and it's live.
-    Step 2: pi.on subscribes to one of 36 typed lifecycle events. This handler runs on every turn_end.
-    Step 3: registerTool gives the model a brand-new tool with a TypeBox schema and an execute function. You can even override built-ins like read or bash.
-    Step 4: registerCommand adds a slash command with autocomplete.
-    Step 5: and ctx, the second argument to every handler, gives you the UI: footer status, widgets, dialogs, even full custom TUI components.
-    Accuracy note: this file stitches together the turn_end status-line, roll_dice tool and /hello command snippets from the research, trimmed with comments. It's illustrative, not one shipped example. No build step and no npm install are needed, because pi loads the file through jiti and aliases its own packages.
+    [~0:35] So how do you hook in? An extension is a TypeScript file whose default export is a function. pi calls it once and hands you the API.
+    Step 1: drop it in ~/.pi/agent/extensions or .pi/extensions, type /reload, it's live. No build, no fork.
+    Steps 2–5: pi.on hooks any event from the loop we just saw; registerTool gives the model a new tool; registerCommand adds a slash command; ctx.ui paints the footer, widgets and dialogs. (The file is illustrative, stitched from documented snippets.)
+    Close: three real extensions, each one level deeper. speedometer only observes, checklist adds tools, and context-prune rewrites the context.
   </aside>
   <script>
   (function () {
@@ -978,47 +975,24 @@ window.Deck = (function () {
   })();
   </script>
 </section>
-<!-- ============================================================ -->
-
-
-<!-- ============================================================ -->
-
-
-<!-- ============================================================ -->
-
-
-<!-- ============================================================ -->
-
-
-<!-- ============================================================ -->
-
-
-<!-- ============================================================ -->
-
-
-<!-- ============================================================ -->
-
-
-<!-- ============================================================ -->
-
-
-<!-- ============================================================ -->
-
-
-<!-- ============================================================ -->
 
 
 <!-- ===== part: 30-speedometer.html ===== -->
 <!-- ============================================================
-     04 / pi-speedometer — "tiny extension, big insight"
-     ids: sp-divider, sp-numbers, sp-sim, sp-code, sp-events, sp-takeaway
+     03 / pi-speedometer — extension 1 of 3: observe only
+     ids: sp-divider, sp-sim, sp-code
+     (short cut: sp-numbers folded into sp-divider; sp-events and
+      sp-takeaway folded into sp-code)
      ============================================================ -->
 
 <section id="sp-divider" class="divider">
   <style>
     #sp-divider .copy { max-width: 900px; }
     #sp-divider h1 { font-size: 80pt; margin-bottom: 22px; white-space: nowrap; }
-    #sp-divider .sub { font-family: var(--head); font-size: 38pt; color: var(--text); margin: 0 0 34px; line-height: 1.15; }
+    #sp-divider .sub { font-family: var(--head); font-size: 38pt; color: var(--text); margin: 0 0 26px; line-height: 1.15; }
+    #sp-divider .two { margin: 0 0 30px; display: flex; flex-direction: column; gap: 6px; }
+    #sp-divider .two p { margin: 0; font-size: 24pt; color: var(--muted); }
+    #sp-divider .two b { font-family: var(--mono); font-weight: 600; display: inline-block; min-width: 110px; }
     #sp-divider .pill { display: inline-flex; gap: 22px; font-family: var(--mono); font-size: 24pt; background: #0a0c11; border: 1px solid var(--line); border-radius: 12px; padding: 12px 24px; color: var(--muted); }
     #sp-divider .pill b { font-weight: 500; }
     #sp-divider .gauge { position: absolute; right: 60px; top: 50%; transform: translateY(-50%); width: 560px; height: 392px; }
@@ -1029,9 +1003,13 @@ window.Deck = (function () {
     #sp-divider.present .arc-fill { stroke-dashoffset: 314; }
   </style>
   <div class="copy">
-    <p class="num">04 / pi-speedometer</p>
+    <p class="num">03 / pi-speedometer</p>
     <h1>pi-speedometer</h1>
     <p class="sub">How fast is my model, <em>really</em>?</p>
+    <div class="two">
+      <p><b class="t-blue">TTFT</b> waiting: network, queue, prefill</p>
+      <p><b class="t-coral">TPS</b> typing: decode speed</p>
+    </div>
     <div class="pill"><b class="t-coral">⚡ 92.3 t/s</b><b class="t-blue">⏱ 840ms</b></div>
   </div>
   <svg class="gauge" viewBox="0 0 600 420" overflow="visible" aria-hidden="true">
@@ -1055,10 +1033,9 @@ window.Deck = (function () {
   </svg>
   <p class="glabel">tokens / second</p>
   <aside class="notes">
-    Third and final extension, and the lightest one. After context-prune, which changes what the model sees, this one changes nothing at all.
-    It answers a question everyone has asked: how fast is my model, really, on my own workload inside my own harness, rather than on a benchmark page?
-    The pill shows the exact string the extension writes into pi's status bar: tokens per second and time to first token.
-    Install line if anyone asks: pi install npm:@championswimmer/pi-speedometer.
+    [~0:15] Extension 1 of 3, and the lightest: it only watches. How fast is my model, really, on my own workload inside my own harness?
+    Two numbers answer "slow when?". TTFT, time to first token, is dead air: network, queueing at the provider, and prefill of your whole context, so a big context means a big TTFT. TPS, tokens per second since the first token, is decode speed: how fast it types once it starts.
+    The pill is the exact string it writes into pi's status bar.
   </aside>
 </section>
 
@@ -1161,22 +1138,22 @@ window.Deck = (function () {
     <text x="30" y="100" fill="#a3acbf">0</text>
   </svg>
   <div class="captions">
-    <p data-only="0">You hit enter. Watch the <b>status bar</b>, bottom right.</p>
-    <p data-only="1"><b>before_provider_request</b>: the stopwatch starts.</p>
-    <p data-only="2">Nothing yet. Events arrive, but <b>no content</b>. This is TTFT.</p>
-    <p data-only="3">First content delta: <b>TTFT locked at 840ms</b>. No TPS yet.</p>
-    <p data-only="4">Deltas every 20ms, footer repaints <b>every ≥250ms</b>.</p>
-    <p data-only="5"><b>message_end</b>: exact 310 tokens ÷ 3.36s = <b>92.3 t/s</b>.</p>
+    <p data-only="0">Watch the <b>status bar</b>, bottom right</p>
+    <p data-only="1"><b>before_provider_request</b> starts the clock</p>
+    <p data-only="2">Events, but <b>no content</b> yet: this gap is TTFT</p>
+    <p data-only="3">First content delta: <b>TTFT = 840ms</b></p>
+    <p data-only="4">Deltas every 20ms, repaint <b>every ≥250ms</b></p>
+    <p data-only="5"><b>message_end</b>: exact 310 tokens ÷ 3.36s = <b>92.3 t/s</b></p>
   </div>
   <aside class="notes">
-    This is the whole extension running in slow motion. All numbers are illustrative but internally consistent, from the research walkthrough: first delta at 840ms, a delta every 20ms, 168 deltas, message_end at 4.2 seconds with 310 output tokens.
-    Step 1, t = 0: pi fires before_provider_request right before the HTTP call. That hook is meant for inspecting or rewriting the payload; we just use it as a starting gun. performance.now(), reset a few variables, return nothing.
-    Step 2, the wait: message_update events of type start and text_start can arrive, but they carry no content, so the handler ignores them. This dead air is network, queueing and prefill of your whole context.
-    Step 3, 840ms: first text_delta. Freeze TTFT at 840ms. There's no TPS yet because zero seconds have passed since the first token, and the code guards against divide-by-zero, so for one frame the footer shows only the stopwatch.
-    Step 4, 2.14s: deltas arrive about 50 times a second. Repainting the footer that often is waste, so it throttles to 250ms; with deltas on a 20ms grid that is a render every 260ms. Point at the maths: 122 tokens divided by 1.30 seconds since the first token is 93.8. 168 deltas produce only 13 status writes.
-    Step 5, 4.2s: message_end carries the real usage: 310 tokens over 3.36 seconds is 92.3 tokens per second. That final value stays in the status bar after the turn. In an agent loop, the next LLM call fires before_provider_request again and re-anchors the clock.
-    Demo: click "replay in real time" to run the full 4.2 seconds at real speed; 0.25× slows it down so people can watch the footer tick.
-    Caveat, say this only if asked: live TPS depends on the provider reporting partial usage. Google sends usage on every chunk; OpenAI chat completions only in the final chunk, so the extension estimates chars ÷ 4 until message_end snaps to exact. The README says Anthropic streams cumulative output counts, but pi's Anthropic adapter appears to set usage.output only at message_start (usually 1) and at the final message_delta, so the mid-stream number could read very low, like 3.8 t/s, until message_end fixes it. Test with a live Claude run before claiming exact live TPS on Anthropic. The final number is correct either way.
+    [~0:50] The whole extension in slow motion. Numbers are illustrative but consistent: first delta at 840ms, a delta every 20ms, message_end at 4.2s with 310 output tokens.
+    Step 1: before_provider_request fires right before the HTTP call. We use it as a starting gun: performance.now(), reset, return nothing.
+    Step 2: start and text_start events can arrive, but carry no content, so they're ignored. This dead air is TTFT.
+    Step 3: first text delta at 840ms. TTFT is frozen; no TPS yet, since zero seconds have passed since the first token.
+    Step 4: deltas arrive ~50 times a second, but the footer only repaints every 250ms: 168 deltas, 13 status writes.
+    Step 5: message_end has the real usage: 310 tokens over 3.36s = 92.3 t/s, and it stays in the footer. The next LLM call in the loop re-anchors the clock.
+    Demo: "replay in real time" runs the full 4.2s; 0.25× slows it down.
+    Only if asked: live TPS depends on the provider reporting partial usage; otherwise it estimates chars ÷ 4 until message_end snaps to exact. On Anthropic the mid-stream number may read low until message_end (unverified, test live first). The final number is correct either way.
   </aside>
   <script>
   (function () {
@@ -1331,11 +1308,13 @@ window.Deck = (function () {
     #sp-code[data-step="4"] .ln:not(.k4) { opacity: .32; }
     #sp-code[data-step="1"] .ln.k1, #sp-code[data-step="2"] .ln.k2,
     #sp-code[data-step="3"] .ln.k3, #sp-code[data-step="4"] .ln.k4 { background: rgba(63,220,214,.07); border-left-color: var(--teal); }
-    #sp-code .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 22px; }
-    #sp-code .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 22px; }
+    #sp-code .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 18px; }
+    #sp-code .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 6px 22px; display: flex; align-items: baseline; gap: 14px; }
     #sp-code .stat p { margin: 0; }
-    #sp-code .stat .big { font-family: var(--head); font-size: 44pt; font-weight: 700; line-height: 1.05; }
+    #sp-code .stat .big { font-family: var(--head); font-size: 36pt; font-weight: 700; line-height: 1.1; }
     #sp-code .stat .cap { font-size: 17pt; color: var(--muted); }
+    #sp-code .obs { margin: 16px 0 0; font-size: 22pt; text-align: center; opacity: 0; transform: translateY(8px); transition: opacity .4s var(--ease), transform .4s var(--ease); }
+    #sp-code.s4 .obs { opacity: 1; transform: none; }
   </style>
   <p class="kicker">the whole extension, one slide</p>
   <h2 style="font-size: 34pt; margin-bottom: 14px;">Three hooks do the measuring</h2>
@@ -1362,14 +1341,15 @@ window.Deck = (function () {
     <div class="stat"><p class="big t-green">0</p><p class="cap">runtime dependencies</p></div>
     <div class="stat"><p class="big t-coral">~55</p><p class="cap">lines of measuring</p></div>
   </div>
+  <p class="obs">Every hook returns <code>undefined</code>: <b class="t-teal">pure observation</b>, the agent runs unchanged</p>
   <aside class="notes">
-    This is every hook the extension registers. Bodies are elided; the skeleton is lines 116 to 194 of the single source file.
-    Step 1: before_provider_request starts the clock. requestStart = performance.now(), and it resets firstDeltaTime, the throttle timestamp, the token count and TTFT. It ignores the payload and returns undefined, so the request goes out unchanged.
-    Step 2: message_update. It returns early unless the stream event is a text, thinking or tool-call delta. On the first one it records firstDeltaTime and computes TTFT. On every one it updates the token count, and only if 250ms have passed does it call renderStatus, which does tokens divided by seconds since the first delta and calls ctx.ui.setStatus with the key "speedometer".
-    Step 3: message_end. It fires for user and tool-result messages too, so it checks role is assistant. It snaps the token count to message.usage.output, which is the exact number, and does one final unthrottled render.
-    Step 4: agent_end and session_shutdown just set streaming to false and leave the final numbers in the footer. /speed toggles each metric on or off and switches icon or text labels, saved to ~/.pi/agent/pi-speedometer.json.
-    Stats: 233 lines total, one file, no runtime dependencies and no build step, because pi loads the .ts directly. Of that, settings load/save is about 45 lines and /speed about 40; the actual measurement logic is about 55.
-    Optional aside, "even tiny extensions have edge cases": after /speed toggles, the re-render passes performance.now() as the end time rather than when the stream ended. So toggling a label 60 seconds after a response recomputes TPS over 63 seconds and shows something like 4.9 t/s. The fix is storing the end time at message_end: a one-line PR.
+    [~0:40] Every hook the extension registers, bodies elided: lines 116 to 194 of one source file.
+    Step 1: before_provider_request starts the clock. It ignores the payload and returns undefined, so the request goes out unchanged.
+    Step 2: message_update returns early unless the event is one of three content deltas: text, thinking or tool-call. So a thinking token counts as "first token". The first one locks TTFT; after that it updates the token count and calls ctx.ui.setStatus at most every 250ms.
+    Step 3: message_end (assistant role only) snaps to message.usage.output, the exact count, and renders once more.
+    Step 4: agent_end and session_shutdown leave the final numbers in the footer; /speed toggles the metrics.
+    Takeaway: every hook returns undefined. It's pure observation, and the agent behaves exactly as before. 233 lines, one file, zero dependencies, about 55 lines of actual measuring. Install: pi install npm:@championswimmer/pi-speedometer.
+    Transition: watching is the lightest thing an extension can do. Next, pi-checklist gives the agent new tools and its own state.
   </aside>
 </section>
 
@@ -1377,28 +1357,32 @@ window.Deck = (function () {
 
 <!-- ===== part: 40-checklist.html ===== -->
 <!-- ============================================================
-     05 / pi-checklist  (section prefix: ck-)
+     04 / pi-checklist — extension 2 of 3: add tools + state  (prefix: ck-)
+     ids: ck-divider, ck-walk, ck-code
+     (short cut: ck-why folded into ck-divider; ck-tree + ck-takeaway folded
+      into ck-code. The shared widget/walk/code script, which lived in
+      ck-takeaway, now sits at the end of ck-code.)
      ============================================================ -->
 
 <section id="ck-divider" class="divider">
   <style>
-    /* shared checklist-widget look (divider, walkthrough, tree) */
-    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-rows { position: relative; }
-    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 16pt; white-space: nowrap; transition: top .55s var(--ease), opacity .4s var(--ease); }
-    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row .pill { flex: none; font-size: 15pt; font-weight: 700; line-height: 1.35; padding: 0 8px; border-radius: 5px; color: #0d0f15; min-width: 64px; text-align: center; transition: background .35s; }
-    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row .g { flex: none; width: 20px; text-align: center; }
-    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row .id { flex: none; font-weight: 700; color: var(--text); }
-    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row .t { overflow: hidden; text-overflow: ellipsis; color: var(--text); min-width: 0; }
-    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row .dep { flex: none; color: var(--coral); }
-    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.prog .pill { background: var(--amber); }
-    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.redy .pill { background: var(--teal); }
-    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.blck .pill { background: var(--coral); }
-    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.done .pill { background: var(--green); }
-    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.prog .g { color: var(--amber); }
-    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.redy .g { color: var(--teal); }
-    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.blck .g { color: var(--coral); }
-    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.done .g { color: var(--green); }
-    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.done .t, :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.blck .t { color: var(--muted); }
+    /* shared checklist-widget look (divider, walkthrough) */
+    :is(#ck-divider, #ck-walk) .ckw-rows { position: relative; }
+    :is(#ck-divider, #ck-walk) .ckw-row { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 16pt; white-space: nowrap; transition: top .55s var(--ease), opacity .4s var(--ease); }
+    :is(#ck-divider, #ck-walk) .ckw-row .pill { flex: none; font-size: 15pt; font-weight: 700; line-height: 1.35; padding: 0 8px; border-radius: 5px; color: #0d0f15; min-width: 64px; text-align: center; transition: background .35s; }
+    :is(#ck-divider, #ck-walk) .ckw-row .g { flex: none; width: 20px; text-align: center; }
+    :is(#ck-divider, #ck-walk) .ckw-row .id { flex: none; font-weight: 700; color: var(--text); }
+    :is(#ck-divider, #ck-walk) .ckw-row .t { overflow: hidden; text-overflow: ellipsis; color: var(--text); min-width: 0; }
+    :is(#ck-divider, #ck-walk) .ckw-row .dep { flex: none; color: var(--coral); }
+    :is(#ck-divider, #ck-walk) .ckw-row.prog .pill { background: var(--amber); }
+    :is(#ck-divider, #ck-walk) .ckw-row.redy .pill { background: var(--teal); }
+    :is(#ck-divider, #ck-walk) .ckw-row.blck .pill { background: var(--coral); }
+    :is(#ck-divider, #ck-walk) .ckw-row.done .pill { background: var(--green); }
+    :is(#ck-divider, #ck-walk) .ckw-row.prog .g { color: var(--amber); }
+    :is(#ck-divider, #ck-walk) .ckw-row.redy .g { color: var(--teal); }
+    :is(#ck-divider, #ck-walk) .ckw-row.blck .g { color: var(--coral); }
+    :is(#ck-divider, #ck-walk) .ckw-row.done .g { color: var(--green); }
+    :is(#ck-divider, #ck-walk) .ckw-row.done .t, :is(#ck-divider, #ck-walk) .ckw-row.blck .t { color: var(--muted); }
 
     #ck-divider .pitch { max-width: 760px; }
     #ck-divider h1 { font-size: 84pt; margin-bottom: 26px; }
@@ -1414,10 +1398,10 @@ window.Deck = (function () {
     @keyframes ck-pulse { 50% { opacity: .25; } }
   </style>
   <div class="pitch">
-    <p class="num">05 / pi-checklist</p>
+    <p class="num">04 / pi-checklist</p>
     <h1>pi-checklist</h1>
     <p class="lead">Three tools, one hook, and the session file as the database.</p>
-    <p class="muted">The agent gets a to-do list it can't lose track of.</p>
+    <p class="muted">Long tasks drift. Here the plan becomes <b style="color:var(--text)">data</b>.</p>
   </div>
   <div class="term mock" aria-hidden="true">
     <div class="bar"><i></i><i></i><i></i><b>pi</b></div>
@@ -1431,11 +1415,9 @@ window.Deck = (function () {
     <div class="status"><b>☑ 1/4</b></div>
   </div>
   <aside class="notes">
-    Third and final walkthrough. Quick recap of the arc: speedometer only watched the event stream, and context-prune rewrote the context before each model call.
-    pi-checklist goes one step further. It gives the model new abilities (three tools), gives the human new UI (a widget, a footer, a command), and keeps its state inside the session file.
-    The one-line pitch: three tools, one hook, and the session file as the database. The agent gets a to-do list it can't lose track of.
-    The mock on the right is the real widget layout: coloured pills, a glyph, a 3-character id, the title and, for blocked tasks, what they're waiting on. The footer shows ☑ done/total.
-    It's on npm as pi-checklist (v0.3.1). If you want to demo live later: pi install npm:pi-checklist.
+    [~0:15] Extension 2 of 3. The speedometer only watched; this one gives the model new abilities (three tools), gives the human new UI (a widget and a footer), and keeps its own state.
+    Why: hand an agent a dozen-step job and, forty tool calls or one compaction later, the goal only lives in a blurry transcript. Here the plan becomes data the agent keeps re-reading, and the harness enforces the order.
+    The mock is the real widget layout: status pill, 3-char id, title, and what blocked tasks wait on. Footer: ☑ done/total. Install: pi install npm:pi-checklist.
   </aside>
 </section>
 
@@ -1506,7 +1488,7 @@ window.Deck = (function () {
     #ck-walk .mk.new { box-shadow: 0 0 18px currentColor; }
     @keyframes ck-pop { from { transform: scale(.6); opacity: 0; } }
   </style>
-  <p class="kicker">05 / pi-checklist · walkthrough</p>
+  <p class="kicker">04 / pi-checklist · walkthrough</p>
   <h2>“Add rate limiting to the API”</h2>
   <div class="stage">
     <div class="left">
@@ -1624,25 +1606,23 @@ window.Deck = (function () {
   </div>
 
   <div class="captions">
-    <p data-only="0">You: <b>add rate limiting to the API</b></p>
-    <p data-only="1"><b>before_agent_start</b> appends a hint to the system prompt</p>
-    <p data-only="2">One tool call and the plan becomes <b>data</b></p>
-    <p data-only="3">Mark <b>ongoing</b> before touching any code</p>
+    <p data-only="0">A multi-step job, no plan yet</p>
+    <p data-only="1">No list yet: just a <b>usage hint</b></p>
+    <p data-only="2">One tool call: the plan is <b>data</b></p>
+    <p data-only="3">Mark <b>ongoing</b> first · open tasks ride along every prompt</p>
     <p data-only="4">Blocked move: <b class="t-coral">whole batch rejected</b>, nothing saved</p>
-    <p data-only="5">The error names the blocker, so the model <b>recovers</b></p>
-    <p data-only="6"><b>☑ 4/4</b> · on the next prompt, only the hint is injected</p>
+    <p data-only="5">The error names the blocker: the model <b>recovers</b></p>
+    <p data-only="6"><b>☑ 4/4</b> · nothing open, so only the hint remains</p>
   </div>
   <div class="dots" style="position:absolute;right:64px;top:48px"></div>
   <aside class="notes">
-    This is the whole extension in one scenario. Every tool text and error string on this slide is real output from running the extension's store and tool code.
-    Step 0: The user types "add rate limiting to the API" and presses Enter. No checklist exists yet.
-    Step 1: before_agent_start fires once per user prompt, before the agent loop. There's no list, so it only appends the moderate usage hint. The promptGuidelines bullets from the three tools are already in the Guidelines section. It's plain text and costs very little.
-    Step 2: The model calls checklist_create. It passes explicit 3-char ids because the dependencies point at tasks created in the same call, which is exactly what the tool guideline recommends. Without explicit ids it would get hashed ids like q6z. The content text goes to the model. The details field holds the full snapshot: it's saved on the tool result and drives the renderer, but it isn't sent to the model. commit() appends a pi-checklist entry, the widget repaints, and the footer shows ☑ 0/4. stg is ready; the rest are blocked.
-    Step 3: The guideline says mark a task ongoing before starting it, so the human always knows what the agent is doing now. The call renders as "checklist stg". On the next user prompt, the injected snippet lists the open tasks, so even after compaction the model still sees the plan.
-    Step 4: Here the model jumps ahead and tries to mark stg done and wir done in one batch. wir depends on mid, and mid isn't done, so the store throws. pi turns the thrown error into isError: true, and the model reads the exact message on screen. Because updates are all-or-nothing, even the valid stg → done is discarded. commit() never runs, so no entry is appended and the widget doesn't change. The extension enforces order; it doesn't just record it.
-    Step 5: The error named the blocker, [mid]. The model finishes stg and starts mid in one call. Order within a batch matters: stg done first, then mid ongoing succeeds. The reverse order would fail. Footer: ☑ 1/4.
-    Step 6: Fast-forward through three more updates to ☑ 4/4. On the next user prompt nothing is planned or ongoing, so before_agent_start appends only the hint and no task snippet.
-    Live demo option: pi install npm:pi-checklist, then ask pi to add rate limiting to a small Express app. Point at the widget and the ☑ footer as tasks move, and open /checklist to show the overlay.
+    [~1:00] One real scenario; every tool text and error string here is real output from the extension's code.
+    Step 1: checklist uses before_agent_start to append to the system prompt. No list yet, so just a short hint: use checklist tools for multi-step work.
+    Step 2: the model calls checklist_create with four tasks and explicit 3-char ids so the dependsOn links resolve. The model reads the content text; the full snapshot goes in details, which is saved but not sent to the model. Widget and footer appear: stg ready, the rest blocked.
+    Step 3: mark stg ongoing before starting it. From the next prompt, the hint also lists the open tasks, so the plan survives compaction.
+    Step 4: the model jumps ahead: stg done and wir done in one batch. wir depends on mid, so the store throws; pi reports isError and the model reads that exact message. All-or-nothing: even the valid stg change is dropped and nothing is saved. The extension enforces order, not just records it.
+    Step 5: the error named the blocker, so the model finishes stg and starts mid. ☑ 1/4.
+    Step 6: fast-forward to ☑ 4/4. Nothing open, so only the hint is injected from now on.
   </aside>
 </section>
 
@@ -1661,7 +1641,7 @@ window.Deck = (function () {
     #ck-code .hl { position: absolute; left: 0; right: 0; border-left: 6px solid var(--c, var(--amber)); background: color-mix(in srgb, var(--c, var(--amber)) 16%, transparent); border-radius: 4px; pointer-events: none; transition: top .35s var(--ease), height .35s var(--ease), opacity .3s; }
     #ck-code .jsonl { margin-top: 12px; font-family: var(--mono); font-size: 16pt; color: var(--green); background: rgba(127,227,164,.07); border: 1px solid rgba(127,227,164,.45); border-radius: 12px; padding: 10px 18px; white-space: nowrap; }
   </style>
-  <p class="kicker">05 / pi-checklist · code</p>
+  <p class="kicker">04 / pi-checklist · code</p>
   <h2>Three APIs do the heavy lifting</h2>
   <div class="tabs">
     <button class="btn m" data-go="0">① registerTool</button>
@@ -1739,27 +1719,152 @@ function commit(snapshot: ChecklistSnapshot, ctx: ExtensionContext): void {
     <p data-only="1"><b>content</b> goes to the model · <b>details</b> is saved, for renderer and rebuild</p>
     <p data-only="2">For the <b>human</b>: custom renderers for call and result</p>
     <p data-only="3">Every prompt: hint + <b>open tasks</b> appended to the system prompt</p>
-    <p data-only="4">Every change: cache, <b>appendEntry</b>, repaint</p>
+    <p data-only="4">State lives in the <b>session</b>, rebuilt via <b>getBranch()</b>: /tree, /fork, resume just work</p>
   </div>
   <aside class="notes">
-    Three excerpts, one at a time. The tabs are clickable if you want to jump.
-    Step 0, registerTool: everything the model sees comes from this object. The description, a one-line promptSnippet in the "Available tools" list, promptGuidelines bullets appended to the Guidelines section (pi's docs say each bullet must name the tool, never "this tool"), and a TypeBox schema for the parameters. There are three of these registrations: create, read and update.
-    Step 1, execute: run a pure store function, commit the new snapshot, and return two things. content is the text the LLM reads. details is structured data that isn't sent to the LLM but is saved on the tool-result entry. Validation errors are thrown from the store before commit runs, so pi reports them to the model as isError and nothing is persisted.
-    Step 2, renderers: renderCall and renderResult are the human-facing half of the same registration. Instead of a raw JSON dump you see "checklist create 4 task(s)" and "0/4 done 0 ongoing 1 ready 3 blocked", read from result.details.
-    Step 3, before_agent_start: it fires once per user prompt. It returns a new systemPrompt: the original, plus the hint, plus the open-task snippet if anything is planned or ongoing. System-prompt changes chain across extensions. The usage mode is captured at load, so changing it needs /reload.
-    Step 4, appendEntry: commit does three things: update the in-memory cache, append a "pi-checklist" custom entry, and repaint. The try/catch matters because print or ephemeral sessions have no file. The custom entry covers human actions like /checklist clear that never produce a tool result.
-    Size check: index.ts, the pi wiring, is 324 lines. store.ts and types.ts, about 640 lines, are plain TypeScript with no pi imports, testable with plain node.
+    [~0:45] Three excerpts; the tabs are clickable.
+    Step 0, registerTool: everything the model sees comes from this object: description, a promptSnippet, promptGuidelines bullets and a TypeBox schema. Three of these: create, read, update.
+    Step 1: execute runs a pure store function, commits, and returns content (what the model reads) and details (structured snapshot, saved on the tool result, not sent to the model). Validation errors throw before commit, so nothing is persisted.
+    Step 2: renderCall and renderResult are the human-facing half, so you see "checklist create 4 task(s)" instead of JSON.
+    Step 3: before_agent_start returns the system prompt plus the hint, plus the open tasks if anything is planned or ongoing.
+    Step 4: commit updates memory, calls appendEntry with a "pi-checklist" custom entry, and repaints. No database: the session file is the database. On session_start and session_tree it rebuilds from ctx.sessionManager.getBranch(), root to current leaf, last snapshot wins. So /tree back to an earlier message rewinds the list, and /resume, /fork and compaction all put back the right plan.
+    Size: index.ts, the pi wiring, is 324 lines; the rules are plain TypeScript with no pi imports.
+    Transition: that one added tools and state. The last one is the most involved: pi-context-prune rewrites the context itself before every model call.
   </aside>
+
+  <script>
+  (function () {
+    /* ---------- shared checklist model (from research/04 walkthrough); used by ck-walk + ck-code ---------- */
+    const TASKS = [
+      { id: 'stg', title: 'Pick rate-limit strategy + store', deps: [] },
+      { id: 'mid', title: 'Add rate-limit middleware', deps: ['stg'] },
+      { id: 'wir', title: 'Wire middleware into routes', deps: ['mid'] },
+      { id: 'tst', title: 'Test 429 + Retry-After', deps: ['wir'] },
+    ];
+    const ORDER = { prog: 0, redy: 1, blck: 2, done: 3 };
+    const PILL = { prog: 'PROG', redy: 'REDY', blck: 'BLCK', done: 'DONE' };
+    const GLYPH = { prog: '●', redy: '○', blck: '⊘', done: '✓' };
+    const WORD = { prog: 'ongoing', redy: 'ready', blck: 'blocked', done: 'done' };
+    const P = 'planned', O = 'ongoing', D = 'done';
+    const st = (a, b, c, d) => ({ stg: a, mid: b, wir: c, tst: d });
+
+    function views(s) {
+      return TASKS.map((t, i) => {
+        const blockedBy = t.deps.filter(d => s[d] !== D);
+        const kind = s[t.id] === O ? 'prog' : s[t.id] === D ? 'done' : blockedBy.length ? 'blck' : 'redy';
+        return { ...t, i, blockedBy, kind };
+      });
+    }
+    function mountRows(box, h) {
+      if (box.children.length) return;
+      TASKS.forEach(t => {
+        const r = document.createElement('div');
+        r.className = 'ckw-row';
+        r.dataset.id = t.id;
+        r.innerHTML = '<span class="pill"></span><span class="g"></span><span class="id">' + t.id + '</span><span class="t">' + t.title + '</span><span class="dep"></span>';
+        box.appendChild(r);
+      });
+      box.style.height = (h * 4) + 'px';
+      box.dataset.h = h;
+    }
+    function paintRows(box, s) {
+      const h = +box.dataset.h;
+      const v = views(s).sort((a, b) => ORDER[a.kind] - ORDER[b.kind] || a.i - b.i);
+      v.forEach((t, idx) => {
+        const r = box.querySelector('[data-id="' + t.id + '"]');
+        r.className = 'ckw-row ' + t.kind;
+        r.style.top = (idx * h) + 'px';
+        r.querySelector('.pill').textContent = PILL[t.kind];
+        r.querySelector('.g').textContent = GLYPH[t.kind];
+        r.querySelector('.dep').textContent = t.kind === 'blck' ? '← ' + t.blockedBy.join(', ') : '';
+      });
+      const c = { done: 0, prog: 0, redy: 0, blck: 0 };
+      v.forEach(t => c[t.kind]++);
+      return c;
+    }
+    // measure code lines so highlight bars sit exactly on source lines
+    function placeHl(codeWrap, hl, spec) {
+      const code = codeWrap.querySelector('pre code');
+      if (!code) return;
+      const cs = getComputedStyle(code);
+      const lh = parseFloat(cs.lineHeight);
+      const top0 = code.offsetTop + parseFloat(cs.borderTopWidth) + parseFloat(cs.paddingTop);
+      const [a, b] = String(spec).split('-').map(Number);
+      hl.style.top = (top0 + (a - 1) * lh - 2) + 'px';
+      hl.style.height = (((b || a) - a + 1) * lh + 4) + 'px';
+    }
+
+    /* ---------- ck-walk ---------- */
+    const WALK = [null, null, st(P, P, P, P), st(O, P, P, P), st(O, P, P, P), st(D, O, P, P), st(D, D, D, D)];
+    const MARKS = [[], [], ['s:create'], ['s:create', 's:stg'], ['s:create', 's:stg', 'x:no snapshot'],
+      ['s:create', 's:stg', 'x:no snapshot', 's:stg,mid'], ['s:create', 's:stg', 'x:no snapshot', 's:stg,mid', 's:×3']];
+    Deck.onStep('ck-walk', (step, sec) => {
+      const box = sec.querySelector('.ckw-rows');
+      mountRows(box, 40);
+      const s = WALK[step];
+      const cnt = sec.querySelector('.cnt'), ft = sec.querySelector('.ft');
+      if (s) {
+        const c = paintRows(box, s);
+        cnt.textContent = c.done + '/4 done   ' + c.prog + ' ongoing   ' + c.redy + ' ready   ' + c.blck + ' blocked';
+        ft.textContent = '☑ ' + c.done + '/4';
+        views(s).forEach(t => {
+          const g = sec.querySelector('.nd[data-id="' + t.id + '"]');
+          g.setAttribute('class', 'nd ' + t.kind);
+          g.querySelector('.gl').textContent = GLYPH[t.kind] + ' ' + t.id;
+          g.querySelector('.st').textContent = WORD[t.kind];
+          const e = sec.querySelector('.ed[data-e="' + t.id + '"]');
+          if (e) e.setAttribute('class', 'ed' + (s[t.id] === D ? ' done' : ''));
+        });
+      } else {
+        cnt.textContent = ''; ft.textContent = '';
+      }
+      // blocked-move error visuals (restart animations each time)
+      const wir = sec.querySelector('.nd[data-id="wir"]'), edge = sec.querySelector('.ed[data-e="mid"]');
+      const widget = sec.querySelector('.widget');
+      widget.classList.remove('flash');
+      if (step === 4) {
+        void wir.getBoundingClientRect();
+        wir.setAttribute('class', 'nd err shake');
+        wir.querySelector('.st').textContent = 'rejected';
+        edge.setAttribute('class', 'ed err');
+        widget.classList.add('flash');
+      }
+      const marks = sec.querySelector('.marks');
+      marks.innerHTML = MARKS[step].map((m, i, arr) => {
+        const [k, label] = m.split(':');
+        return '<span class="mk ' + k + (i === arr.length - 1 && arr.length !== (MARKS[step - 1] || []).length ? ' new' : '') + '">' + (k === 's' ? '◆ ' : '✕ ') + label + '</span>';
+      }).join('');
+      if (!MARKS[step].length) marks.innerHTML = '<span class="mk" style="color:var(--muted);border-color:var(--line);animation:none">empty</span>';
+    });
+
+    /* ---------- ck-code ---------- */
+    Deck.onStep('ck-code', (step, sec) => {
+      const tab = step <= 2 ? 0 : step === 3 ? 1 : 2;
+      sec.querySelectorAll('.tabs button').forEach((b, i) => b.classList.toggle('active', i === tab));
+      sec.querySelectorAll('.hl').forEach(hl => {
+        hl.style.opacity = +hl.dataset.show === step ? 1 : 0;
+        placeHl(hl.parentElement, hl, hl.dataset.lines);
+      });
+    });
+    document.querySelectorAll('#ck-code .tabs button').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      const i = Reveal.getIndices();
+      Reveal.slide(i.h, i.v, +b.dataset.go - 1);
+    }));
+  })();
+  </script>
 </section>
 
 
 
 <!-- ===== part: 50-context-prune.html ===== -->
 <!-- ===================================================================
-     Extension 1 · pi-context-prune
+     05 · pi-context-prune (extension 3 of 3, the most involved one)
+     Slides: cp-divider, cp-problem, cp-hooks, cp-walk, cp-recover, cp-code
      Shared metaphor: the context window as a vertical stack of message
      blocks (height ~ tokens), a token meter, and a vault (session index).
-     Shared CSS + the CP helper live in the divider section below.
+     Shared CSS + the CP helper live in the divider section below, so
+     cp-divider must stay in the deck.
      =================================================================== -->
 <section id="cp-divider" class="divider">
   <style>
@@ -1820,7 +1925,7 @@ function commit(snapshot: ChecklistSnapshot, ctx: ExtensionContext): void {
     #cp-divider .mini { position: absolute; right: 120px; top: 50%; transform: translateY(-50%); width: 360px; height: 520px; }
     #cp-divider .mini div { position: absolute; left: 0; right: 0; border-radius: 8px; border: 2px solid; }
   </style>
-  <p class="num">03 / pi-context-prune</p>
+  <p class="num">05 / pi-context-prune</p>
   <h1>pi-context-prune</h1>
   <p class="sub">Rewrite <span class="t-teal">what the model sees</span> on every request.<br>Keep <span class="t-green">the truth</span> on disk.</p>
   <div class="mini" aria-hidden="true">
@@ -1832,11 +1937,10 @@ function commit(snapshot: ChecklistSnapshot, ctx: ExtensionContext): void {
     <div style="top:416px;height:26px;border-color:var(--blue);background:rgba(116,185,255,.2)"></div>
   </div>
   <aside class="notes">
-    Now the first real extension. You know the loop and you know the hooks. This one uses them to do something you
-    can't do from a prompt: it rewrites what the model sees on every request, without touching the saved session,
-    and it gives the model a tool to get things back.
-    The picture on the right is the visual language for the next ten minutes: the context window as a stack of
-    messages, height roughly proportional to tokens. Coral is tool output, green is a summary, violet is a tool call.
+    [~0:15] Last one, and the most involved. Speedometer only watched, checklist added a tool. This one rewrites what the
+    model sees on every request, keeps the saved session untouched, and gives the model a tool to get things back.
+    The picture on the right is the visual language from here on: the context window as a stack of messages, height roughly
+    proportional to tokens. Coral is tool output, green is a summary, violet is a tool call.
   </aside>
   <script>
   /* CP: shared helpers for the context-prune section (stack layout, meter, number tweening) */
@@ -1970,20 +2074,17 @@ function commit(snapshot: ChecklistSnapshot, ctx: ExtensionContext): void {
     </div>
   </div>
   <div class="captions">
-    <p data-only="0">Request 1: system prompt + your question</p>
-    <p data-only="1">Turn 0: <b>read</b> + <b>npm test</b> add 9,000 tokens</p>
-    <p data-only="2">Turn 1: <b>grep</b> adds 2,000 more</p>
-    <p data-only="3">Your next message drags all of it along</p>
+    <p data-only="0">Request 1: system prompt + question</p>
+    <p data-only="1"><b>read</b> + <b>npm test</b>: +9,000 tokens</p>
+    <p data-only="2"><b>grep</b>: +2,000</p>
+    <p data-only="3">Your next message drags it all along</p>
     <p data-only="4 5">Paid again on <b>every</b> later request</p>
   </div>
   <aside class="notes">
-    Token counts on this and the following slides are illustrative estimates (about 4 characters per token); the mechanics are exact.
-    [Step 0] Every LLM request re-sends the whole message array. Request 1 is the system prompt plus "why is the login test failing?", about 2,500 tokens.
-    [Step 1] The model reads src/auth.ts and runs npm test in parallel. Those two results are about 9,000 tokens, so request 2 is 11,575.
-    [Step 2] It greps for "token", another 2,000. Request 3 is 13,615.
-    [Step 3] It answers. You say "OK, fix it", and request 4 is 13,875 tokens. The npm test log has now been sent three times, and it will be sent again on every request in this session.
-    [Step 4] Cost scales with old tool output times the number of later requests. Attention: the one fact that matters, verifyToken comparing seconds with milliseconds, is buried.
-    [Step 5] It fills the window toward auto-compaction, which is lossy and all-at-once. The cache twist: providers cache an identical prefix, so rewriting old messages too often loses cache hits. Remember that for the modes slide.
+    [~0:40] Go fast: they know the whole array is re-sent. Token counts here and on the next slides are illustrative (about 4 chars per token); the mechanics are exact.
+    [0–3] "Why is the login test failing?" read + npm test add 9,000 tokens, grep adds 2,000, and by "OK, fix it" request 4 is 13,875 tokens. The test log has now gone out three times.
+    [4] Cost: old tool output times every later request. Attention: the one useful fact is buried.
+    [5] It pushes you toward lossy auto-compaction. And the twist: rewriting old messages busts the prompt cache, so you can't just prune constantly. Keep that in mind.
   </aside>
   <script>
   (function () {
@@ -2066,8 +2167,8 @@ function commit(snapshot: ChecklistSnapshot, ctx: ExtensionContext): void {
     <span class="arr">↺</span>
   </div>
   <div class="job">
-    <div data-only="0"><h3>capture → summarise → filter → recover</h3><p>Click a hook, or step through them one by one.</p></div>
-    <div data-only="1"><span class="src">index.ts:394 · :425</span><h3>session_start · session_tree</h3><p>Load settings. Rebuild index, stats and frontier from the current branch.</p></div>
+    <div data-only="0"><h3>summarise → index → recover by ref</h3><p>Summaries go to the model. Originals go to an index. A tool pages them back.</p></div>
+    <div data-only="1"><span class="src">index.ts:394 · :425</span><h3>session_start · session_tree</h3><p>Same trick as checklist: rebuild the index from <code>getBranch()</code></p></div>
     <div data-only="2"><span class="src">index.ts:562</span><h3>before_agent_start ✎</h3><p>agentic-auto only: append pruning guidance to the system prompt.</p></div>
     <div data-only="3"><span class="src">index.ts:524</span><h3>context ✎</h3><p>Before every LLM call: drop tool results that already have a summary.</p></div>
     <div data-only="4"><span class="src">index.ts:434</span><h3>turn_end</h3><p>Capture this turn's tool calls and results as a pending batch.</p></div>
@@ -2077,14 +2178,14 @@ function commit(snapshot: ChecklistSnapshot, ctx: ExtensionContext): void {
   </div>
   <p class="also">also: <code>tool_execution_end</code> (on-context-tag) · <code>agent_end</code> (status only) · <code>context_prune</code> tool (agentic-auto)</p>
   <aside class="notes">
-    This is the whole extension mapped onto the lifecycle you just saw. The ✎ marks the hooks whose return value changes what pi does.
-    [1] session_start and session_tree: on startup, reload or /tree navigation it reloads config and rebuilds its index from the current branch, so state is branch-aware.
-    [2] before_agent_start: only in agentic-auto mode, it appends instructions to the system prompt telling the model when to call context_prune.
-    [3] context: the important one. It runs before every LLM call and filters out tool results that are already summarized. It changes that one request only.
-    [4] turn_end: after each turn with tool calls it captures a batch: the assistant text plus each call and its result. Nothing is summarized yet.
-    [5] message_end: in the default agent-message mode, the first assistant message with no tool calls means the task is done, so it flushes.
-    [6] A registered tool, context_tree_query, which is the recovery path.
-    [7] A /pruner command with subcommands. Also, tool_execution_end triggers on-context-tag mode, agent_end only updates status, and a second tool, context_prune, exists for agentic-auto.
+    [~0:50] The idea in one line: once a task is done, a side LLM call summarises the old tool output, the originals go into an index in the session that's never sent, and the model can page any original back by a short ref. Lossy summary, lossless recovery. Here it is on the loop; ✎ marks hooks whose return value changes what pi does. Hooks are clickable.
+    [1] session_start / session_tree: same trick as checklist. Index, stats and frontier are rebuilt from the current branch.
+    [2] before_agent_start: agentic-auto mode only. Adds system-prompt guidance on when to call context_prune.
+    [3] context: the important one. Before every LLM call, drop tool results that already have a summary. This request only.
+    [4] turn_end: capture the turn's calls and results as a pending batch. Nothing summarised yet.
+    [5] message_end: default mode. A final answer with no tool calls means the task is done, so flush.
+    [6] context_tree_query: the recovery tool.
+    [7] /pruner command. The footer line lists the rest; skip it unless asked.
   </aside>
   <script>
   (function () {
@@ -2284,33 +2385,33 @@ function commit(snapshot: ChecklistSnapshot, ctx: ExtensionContext): void {
   </div>
 
   <div class="captions">
-    <p data-only="0">Request 1: system prompt + your question</p>
-    <p data-only="1">Turn 0: two tools return 9,000 tokens</p>
+    <p data-only="0">Request 1: nothing to prune</p>
+    <p data-only="1">Two tools return 9,000 tokens</p>
     <p data-only="2"><b>turn_end</b>: capture the batch, don't prune yet</p>
-    <p data-only="3">Turn 1: grep adds 2,000 more. Queue it.</p>
-    <p data-only="4"><b>message_end</b>: a final text answer triggers the flush</p>
+    <p data-only="3">grep adds 2,000. Queue it too.</p>
+    <p data-only="4"><b>message_end</b>: final answer, so flush</p>
     <p data-only="5">One summarizer call per batch, in parallel</p>
     <p data-only="6">Summaries come back with short refs</p>
-    <p data-only="7">Originals archived in the index. Nothing removed yet.</p>
+    <p data-only="7">Originals go to the index. Nothing removed yet.</p>
     <p data-only="8">Next prompt: <b>context</b> builds request 4</p>
     <p data-only="9">One filter: 13,875 → 3,160 tokens</p>
     <p data-only="10">On disk, every raw result is still there</p>
   </div>
   <div class="dots" style="position:absolute;right:190px;bottom:44px"></div>
   <aside class="notes">
-    Token counts are illustrative estimates (about 4 chars per token). The events, field names and ordering are exact. Settings: /pruner on, default prune-on agent-message.
-    [0] Request 1. The context hook runs before every LLM call. The index is empty, so it returns undefined and pi sends the messages unchanged.
-    [1] The model calls read and bash in one assistant message, and pi runs them in parallel. 12,000 and 24,000 chars land in context.
-    [2] turn_end fires with the assistant message and its tool results. captureBatch builds this object: turnIndex, assistantText, and each toolCallId, toolName, args, resultText, isError. It goes into pendingBatches. Nothing is summarized yet.
-    [3] Why wait? The prompt cache. Every time you rewrite earlier messages, the cached prefix from that point is invalidated. So the default batches a whole task. Turn 1: grep, 2,000 tokens, second batch queued. (context also ran for requests 2 and 3 and returned undefined.)
-    [4] The model answers in plain text. In agent-message mode, message_end with an assistant message that has zero toolCall blocks means the task is done, so flushPending runs, with session delivery.
-    [5] The flush re-scans the session branch, then summarizeBatches makes one LLM call per batch, in parallel with Promise.all. It's the active model by default, or a cheap one you configure. Each tool result is cut to its first 2,000 chars, so the summarizer sees about 1,000 tokens of the 9,000.
-    [6] Each summary gets short refs: turn 0 gets t1 and t2, turn 1 gets t3. There's a size check: if the summary is bigger than the raw output, the batch is skipped.
-    [7] Two kinds of session entries: a custom_message with the summary, which is sent to the model as user-role text but hidden in the transcript, and a custom index entry with the full originals, which pi never sends. Plus a frontier and a stats snapshot. Note the context is still exactly as big.
-    [8] You say "OK, fix it". Request 4 is being built. context gets a deep copy of the messages. Unpruned, this would be 13,875 tokens.
-    [9] The filter drops every toolResult whose ID is indexed. Assistant tool-call blocks stay, so the IDs are anchors; pi's provider layer inserts tiny "No result provided" placeholders for the orphaned calls. 13,875 becomes about 3,160, which is 77% smaller.
-    CAVEAT (say it carefully): this frame shows the intended design, with the summaries in context. In the session delivery modes (agent-message, every-turn) the summary is written with sessionManager.appendCustomMessageEntry, which may not reach the live agent's in-memory messages until a reload or tree navigation. The raw results are still removed immediately, and recovery still works. Runtime delivery (/pruner now, on-context-tag, agentic-auto) uses pi.sendMessage with deliverAs "steer", which doesn't have that gap. For the live demo use: /pruner on, /pruner prune-on on-demand, /pruner now, then /pruner tree and /pruner stats.
-    [10] The session file was never rewritten. Every raw tool result is still on disk; the extension only added entries. Pruning is a view, not a delete.
+    [~1:30] The core slide: keep a steady click rhythm, about 8 seconds a step. Token counts are illustrative; events, field names and ordering are exact. Default mode, agent-message.
+    [0] Request 1. context runs, the index is empty, it returns undefined: nothing changes.
+    [1] read and bash run in parallel: 12,000 and 24,000 chars land in context.
+    [2] turn_end: captureBatch builds this object (call IDs, args, full result text) and queues it. No summary yet.
+    [3] Why wait? Every rewrite of old messages busts the prompt cache, so the default batches the whole task. grep's turn is queued too.
+    [4] The model answers in plain text. message_end sees an assistant message with zero tool calls: task done, flush.
+    [5] One summarizer call per batch, in parallel. Active model by default, or a cheap one you configure. Each result is cut to its first 2,000 chars.
+    [6] Summaries come back with short refs: t1, t2 for turn 0, t3 for turn 1.
+    [7] Two session entries: the summary as a custom_message the model sees but the UI hides, and an index entry with the full originals that pi never sends. The context is still just as big.
+    [8] "OK, fix it." context gets a deep copy of the messages for request 4.
+    [9] One filter drops every toolResult whose ID is indexed. Tool-call blocks stay as anchors. 13,875 becomes about 3,160: 77% smaller.
+    Caveat if asked: in session-delivery modes the summary may only reach the live agent after a reload or /tree; raw results are dropped immediately either way. For a live demo use /pruner prune-on on-demand and /pruner now, which deliver at runtime.
+    [10] The session file was never rewritten. Every raw result is still on disk. Pruning is a view, not a delete.
   </aside>
   <script>
   (function () {
@@ -2408,15 +2509,15 @@ Turn: 0
   <div class="captions">
     <p data-only="0">The summary is lossy. That's fine.</p>
     <p data-only="1">The model asks for <b>t2</b> by ref</p>
-    <p data-only="2">The full test log flows back into context</p>
-    <p data-only="3">Hot context, cold storage, one tool between them</p>
+    <p data-only="2">The full test log comes back</p>
+    <p data-only="3">Hot context, cold storage, one tool between</p>
   </div>
   <aside class="notes">
-    Illustrative token counts again.
-    [0] After pruning we're at about 3,160 tokens. The summary says one test failed. But the summarizer only saw the first 2,000 characters of the jest log, and the failure detail is near the end.
-    [1] So the model calls context_tree_query with the short ref t2, which it read in the summary footer. The tool is always registered, and its promptSnippet and guidelines tell the model when to use it. It takes short refs or full tool call IDs; an unknown ref comes back as "not found in index".
-    [2] The indexer resolves t2 to toolu_01NpmTest and returns the full stored output as a new tool result: tool, args, status, turn, then the log, capped with truncateHead at 2,000 lines or 50 KB. Now the model sees "Expected 401, received 200, at login.test.ts line 57". Context goes back up to roughly 9,200.
-    [3] That recovered output is a new tool result, so at the next flush it gets summarized and pruned again with a new ref. Think hot memory versus cold storage.
+    [~0:30] Illustrative token counts.
+    [0] The summary says one test failed, but the summarizer only saw the first 2,000 chars and the detail is near the end.
+    [1] So the model calls context_tree_query with t2, the ref it read in the summary. The tool is always registered.
+    [2] It gets the full stored log back as a new tool result, capped like built-in tools. Now it sees "Expected 401, received 200" at line 57.
+    [3] That's a new tool result, so the next flush summarises it again with a new ref. Hot context, cold storage.
   </aside>
   <script>
   (function () {
@@ -2493,44 +2594,25 @@ Turn: 0
       </div>
     </div>
   </div>
-  <p class="punch" data-at="4">No session rewrite. <span class="t-green">A different view per request.</span></p>
+  <p class="punch" data-at="4">The model sees <span class="t-green">a summary</span>. The session keeps <span class="t-amber">everything</span>.</p>
   <aside class="notes">
-    Excerpts are from pi-context-prune 1.4.0, lightly trimmed. The real context handler also adds a pruner-note reminder in agentic-auto mode; I've cut that.
-    [Step 0] On the right is the whole extension's shape: one default-exported function receiving pi, a handful of pi.on calls, two tools and a command. Plus tool_execution_end and agent_end, not shown.
-    [Step 1] The one that matters: context. It fires before every LLM call with a deep copy of the messages.
-    [Step 2] The entire pruning algorithm is src/pruner.ts, sixteen lines: keep everything except toolResult messages whose toolCallId is in the index. Assistant tool-call blocks stay.
-    [Step 3] Two early exits that return undefined: disabled, or nothing to drop. Returning undefined means pi sends the messages untouched, which also keeps the prompt cache stable.
-    [Step 4] Otherwise it returns new messages. pi uses them for this one request; the session is never rewritten. That's the lesson of this extension.
+    [~0:40] Excerpts from pi-context-prune 1.4.0, lightly trimmed (the agentic-auto reminder in the context handler is cut).
+    [0] Right: the whole extension's shape. One function, a handful of pi.on calls, two tools, a command.
+    [1] The one that matters: context.
+    [2] The whole pruning algorithm is one filter: drop toolResults whose ID is in the index.
+    [3] Early exits return undefined: disabled, or nothing to drop. Untouched messages keep the prompt cache stable.
+    [4] Otherwise return new messages, for this request only. The model sees a summary; the session keeps everything; no fork of pi. That's the lesson.
+    One breath, only if time: five flush modes trade cache hits against context size (default once per task, every-turn is leanest but busts the cache most, plus on-demand /pruner now and model-driven ones). If a summary would be bigger than the raw output the batch is skipped, and if the summarizer fails the batches go back to pending.
   </aside>
 </section>
-<!-- =================================================================== -->
-
-
-<!-- =================================================================== -->
-
-
-<!-- =================================================================== -->
-
-
-<!-- =================================================================== -->
-
-
-<!-- =================================================================== -->
-
-
-<!-- =================================================================== -->
-
-
-<!-- =================================================================== -->
-
-
-<!-- =================================================================== -->
-
-
-<!-- =================================================================== -->
 
 
 <!-- ===== part: 90-outro.html ===== -->
+<!-- ===================================================================
+     Outro (no divider)
+     Slides: out-zero (the 4th hook kind, intercept: the only tool_call
+     demo in the deck), out-thanks (install lines + Q&A)
+     =================================================================== -->
 <section id="out-zero" class="stepper" data-steps="4">
   <style>
     #out-zero .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; margin-top: 28px; }
@@ -2545,9 +2627,13 @@ Turn: 0
     #out-zero .share { position: absolute; right: 64px; bottom: 64px; display: flex; gap: 20px; align-items: center; }
     #out-zero .share p { margin: 0; font-size: 24pt; }
     #out-zero .share code { font-size: 22pt; }
+    #out-zero .arc { position: absolute; right: 64px; top: 40px; display: flex; gap: 10px; align-items: center; margin: 0; }
+    #out-zero .arc span { font-family: var(--mono); font-size: 16pt; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 14px; }
+    #out-zero .arc span.now { color: #061a19; background: var(--teal); border-color: var(--teal); font-weight: 700; }
     #out-zero .k { color: var(--violet); } #out-zero .s { color: var(--green); } #out-zero .c { color: var(--muted); }
   </style>
   <p class="kicker">zero → live</p>
+  <p class="arc" aria-label="four kinds of hook"><span>observe</span><span>add tools</span><span>rewrite context</span><span class="now">4 · intercept</span></p>
   <h2>No build. No fork. No restart.</h2>
   <div class="row">
     <div class="stage" data-at="1">
@@ -2606,10 +2692,11 @@ Turn: 0
     <p><code>pi install npm:your-extension</code></p>
   </div>
   <aside class="notes">
-    Step 1: one TypeScript file in ~/.pi/agent/extensions. Pi loads it through jiti, so there's no compile step, and pi's own packages resolve without an npm install. The slide is trimmed for size; the real file imports isToolCallEventType from @earendil-works/pi-coding-agent.
-    Step 2: /reload tears the runtime down and brings it back in the same session: session_shutdown with reason reload, then session_start. There's no file watcher, so you trigger it yourself.
-    Step 3: the model tries rm -rf and the tool_call hook blocks it. The model gets the reason back as the tool result and adapts. Also worth saying: if a tool_call handler throws, the call is blocked, so it fails safe.
-    Step 4: share it with pi install npm: or git:. Every extension in this talk is published that way.
+    [~0:40] Recap the arc in one breath (top-right chips): speedometer observed, checklist added a tool, context-prune rewrote the context. The fourth kind of hook is intercept: stop something before it happens. That's the tool_call hook, and it's also how fast you go from zero to live.
+    [1] One TypeScript file in ~/.pi/agent/extensions. Loaded through jiti, so no compile step. (Trimmed: the real file imports isToolCallEventType.)
+    [2] /reload: session_shutdown, then session_start, same session. No file watcher, you trigger it.
+    [3] The model tries rm -rf, tool_call returns block, and the model gets the reason back and adapts. If a tool_call handler throws, the call is blocked too: it fails safe.
+    [4] Share it with pi install npm: or git:, like all three extensions today.
   </aside>
 </section>
 
@@ -2621,26 +2708,29 @@ Turn: 0
     #out-thanks .inst .card .name { font-family: var(--head); font-size: 26pt; font-weight: 600; margin-bottom: 6px; }
     #out-thanks .inst .card code { font-size: 18pt; }
     #out-thanks .big { font-family: var(--head); font-size: 96pt; font-weight: 700; line-height: 1; margin: 0 0 20px; }
+    #out-thanks .inst .meta { font-size: 24pt; margin: 8px 0 0; }
     #out-thanks .links p { font-size: 24pt; margin-bottom: 14px; }
   </style>
   <p class="kicker">try them tonight</p>
   <div class="grid">
     <div class="inst">
-      <div class="card green"><p class="name">pi-context-prune</p><p><code>pi install npm:pi-context-prune</code></p></div>
       <div class="card blue"><p class="name">pi-speedometer</p><p><code>pi install npm:@championswimmer/pi-speedometer</code></p></div>
       <div class="card violet"><p class="name">pi-checklist</p><p><code>pi install npm:pi-checklist</code></p></div>
+      <div class="card green"><p class="name">pi-context-prune</p><p><code>pi install npm:pi-context-prune</code></p></div>
+      <p class="meta">Or just ask pi to write one. <span class="muted">Its docs teach it how.</span></p>
     </div>
     <div>
       <p class="big">Thanks!</p>
       <div class="links">
         <p><span class="muted">pi</span> &nbsp;github.com/earendil-works/pi</p>
         <p><span class="muted">code</span> &nbsp;github.com/championswimmer</p>
-        <p><span class="muted">slides</span> &nbsp;sites.arnavg.in/learning/<br>building-your-coding-harness</p>
+        <p><span class="muted">slides</span> &nbsp;sites.arnavg.in/learning/<br>coding-harness-in-15-min</p>
       </div>
     </div>
   </div>
   <aside class="notes">
-    All three extensions are published on npm. The install commands on the slide are the real package names.
+    [Q&amp;A] All three are on npm; these are the real package names, in the order we saw them.
+    Last line: pi's extension docs open with "pi can create extensions, ask it to build one", and its system prompt points the model at those docs. So open pi, describe the behaviour, and it writes the .ts file for you to /reload.
     Leave this slide up during Q&amp;A.
     Likely questions: Does it work with any model? Yes, pi is provider-agnostic, and hooks don't care which model is behind them. Is it safe? Extensions run with your full permissions, so only install ones you trust. How does this compare with Claude Code hooks? Those are shell commands at fixed points, while pi extensions are in-process TypeScript with typed events and return values.
   </aside>
