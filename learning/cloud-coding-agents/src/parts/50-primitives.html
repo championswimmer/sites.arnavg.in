@@ -12,14 +12,14 @@
   </style>
   <div>
     <p class="num">05 / How it works</p>
-    <h1>Three ideas<br>do the work.</h1>
-    <p class="sub">Cheap object storage, shared files, one owner per sandbox.</p>
+    <h1>Store the state.<br>Track the session.</h1>
+    <p class="sub">Object storage, writable layers and a coordinator.</p>
   </div>
   <div class="trio" aria-hidden="true"><div class="t">snapshots → object store</div><div class="t">one repo, many views</div><div class="t">one owner per sandbox</div></div>
   <aside class="notes">
-    Stop five: the technology layer. Forget brand names for a minute. Every pausable platform is built from the same three ideas:
-    snapshots parked in cheap object storage, one repo shared through copy-on-write, and a single owner object coordinating each sandbox.
-    Next slide makes each one clickable, using Cloudflare's stack as the concrete example.
+    These are useful building blocks, not a blueprint every provider follows.
+    Cloudflare gives us a concrete example: R2 for backups, writable layers for edits and Durable Objects for coordination.
+    Its filesystem backups do not preserve live RAM.
   </aside>
 </section>
 
@@ -38,32 +38,31 @@
     #pm-tech #techOutBody:empty { display: none; }
     #pm-tech #techOutBody { margin-top: 8px !important; }
   </style>
-  <p class="kicker">three ideas, click each one</p>
-  <h2>Where state sleeps, how files share, who is in charge</h2>
+  <p class="kicker"><i data-icon="brand-cloudflare"></i> Cloudflare · a concrete example</p>
+  <h2>Three parts of a restorable sandbox</h2>
   <div class="grid">
-    <div class="t c1" data-t="store" data-at="1"><b class="t-violet">Object storage</b><span>snapshots sleep here</span><br><code>R2 · squashfs · meta.json</code></div>
+    <div class="t c1" data-t="store" data-at="1"><b class="t-violet">Object storage</b><span>durable filesystem backups</span><br><code>R2 · squashfs · meta.json</code></div>
     <div class="t c2" data-t="cow" data-at="2"><b class="t-amber">Shared files</b><span>one repo, many views</span><br><code>lowerdir + upperdir</code></div>
     <div class="t c3" data-t="owner" data-at="3"><b class="t-teal">One owner</b><span>a coordinator per sandbox</span><br><code>Durable Object + alarms</code></div>
   </div>
-  <div id="techOut" class="card violet"><p>Click a card to see each idea on Cloudflare.</p><p id="techOutBody"></p></div>
+  <div id="techOut" class="card violet"><p class="muted small">Select a component for implementation details.</p><div id="techOutBody" aria-live="polite"></div></div>
   <div class="captions">
-    <p data-only="0">Three ideas, every platform.</p>
+    <p data-only="0">This example restores files, not running processes.</p>
     <p data-only="1">Snapshots are just files in <b>object storage</b>.</p>
-    <p data-only="2">Repos are shared with <b>copy-on-write</b>, same as section 4.</p>
+    <p data-only="2">A read-only base plus a <b>writable layer</b> keeps edits separate.</p>
     <p data-only="3">Each sandbox gets <b>one owner</b> that outlives its container.</p>
   </div>
   <aside class="notes">
-    Walk the three clicks using Cloudflare as the concrete example. One: object storage. A backup is a directory compressed to squashfs, uploaded to R2 next to a small metadata file.
-    Restoring downloads both and mounts the archive read-only with a writable layer on top. It runs at object-storage speed, not disk speed — that is the honest trade.
-    Two: shared files. That read-only mount plus writable upper layer is overlayfs — the same lowerdir/upperdir shape from section four. The industry keeps rediscovering copy-on-write.
-    Three: one owner. A Durable Object is a single-threaded coordinator with private transactional storage — SQLite, key-value, alarms that wake it later. The container is disposable; the owner remembers. That split is what lets a sandbox sleep for hours and still know what it was doing.
+    A backup stores a directory archive and metadata in R2. Restore fetches them and adds a writable layer.
+    That is slower than keeping a live local disk, but it survives the container being replaced.
+    A Durable Object coordinates the sandbox and can persist session metadata. Applications must choose what to save.
   </aside>
   <script>
   (function () {
     const D = {
-      store: '<b>Object storage.</b> Cloudflare backups land in R2 as <b>data.sqsh + meta.json</b> (3-day default TTL). Restore downloads both, then FUSE-mounts the archive read-only. Cheap and durable; slower than local disk.',
-      cow: '<b>Shared files.</b> The restored backup becomes the read-only <b>lower layer</b>; new writes go to an <b>upper layer</b>. Re-restore and the upper layer is discarded. Overlayfs, ZFS clones, same idea everywhere.',
-      owner: '<b>One owner:</b> a <b>Durable Object</b>, one ID, one single-threaded instance, private SQLite + KV storage, <b>alarms</b> that wake it later. The container can die; the owner keeps the plan, the backup handles, the credentials.'
+      store: '<ul class="detail-list"><li><b>R2:</b> stores the archive and metadata.</li><li><b>Retention:</b> 3-day default backup TTL.</li><li><b>Restore:</b> download and mount the archive. Slower than local disk.</li></ul>',
+      cow: '<ul class="detail-list"><li><b>Base:</b> the restored archive stays read-only.</li><li><b>Edits:</b> new writes go into a private upper layer.</li><li><b>Restore again:</b> save any edits you need before replacing that layer.</li></ul>',
+      owner: '<ul class="detail-list"><li><b>Identity:</b> one Durable Object coordinates each sandbox.</li><li><b>State:</b> durable storage holds session metadata and backup references.</li><li><b>Lifecycle:</b> alarms can schedule work after the container stops.</li></ul>'
     };
     const sec = document.getElementById('pm-tech');
     sec.querySelectorAll('[data-t]').forEach(b => b.addEventListener('click', e => {

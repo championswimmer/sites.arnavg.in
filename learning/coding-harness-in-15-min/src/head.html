@@ -137,6 +137,12 @@ button.btn.active { background: var(--teal); border-color: var(--teal); color: #
 .reveal .controls { color: var(--teal); }
 .reveal .slide-number a { text-decoration: none; }
 .reveal .slide-number { right: 90px; bottom: 14px; background: transparent; color: var(--muted); font-family: var(--mono); font-size: 13pt; }
+
+/* deck control bar: fullscreen / speaker-notes launch buttons */
+.deck-controls { position: fixed; left: 24px; bottom: 20px; z-index: 40; display: flex; gap: 10px; }
+.deck-ctrl-btn { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; padding: 0; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); color: var(--muted); cursor: pointer; transition: all .2s var(--ease); }
+.deck-ctrl-btn:hover, .deck-ctrl-btn:focus-visible { color: var(--teal); border-color: var(--teal); background: var(--panel-2); }
+.deck-ctrl-btn svg { width: 20px; height: 20px; pointer-events: none; }
 </style>
 <script>
 /* Deck: tiny helper API for part scripts. Parts call Deck.onStep(id, fn) / Deck.onEnter(id, fn). */

@@ -1,5 +1,13 @@
 
 </div>
+<div class="deck-controls" role="group" aria-label="Presentation controls">
+  <button type="button" class="deck-ctrl-btn" id="btn-fullscreen" title="Start presentation (fullscreen)" aria-label="Start presentation (fullscreen)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+  </button>
+  <button type="button" class="deck-ctrl-btn" id="btn-notes" title="Open speaker notes" aria-label="Open speaker notes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+  </button>
+</div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
@@ -17,6 +25,19 @@ Reveal.initialize({
   Reveal.on('slidechanged', e => { Deck._leave(e.previousSlide); Deck.apply(e.currentSlide); Deck._enter(e.currentSlide); });
   Reveal.on('fragmentshown', () => Deck.apply(cur()));
   Reveal.on('fragmenthidden', () => Deck.apply(cur()));
+
+  document.getElementById('btn-fullscreen').addEventListener('click', () => {
+    const el = document.documentElement;
+    if (!document.fullscreenElement) {
+      (el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen).call(el);
+    } else {
+      document.exitFullscreen();
+    }
+  });
+  document.getElementById('btn-notes').addEventListener('click', () => {
+    const notes = Reveal.getPlugin('notes');
+    if (notes) notes.open();
+  });
 });
 </script>
 </body>

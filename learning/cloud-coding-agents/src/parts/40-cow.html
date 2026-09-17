@@ -15,19 +15,19 @@
   </style>
   <div>
     <p class="num">04 / Share</p>
-    <h1>Never clone<br><span class="t-amber">the whole repo.</span></h1>
-    <p class="sub">One warm copy on the server. Every session borrows it.</p>
+    <h1>Clone once.<br><span class="t-amber">Share the base.</span></h1>
+    <p class="sub">One base checkout. A private writable view per session.</p>
   </div>
   <div class="srv" aria-hidden="true">
-    <b>devserver · beefy machine</b>
+    <b>devserver · shared host</b>
     <div class="warm">warm monorepo · 40 GiB</div>
     <div class="vms"><div class="vm">µVM · chat A</div><div class="vm">µVM · chat B</div></div>
-    <p class="more">&times; a few devservers per fleet</p>
+    <p class="more">&times; hosts for active work</p>
   </div>
   <aside class="notes">
-    Stop four: the second fix. Workplace code is often one giant monorepo — tens of gigs. Copying it per session is slow and wasteful, and most sessions barely touch it.
-    So run a few beefy devservers, each holding one warm checkout — hot in page cache, outside any VM — and start one microVM per user chat inside the devserver.
-    Each microVM forks a copy-on-write view of that warm clone. Only changed blocks cost anything.
+    A large monorepo can take tens of gigabytes. Most tasks change only a small part of it.
+    Keep an immutable base checkout on each host and give sessions copy-on-write views.
+    Each session still needs compute and private state, but it need not duplicate the whole repo.
   </aside>
 </section>
 
@@ -41,12 +41,13 @@
   <p class="kicker">the naive way</p>
   <h2>2,000 clones of a <span class="t-coral">40 GiB</span> monorepo?</h2>
   <div class="vs">
-    <div class="card coral" data-at="1"><h3>Full copy each</h3><div class="repo">git clone × 2,000</div><p class="big t-coral">80 TB</p><p class="muted">moved to change three files</p></div>
-    <div class="card green" data-at="2"><h3>CoW view each</h3><div class="repo">clone = metadata only</div><p class="big t-green">~0 GB</p><p class="muted">until a session writes</p></div>
+    <div class="card coral" data-at="1"><h3>Full copy each</h3><div class="repo">git clone × 2,000</div><p class="big t-coral">~78 TiB</p><p class="muted">of duplicate checkouts</p></div>
+    <div class="card green" data-at="2"><h3>CoW view each</h3><div class="repo">clone = metadata only</div><p class="big t-green">Metadata</p><p class="muted">plus each session's changes</p></div>
   </div>
   <aside class="notes">
-    Two clicks. Naive: two thousand full clones of a forty-gig monorepo is eighty terabytes moved and stored — so each agent can change three files.
-    Copy-on-write: a clone is metadata pointing at the same blocks, near-zero cost until a session actually writes. Reads are free and shared; writes pay per changed block.
+    Two thousand 40-GiB checkouts occupy 80,000 GiB, or about 78 TiB, before compression or deduplication.
+    A copy-on-write clone initially shares the base data. It adds metadata, then private data as the session writes.
+    This saves duplicate storage. It does not make reads or compute free.
   </aside>
 </section>
 
@@ -70,40 +71,38 @@
     #cw-cow .blk.own { border-color: var(--teal); color: var(--teal); background: rgba(63,220,214,.08); }
     #cw-cow #cowDetail { margin-top: 14px; min-height: 70px; }
     #cw-cow #cowDetail p { font-size: 19pt; margin: 0; }
+    #cw-cow #cowDetail [data-only]:not(.on) { display: none; }
     #cw-cow #cowOut { font-size: 19pt; margin: 8px 0 0; }
     #cw-cow #cowOut:empty { display: none; }
     #cw-cow .fleet { text-align: center; margin-top: 10px; }
   </style>
   <p class="kicker">one devserver, up close — click a microVM</p>
-  <h2>A few devservers. <em>MicroVMs</em> inside.</h2>
+  <h2>One host. Many <em>isolated sessions</em>.</h2>
   <div class="srv">
-    <span class="tag">devserver · beefy machine · 128 GiB RAM, fast SSD</span>
-    <div class="warm" data-at="1"><b>🔥 warm repo clone · 40 GiB</b><span>lives on the devserver, outside every VM · hot in page cache</span></div>
-    <p class="fork-lbl" data-at="2">&#9495; each microVM gets a CoW clone of it as its disk &#9495;</p>
+    <span class="tag">example host · 128 GiB RAM · fast SSD</span>
+    <div class="warm" data-at="1"><b><i data-icon="lucide-layers"></i> warm repo clone · 40 GiB</b><span>immutable base on the host · shared by each session</span></div>
+    <p class="fork-lbl" data-at="2">Each microVM attaches its own copy-on-write disk.</p>
     <div class="vms">
-      <div class="uvm" data-sess="a" data-at="2"><h3>µVM · chat A</h3><div><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span><span class="blk own" data-at="3">✎ auth.ts</span></div><p class="muted" style="font-size:15pt;margin:6px 0 0">click me</p></div>
-      <div class="uvm" data-sess="b" data-at="2"><h3>µVM · chat B</h3><div><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span></div><p class="muted" style="font-size:15pt;margin:6px 0 0">read-only so far</p></div>
-      <div class="uvm" data-sess="c" data-at="2"><h3>µVM · chat C</h3><div><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span></div><p class="muted" style="font-size:15pt;margin:6px 0 0">just forked</p></div>
+      <div class="uvm" data-sess="a" data-at="2"><h3>µVM · chat A</h3><div><span class="blk shared"><i data-icon="lucide-layers"></i> shared</span><span class="blk own" data-at="3"><i data-icon="lucide-pencil"></i> auth.ts</span></div><p class="muted" style="font-size:15pt;margin:6px 0 0">select for details</p></div>
+      <div class="uvm" data-sess="b" data-at="2"><h3>µVM · chat B</h3><div><span class="blk shared"><i data-icon="lucide-layers"></i> shared base</span></div><p class="muted" style="font-size:15pt;margin:6px 0 0">read-only so far</p></div>
+      <div class="uvm" data-sess="c" data-at="2"><h3>µVM · chat C</h3><div><span class="blk shared"><i data-icon="lucide-layers"></i> shared base</span></div><p class="muted" style="font-size:15pt;margin:6px 0 0">just forked</p></div>
     </div>
   </div>
-  <p class="fleet muted small">fleet = a few of these devservers · 500 devs &times; 4 chats spread across them · each chat = one microVM</p>
-  <div id="cowDetail" class="card amber"><p data-only="0">A devserver, not a VM per chat. Watch it fill up.</p><p data-only="1">One warm clone sits on the devserver's SSD — <b>outside</b> every microVM, hot in page cache.</p><p data-only="2">Each chat starts a microVM that <b>forks a CoW view</b>: metadata only, ~0 bytes, instant.</p><p data-only="3">A writes <b>auth.ts</b> → only that file copies up into its private layer. The rest stays shared.</p><p data-only="4">B and C changed nothing → still <b>pay nothing</b>. Unmodified files share the host page cache too.</p><p id="cowOut"></p></div>
+  <p class="fleet muted small">Size the host pool for active sessions. Pause idle VMs and keep their private state.</p>
+  <div id="cowDetail" class="card amber"><p data-only="0">One VM per chat, without a full repo copy per VM.</p><p data-only="1">The host keeps one <b>immutable base</b> on its SSD.</p><p data-only="2">Each VM gets a <b>writable clone</b> that shares the base blocks.</p><p data-only="3">A edits <b>auth.ts</b>. Its changed blocks become private.</p><p data-only="4">B and C still share the base. No duplicate repo data yet.</p><p id="cowOut"></p></div>
   <aside class="notes">
-    The heart of the talk — let the audience click the microVMs. There is no VM per chat floating in the cloud: there are a few beefy devservers, and each one holds a single warm
-    clone of the monorepo on its fast SSD, outside every VM, hot in the host page cache.
-    Each user chat starts a microVM inside a devserver, and that microVM forks a copy-on-write view of the warm clone — metadata pointing at the same blocks, instant, near-zero bytes.
-    When chat A edits auth.ts, only that file copies up into its private layer. Chats B and C changed nothing and pay nothing — and unmodified files share the host page cache,
-    so hundreds of chats on one box do not need hundreds of copies in RAM either.
-    Implementation notes for Q&A: on the host, OverlayFS merges the shared lowerdir with a private upperdir per microVM, or ZFS hands each one a writable block-level clone
-    of a snapshot — either way each microVM gets its CoW view attached as its own virtio-blk disk. (Honest footnote: upstream Firecracker has no virtiofs support, so the
-    sharing happens at the block layer, not as a shared folder.)
+    Each chat still gets a microVM. What changes is the storage underneath it.
+    The host shares an immutable base; each VM gets a private writable disk view.
+    Block-level clones can back virtio-blk devices. OverlayFS is a file-level alternative, not itself a VM disk device.
+    Upstream Firecracker does not support virtiofs. Do not assume host storage sharing also deduplicates guest RAM.
+    Size the fleet for active CPU and memory, not just the number of stored sessions.
   </aside>
   <script>
   (function () {
     const D = {
-      a: '🟢 <b>Chat A</b> owns <b>1 file</b> (auth.ts, 12 KiB) inside its microVM. Everything else is shared blocks of the devserver clone. Reads cost nothing.',
-      b: '🔵 <b>Chat B</b> owns <b>0 bytes</b>. Pure CoW fork of the warm clone. When it writes, only touched files copy up.',
-      c: '🟣 <b>Chat C</b> just forked — same story: metadata view, boots in milliseconds, pays nothing until it writes.'
+      a: '<b>Chat A:</b> edited auth.ts. Changed blocks live in its private clone; the base is untouched.',
+      b: '<b>Chat B:</b> no repo edits yet. It shares the base data and has its own clone metadata.',
+      c: '<b>Chat C:</b> just started from the same base. It needs compute, but not another full checkout.'
     };
     const sec = document.getElementById('cw-cow');
     sec.querySelectorAll('[data-sess]').forEach(b => b.addEventListener('click', e => {
@@ -129,13 +128,13 @@
     #cw-edit .pick { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
   </style>
   <p class="kicker">what "copy on write" literally means</p>
-  <h2>Reads stay shared. Writes <span class="t-amber">copy once</span>.</h2>
+  <h2>Read the base. <span class="t-amber">Keep edits private.</span></h2>
   <div class="flow">
-    <div class="st" data-at="1"><p class="e">📖</p><b>Read</b><span>served from base</span></div>
+    <div class="st" data-at="1"><p class="e t-violet"><i data-icon="lucide-book-open"></i></p><b>Read</b><span>served from base</span></div>
     <div class="arr" data-at="2">→</div>
-    <div class="st" data-at="2" style="border-color: var(--amber)"><p class="e">✎</p><b>First write</b><span>copy_up that file</span></div>
+    <div class="st" data-at="2" style="border-color: var(--amber)"><p class="e t-amber"><i data-icon="lucide-pencil"></i></p><b>First write</b><span>copy_up that file</span></div>
     <div class="arr" data-at="3">→</div>
-    <div class="st" data-at="3" style="border-color: var(--teal)"><p class="e">🔀</p><b>Diverged</b><span>private layer grows</span></div>
+    <div class="st" data-at="3" style="border-color: var(--teal)"><p class="e t-teal"><i data-icon="lucide-git-fork"></i></p><b>Diverged</b><span>private layer grows</span></div>
   </div>
   <div class="pick" data-at="3">
     <button class="btn" data-fs="overlay">OverlayFS · file-level</button>
@@ -143,23 +142,22 @@
     <button class="btn" data-fs="btrfs">btrfs · extents</button>
   </div>
   <div class="captions">
-    <p data-only="0">Reads never copy anything.</p>
+    <p data-only="0">OverlayFS copies files; block-level clones copy smaller units.</p>
     <p data-only="1">Reads come from the shared lower tree.</p>
-    <p data-only="2">First write to a file <b>copies just that file</b> up. Deletes become whiteouts.</p>
-    <p data-only="3">Pick a filesystem. Trade-offs differ, the pattern holds.</p>
+    <p data-only="2">In OverlayFS, the first write <b>copies up the file</b>. Deletes create whiteouts.</p>
+    <p data-only="3">Choose file-level or block-level sharing for your workload.</p>
   </div>
   <aside class="notes">
-    Spell out the literal mechanism. Reads are served from the shared base — zero cost. The first write to a file copies just that file into the private upper layer; deletions become whiteout markers.
-    The buttons compare implementations: OverlayFS is ubiquitous and file-granular, great for read-mostly repos; ZFS clones share at block level with native snapshots — better for heavy writes, costs running ZFS; btrfs snapshots subvolumes with extent-level sharing, the Linux-native middle ground.
-    And pause composes with this: pausing captures two things together — the microVM's memory and device state in one snapshot file, and the per-session
-    writable layer as a disk snapshot. Firecracker manages the disk side separately, so a platform snapshots both and restores both.
+    The diagram shows OverlayFS: reads use the base, and the first write copies a file into the private upper layer.
+    ZFS clones and btrfs snapshots share smaller units: blocks or extents.
+    For pause and resume, capture the private disk state consistently with the VM memory and device state.
   </aside>
   <script>
   (function () {
     const D = {
-      overlay: 'OverlayFS: shared <b>lowerdir</b> + private <b>upperdir</b> per session. Ubiquitous, simple, file-granular copy_up.',
-      zfs: 'ZFS: snapshot the warm dataset, hand each session a <b>writable clone</b>. Block-level sharing, native replication. Operate ZFS.',
-      btrfs: 'btrfs: read-write <b>subvolume snapshots</b>. Fast metadata ops, shared extents until written. Linux-native.'
+      overlay: '<b>OverlayFS:</b> read-only lowerdir, private upperdir. First writes copy whole files; deletes use whiteouts.',
+      zfs: '<b>ZFS:</b> writable clones of a snapshot. Shares blocks; requires a ZFS storage stack.',
+      btrfs: '<b>btrfs:</b> writable subvolume snapshots. Shares extents until they change.'
     };
     const sec = document.getElementById('cw-edit');
     sec.querySelectorAll('[data-fs]').forEach(b => b.addEventListener('click', e => {

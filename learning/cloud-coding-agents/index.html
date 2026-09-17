@@ -71,6 +71,15 @@ html, body { background: var(--bg); }
 .reveal pre code .hljs-ln-numbers { color: var(--muted); }
 .code-label { font-family: var(--mono); font-size: 15pt !important; color: var(--muted) !important; margin: 0 0 6px !important; }
 
+/* ---------- icons and compact lists ---------- */
+.reveal .icon { display: inline-block; width: 1em; height: 1em; vertical-align: -.13em; flex-shrink: 0; }
+.reveal .icon[data-icon-name="brand-daytona"] { width: 4.4em; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.reveal .detail-list { margin-left: 1.1em; }
+.reveal .detail-list li { font-size: 20pt; margin-bottom: 10px; }
+.reveal button { font-family: inherit; }
+.reveal :is(button, a, [role="button"]):focus-visible { outline: 3px solid var(--teal); outline-offset: 5px; }
+
 /* ---------- common components ---------- */
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px 26px; }
 .card h3, .card h4 { margin-bottom: 8px; }
@@ -85,8 +94,7 @@ html, body { background: var(--bg); }
 /* event / hook chip */
 .hook { display: inline-block; font-family: var(--mono); font-size: 16pt; color: var(--teal); background: rgba(63,220,214,.1); border: 1px solid rgba(63,220,214,.45); border-radius: 999px; padding: 4px 14px; white-space: nowrap; transition: all .35s var(--ease); }
 .hook.hot { background: var(--teal); color: #041413; box-shadow: 0 0 0 6px rgba(63,220,214,.18), 0 0 28px rgba(63,220,214,.5); }
-.hook.mut::after { content: " ✎"; color: var(--amber); }
-.hook.hot.mut::after { color: #041413; }
+.hook.mut { border-style: dashed; }
 
 /* terminal window mock (pi TUI) */
 .term { background: #0a0c11; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; font-family: var(--mono); font-size: 17pt; }
@@ -149,8 +157,9 @@ window.Deck = (function () {
     const n = +sec.dataset.steps || 0, s = stepOf(sec);
     sec.dataset.step = s;
     for (let k = 1; k <= n; k++) sec.classList.toggle('s' + k, k <= s);
-    sec.querySelectorAll('[data-at]').forEach(el => el.classList.toggle('on', s >= +el.dataset.at));
-    sec.querySelectorAll('[data-only]').forEach(el => el.classList.toggle('on', el.dataset.only.split(/[ ,]+/).map(Number).includes(s)));
+    const show = (el, visible) => { el.classList.toggle('on', visible); el.inert = !visible; el.setAttribute('aria-hidden', String(!visible)); };
+    sec.querySelectorAll('[data-at]').forEach(el => show(el, s >= +el.dataset.at));
+    sec.querySelectorAll('[data-only]').forEach(el => show(el, el.dataset.only.split(/[ ,]+/).map(Number).includes(s)));
     sec.querySelectorAll('[data-hot]').forEach(el => el.classList.toggle('hot', el.dataset.hot.split(/[ ,]+/).map(Number).includes(s)));
     sec.querySelectorAll('.dots').forEach(d => {
       if (d.children.length !== n) d.innerHTML = '<span></span>'.repeat(n);
@@ -159,6 +168,13 @@ window.Deck = (function () {
     (stepFns[sec.id] || []).forEach(fn => { try { fn(s, sec); } catch (e) { console.error(e); } });
   }
   function prepare() {
+    document.querySelectorAll('[data-mcp], [data-sess], [data-tech], [data-n]').forEach(el => {
+      el.setAttribute('role', 'button');
+      el.tabIndex = 0;
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); el.click(); }
+      });
+    });
     document.querySelectorAll('section.stepper').forEach(sec => {
       const n = +sec.dataset.steps || 0;
       for (let k = 0; k < n; k++) {
@@ -208,7 +224,7 @@ window.Deck = (function () {
     @keyframes inFloat { 0%,100% { margin-top: 0; } 50% { margin-top: -14px; } }
   </style>
   <div style="max-width: 880px;">
-    <p class="kicker">a talk about where coding agents really run</p>
+    <p class="kicker">coding agents, beyond your laptop</p>
     <h1>Why your coding agent needs <span class="t-teal">a cloud</span></h1>
     <p class="sub">The computer behind the chat.</p>
   </div>
@@ -220,10 +236,9 @@ window.Deck = (function () {
     <span class="hook chip" style="left:90%;top:70%">MCP tools</span>
   </div>
   <aside class="notes">
-    Welcome. You all use coding agents. This talk is about the half nobody sees: the machine each agent lives on.
-    I will show you what the agent does with that machine, why one VM per chat goes broke at workplace scale,
-    and the two tricks that fix it: pausing VMs into snapshots, and sharing one repo with copy-on-write.
-    Drive with clicker or arrows. Press S for these notes, F for fullscreen. Several diagrams are clickable — try them.
+    We spend a lot of time talking about models. This talk is about the computer running the agent.
+    We will follow one session, work out what it costs, then look at snapshots and shared repos.
+    Use the arrows to advance. S opens notes; F goes fullscreen. The diagrams have clickable details.
   </aside>
 </section>
 
@@ -234,15 +249,15 @@ window.Deck = (function () {
     #in-hands .q.on .n { color: var(--teal); }
     #in-hands .q p.t { font-family: var(--head); font-size: 36pt; margin: 0; line-height: 1.15; }
   </style>
-  <p class="kicker">three questions, honest hands</p>
+  <p class="kicker">quick show of hands</p>
   <h2 style="margin-bottom: 46px;">Keep your hand up if…</h2>
   <div class="q" data-at="1"><p class="n">1</p><p class="t">you used an AI coding agent this week</p></div>
-  <div class="q" data-at="2"><p class="n">2</p><p class="t">you connect to that agent <span class="t-amber">from your phone</span> while it keeps running on your laptop</p></div>
-  <div class="q" data-at="3"><p class="n">3</p><p class="t">you can start sessions from mobile that arrive with your <span class="t-teal">repo cloned, tickets linked</span> and can deploy to prod</p></div>
+  <div class="q" data-at="2"><p class="n">2</p><p class="t">you check on it <span class="t-amber">from your phone</span>, while it runs on your laptop</p></div>
+  <div class="q" data-at="3"><p class="n">3</p><p class="t">you start it from your phone with the <span class="t-teal">repo, tickets and deploy tools</span> ready</p></div>
   <aside class="notes">
-    Question 2 drops most of the room: staying connected to that same session from your phone, with Claude or Codex mobile, while it keeps running on your laptop. (Expect fewer hands here.)
-    Question 3 should leave almost nobody: starting sessions from mobile that begin with your repo already cloned, have access to tickets, and can deploy to prod. (Expect almost nobody.)
-    That funnel is the talk. We know agents work. We barely run them in the cloud. And almost nobody has them wired into work yet. Today is about closing those two gaps.
+    Pause after each question and see which hands stay up. Do not assume the answer.
+    Checking a laptop session from your phone is one thing. Starting a cloud session with the repo and work tools ready is another.
+    That second setup is what we are building towards.
   </aside>
 </section>
 
@@ -264,34 +279,33 @@ window.Deck = (function () {
     <div class="card coral" data-at="2">
       <p class="big t-coral">2</p>
       <h3>The bill</h3>
-      <p class="muted">One VM per chat breaks</p>
+      <p class="muted">The cost of idle VMs</p>
     </div>
     <div class="card violet" data-at="3">
       <p class="big t-violet">3</p>
-      <h3>Pause &amp; share</h3>
-      <p class="muted">Snapshots, shared repos</p>
+      <h3>Pause &amp; resume</h3>
+      <p class="muted">Save state, release compute</p>
     </div>
     <div class="card teal" data-at="4">
       <p class="big t-teal">4</p>
-      <h3>How it works</h3>
-      <p class="muted">Storage, sharing, owners</p>
+      <h3>Share the repo</h3>
+      <p class="muted">A base copy, private edits</p>
     </div>
     <div class="card amber" data-at="5">
       <p class="big t-amber">5</p>
-      <h3>Where to run it</h3>
-      <p class="muted">Side project first, six hosts</p>
+      <h3>How it works</h3>
+      <p class="muted">Storage and coordination</p>
     </div>
     <div class="card green" data-at="6">
       <p class="big t-green">6</p>
-      <h3>The whole system</h3>
-      <p class="muted">Wired together, Q&amp;A</p>
+      <h3>Where to run it</h3>
+      <p class="muted">Railway and six alternatives</p>
     </div>
   </div>
   <aside class="notes">
-    Six stops. First, what an agent session actually does with its machine — the loop, running code, tools, and why it must verify by running things.
-    Second, the bill: what thousands of always-on VMs cost and where the money really burns.
-    Third, the two fixes: pause VMs into snapshots and resume in a second, and share one warm repo with copy-on-write.
-    Fourth, the three ideas underneath every platform. Fifth, where to run it: try it on a side project first, then six hosted options. Sixth, the whole system on one slide for Q&A.
+    Start with the agent loop and its tools. Then look at the bill.
+    Snapshots reduce idle compute; copy-on-write avoids duplicate repos.
+    We will look at the storage behind those ideas, compare hosted options, and finish with the full system.
   </aside>
 </section>
 
@@ -308,10 +322,10 @@ window.Deck = (function () {
   </style>
   <p class="num">01 / What agents do</p>
   <h1>Your agent loops<br>on a <span class="t-amber">real computer</span>.</h1>
-  <p class="sub">Plan → act → observe → repair, until the tests pass.</p>
+  <p class="sub">Run tools. Read the result. Fix what failed.</p>
   <aside class="notes">
-    Stop one. Everyone pictures the chat. The real agent is a loop wrapped around the model, and that loop lives on a computer with your repo, a shell, and tools.
-    The next four slides walk that loop, then code mode, then MCP tools, then why the agent must verify by running things.
+    The chat is the interface. Behind it, a loop calls the model and runs its tools.
+    The tools need a computer with the repo, a shell and the right runtimes.
   </aside>
 </section>
 
@@ -322,7 +336,7 @@ window.Deck = (function () {
     #lp-loop .flow { display: grid; grid-template-columns: 1fr 44px 1fr 44px 1fr 44px 1fr 44px 1fr; align-items: stretch; margin-top: 14px; }
     #lp-loop .node { text-align: center; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 6px; transition: all .4s var(--ease); opacity: .4; }
     #lp-loop .node b { display: block; font-family: var(--head); font-size: 24pt; margin: 0 0 2px; }
-    #lp-loop .node span { font-family: var(--mono); font-size: 14pt; color: var(--muted); }
+    #lp-loop .node span { font-family: var(--mono); font-size: 15pt; color: var(--muted); }
     #lp-loop .node.on { opacity: 1; transform: translateY(-6px); }
     #lp-loop .n1.on { border-color: var(--blue); box-shadow: 0 0 22px rgba(116,185,255,.3); }
     #lp-loop .n2.on { border-color: var(--amber); box-shadow: 0 0 22px rgba(255,180,84,.3); }
@@ -335,52 +349,49 @@ window.Deck = (function () {
     #lp-loop .loopback.on { opacity: 1; }
     #lp-loop .loopback svg { display: block; width: 100%; height: 26px; }
     #lp-loop .loopback .lbl { text-align: center; font-family: var(--mono); font-size: 16pt; color: var(--violet); margin: 2px 0 0; }
-    #lp-loop .node .icons { display: flex; gap: 6px; justify-content: center; margin-top: 9px; }
-    #lp-loop .node .icons img { width: 22px; height: 22px; background: #fff; border-radius: 50%; padding: 3px; display: block; }
-    #lp-loop .node .icons img.wide { width: auto; height: 22px; padding: 3px 8px; border-radius: 11px; }
+    #lp-loop .node .icons { display: flex; justify-content: center; margin-top: 9px; color: var(--text); font-size: 19pt; gap: 12px; }
+    #lp-loop .node .icons .brand { display: inline-flex; font-size: inherit; color: inherit; }
     #lp-loop .node:not(.on) .icons { filter: grayscale(.4); opacity: .75; }
   </style>
   <p class="kicker">one agent session</p>
-  <h2>Click through the loop</h2>
+  <h2>From ticket to tested patch</h2>
   <div class="vmbox">
-    <span class="tag">everything runs inside one VM</span>
+    <span class="tag">harness + local tools · one VM</span>
     <div class="flow">
-      <div class="node n1" data-at="1"><b>Plan</b><span>inspect</span><div class="icons"><img src="https://cdn.simpleicons.org/jira" alt="Jira" title="Jira"><img src="https://cdn.simpleicons.org/linear" alt="Linear" title="Linear"><img src="https://cdn.simpleicons.org/asana" alt="Asana" title="Asana"><img src="https://cdn.simpleicons.org/notion" alt="Notion" title="Notion"></div></div><div class="arr" data-at="2">→</div>
-      <div class="node n2" data-at="2"><b>Act</b><span>edit·run·call</span><div class="icons"><img src="https://cdn.simpleicons.org/github" alt="GitHub" title="GitHub clone"><img class="wide" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/amazonwebservices/amazonwebservices-original-wordmark.svg" alt="AWS" title="AWS deploy"><img src="https://cdn.simpleicons.org/googlecloud" alt="GCP" title="GCP deploy"></div></div><div class="arr" data-at="3">→</div>
+      <div class="node n1" data-at="1"><b>Plan</b><span>inspect</span><div class="icons"><span class="brand" role="img" aria-label="Jira" title="Jira"><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-jira" aria-hidden="true" focusable="false"><title>Jira</title><path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24 12.483V1.005A1.001 1.001 0 0 0 23.013 0Z"/></svg></span><span class="brand" role="img" aria-label="Linear" title="Linear"><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-linear" aria-hidden="true" focusable="false"><title>Linear</title><path d="M2.886 4.18A11.982 11.982 0 0 1 11.99 0C18.624 0 24 5.376 24 12.009c0 3.64-1.62 6.903-4.18 9.105L2.887 4.18ZM1.817 5.626l16.556 16.556c-.524.33-1.075.62-1.65.866L.951 7.277c.247-.575.537-1.126.866-1.65ZM.322 9.163l14.515 14.515c-.71.172-1.443.282-2.195.322L0 11.358a12 12 0 0 1 .322-2.195Zm-.17 4.862 9.823 9.824a12.02 12.02 0 0 1-9.824-9.824Z"/></svg></span><span class="brand" role="img" aria-label="Asana" title="Asana"><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-asana" aria-hidden="true" focusable="false"><title>Asana</title><path d="M18.78 12.653c-2.882 0-5.22 2.336-5.22 5.22s2.338 5.22 5.22 5.22 5.22-2.34 5.22-5.22-2.336-5.22-5.22-5.22zm-13.56 0c-2.88 0-5.22 2.337-5.22 5.22s2.338 5.22 5.22 5.22 5.22-2.338 5.22-5.22-2.336-5.22-5.22-5.22zm12-6.525c0 2.883-2.337 5.22-5.22 5.22-2.882 0-5.22-2.337-5.22-5.22 0-2.88 2.338-5.22 5.22-5.22 2.883 0 5.22 2.34 5.22 5.22z"/></svg></span><span class="brand" role="img" aria-label="Notion" title="Notion"><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-notion" aria-hidden="true" focusable="false"><title>Notion</title><path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.139c-.093-.514.28-.887.747-.933zM1.936 1.035l13.31-.98c1.634-.14 2.055-.047 3.082.7l4.249 2.986c.7.513.934.653.934 1.213v16.378c0 1.026-.373 1.634-1.68 1.726l-15.458.934c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.667c0-.839.374-1.54 1.447-1.632z"/></svg></span></div></div><div class="arr" data-at="2">→</div>
+      <div class="node n2" data-at="2"><b>Act</b><span>edit·run·call</span><div class="icons"><span class="brand" role="img" aria-label="GitHub" title="GitHub"><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-github" aria-hidden="true" focusable="false"><title>GitHub</title><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></span><span class="brand" role="img" aria-label="AWS" title="AWS staging"><svg fill="currentColor" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-amazonwebservices" aria-hidden="true" focusable="false"> <path fill="currentColor" d="M108.59 26.148c-1.852 0-3.622.211-5.305.715-1.684.504-3.117 1.223-4.379 2.188a10.829 10.829 0 0 0-3.031 3.453c-.757 1.348-1.137 2.906-1.137 4.676 0 2.187.716 4.25 2.106 6.105 1.386 1.895 3.66 3.324 6.734 4.293l6.106 1.895c2.062.675 3.496 1.391 4.254 2.191.757.801 1.136 1.765 1.136 2.945 0 1.726-.758 3.074-2.191 4-1.43.925-3.492 1.391-6.145 1.391-1.687 0-3.328-.168-5.011-.504a23.102 23.102 0 0 1-4.633-1.476c-.421-.168-.801-.336-1.051-.418a2.357 2.357 0 0 0-.758-.13c-.634 0-.969.423-.969 1.305v2.149a2.919 2.919 0 0 0 .254 1.18c.168.38.629.8 1.305 1.18 1.094.628 2.734 1.179 4.84 1.683 2.105.504 4.297.758 6.484.758 2.15 0 4.129-.297 6.024-.883 1.808-.551 3.367-1.309 4.672-2.36 1.304-1.01 2.316-2.273 3.074-3.707.714-1.429 1.094-3.07 1.094-4.882 0-2.188-.633-4.168-1.938-5.895-1.304-1.727-3.491-3.074-6.523-4.043l-5.98-1.895c-2.23-.713-3.79-1.516-4.634-2.316-.84-.797-1.261-1.808-1.261-2.988 0-1.726.671-2.95 1.98-3.746 1.305-.801 3.199-1.18 5.598-1.18 2.988 0 5.683.547 8.086 1.64.714.337 1.261.508 1.597.508.633 0 .969-.463.969-1.347v-1.98c0-.59-.125-1.051-.379-1.391-.25-.378-.672-.715-1.262-1.051-.422-.254-1.011-.504-1.77-.758a32.528 32.528 0 0 0-2.398-.676c-.886-.168-1.769-.336-2.738-.46a21.347 21.347 0 0 0-2.82-.169zm-86.822.082c-2.316 0-4.508.254-6.57.801-2.063.505-3.831 1.137-5.303 1.895-.59.297-.97.59-1.18.883-.211.296-.293.8-.293 1.476v2.063c0 .882.293 1.304.883 1.304.168 0 .378-.043.674-.125.293-.086.796-.254 1.472-.547a33.416 33.416 0 0 1 4.547-1.433A19.176 19.176 0 0 1 20.547 32c3.242 0 5.513.633 6.863 1.938 1.304 1.303 1.98 3.534 1.98 6.734v3.074c-1.683-.379-3.283-.715-4.843-.926-1.558-.21-3.031-.336-4.461-.336-4.34 0-7.75 1.094-10.316 3.286-2.571 2.187-3.832 5.093-3.832 8.671 0 3.368 1.05 6.063 3.113 8.086 2.066 2.02 4.887 3.032 8.422 3.032 4.97 0 9.097-1.938 12.379-5.813a34.153 34.153 0 0 0 1.304 2.484 13.28 13.28 0 0 0 1.516 1.98c.422.38.844.59 1.266.59.334 0 .714-.128 1.093-.378l2.653-1.77c.546-.42.8-.843.8-1.261a1.86 1.86 0 0 0-.293-.97 22.469 22.469 0 0 1-1.347-3.03c-.297-.925-.465-2.19-.465-3.75h-.086V40c0-4.633-1.176-8.086-3.492-10.36-2.36-2.273-6.025-3.41-11.033-3.41zm19.58 1.012c-.676 0-1.012.379-1.012 1.051 0 .297.129.844.379 1.687l9.894 32.547c.254.8.547 1.387.887 1.641.336.297.84.422 1.598.422h3.62c.759 0 1.347-.125 1.684-.422.34-.293.591-.84.801-1.684l6.485-27.117 6.527 27.16c.168.84.46 1.387.8 1.684.337.292.883.422 1.684.422h3.621c.715 0 1.262-.167 1.598-.422.34-.253.633-.8.887-1.64L90.949 30.02c.168-.46.25-.797.293-1.051.043-.254.086-.466.086-.676 0-.715-.379-1.05-1.055-1.05H86.36c-.757 0-1.308.166-1.644.421-.293.25-.59.8-.84 1.64L76.59 57.517l-6.653-28.211c-.166-.8-.464-1.39-.8-1.64-.336-.298-.884-.423-1.684-.423h-3.367c-.758 0-1.348.167-1.688.422-.335.25-.588.8-.796 1.64l-6.57 27.876-7.075-27.875c-.25-.8-.504-1.39-.84-1.64-.297-.298-.844-.423-1.644-.423h-4.125zM21.64 47.496a31.816 31.816 0 0 1 3.96.25 34.401 34.401 0 0 1 3.872.719v1.765c0 1.435-.168 2.653-.422 3.665-.25 1.01-.758 1.895-1.43 2.695-1.137 1.262-2.484 2.187-4 2.695-1.516.504-2.949.758-4.336.758-1.937 0-3.41-.508-4.422-1.559-1.054-1.01-1.558-2.484-1.558-4.464 0-2.106.675-3.704 2.062-4.84 1.391-1.137 3.454-1.684 6.274-1.684zM118 73.348c-4.432.063-9.664 1.052-13.621 3.832-1.223.883-1.012 2.062.336 1.894 4.508-.547 14.44-1.726 16.21.547 1.77 2.23-1.976 11.62-3.663 15.79-.504 1.26.59 1.769 1.726.8 7.41-6.231 9.348-19.242 7.832-21.137-.757-.925-4.388-1.79-8.82-1.726zM1.63 75.859c-.926.116-1.347 1.236-.368 2.121 16.508 14.902 38.359 23.872 62.613 23.872 17.305 0 37.43-5.43 51.281-15.66 2.273-1.689.298-4.254-2.02-3.204-15.533 6.57-32.421 9.77-47.788 9.77-22.778 0-44.8-6.273-62.653-16.633-.39-.231-.755-.304-1.064-.266z"/> </svg></span><span class="brand" role="img" aria-label="Google Cloud" title="Google Cloud staging"><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-googlecloud" aria-hidden="true" focusable="false"><title>Google Cloud</title><path d="M12.19 2.38a9.344 9.344 0 0 0-9.234 6.893c.053-.02-.055.013 0 0-3.875 2.551-3.922 8.11-.247 10.941l.006-.007-.007.03a6.717 6.717 0 0 0 4.077 1.356h5.173l.03.03h5.192c6.687.053 9.376-8.605 3.835-12.35a9.365 9.365 0 0 0-2.821-4.552l-.043.043.006-.05A9.344 9.344 0 0 0 12.19 2.38zm-.358 4.146c1.244-.04 2.518.368 3.486 1.15a5.186 5.186 0 0 1 1.862 4.078v.518c3.53-.07 3.53 5.262 0 5.193h-5.193l-.008.009v-.04H6.785a2.59 2.59 0 0 1-1.067-.23h.001a2.597 2.597 0 1 1 3.437-3.437l3.013-3.012A6.747 6.747 0 0 0 8.11 8.24c.018-.01.04-.026.054-.023a5.186 5.186 0 0 1 3.67-1.69z"/></svg></span></div></div><div class="arr" data-at="3">→</div>
       <div class="node n3" data-at="3"><b>Observe</b><span>logs·exits</span></div><div class="arr" data-at="4">→</div>
       <div class="node n4" data-at="4"><b>Repair</b><span>re-plan</span></div><div class="arr" data-at="5">→</div>
-      <div class="node n5" data-at="5"><b>Handoff</b><span>PR·patch</span><div class="icons"><img src="https://cdn.simpleicons.org/github" alt="GitHub" title="GitHub PR"><img src="https://cdn.simpleicons.org/linear" alt="Linear" title="Linear — close ticket"><img src="https://cdn.simpleicons.org/jira" alt="Jira" title="Jira — close ticket"></div></div>
+      <div class="node n5" data-at="5"><b>Handoff</b><span>PR·patch</span><div class="icons"><span class="brand" role="img" aria-label="GitHub" title="Open a PR"><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-github" aria-hidden="true" focusable="false"><title>GitHub</title><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></span><span class="brand" role="img" aria-label="Linear" title="Update Linear"><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-linear" aria-hidden="true" focusable="false"><title>Linear</title><path d="M2.886 4.18A11.982 11.982 0 0 1 11.99 0C18.624 0 24 5.376 24 12.009c0 3.64-1.62 6.903-4.18 9.105L2.887 4.18ZM1.817 5.626l16.556 16.556c-.524.33-1.075.62-1.65.866L.951 7.277c.247-.575.537-1.126.866-1.65ZM.322 9.163l14.515 14.515c-.71.172-1.443.282-2.195.322L0 11.358a12 12 0 0 1 .322-2.195Zm-.17 4.862 9.823 9.824a12.02 12.02 0 0 1-9.824-9.824Z"/></svg></span><span class="brand" role="img" aria-label="Jira" title="Update Jira"><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-jira" aria-hidden="true" focusable="false"><title>Jira</title><path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24 12.483V1.005A1.001 1.001 0 0 0 23.013 0Z"/></svg></span></div></div>
     </div>
     <div class="loopback" data-at="4"><svg viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="lpBackHead" markerWidth="9" markerHeight="7" refX="7" refY="3.5" orient="auto"><path d="M0,0 L8,3.5 L0,7 z" fill="#b9a2ff"></path></marker></defs><line x1="73" y1="11" x2="29" y2="11" stroke="#b9a2ff" stroke-width="1.4" stroke-dasharray="5 3" marker-end="url(#lpBackHead)"></line></svg><p class="lbl">repair loops back to act until checks pass</p></div>
   </div>
   <div class="captions">
-    <p data-only="0">Your session runs on a VM, not just chat.</p>
-    <p data-only="1"><b>Plan:</b> reads the ticket + the repo. Needs <b>ticket access</b> and repo read.</p>
-    <p data-only="2"><b>Act:</b> edits, runs, calls tools. Needs <b>repo write (clone)</b>, shell, MCP.</p>
-    <p data-only="3"><b>Observe:</b> reads results back. Needs <b>logs, exits, CI</b> output.</p>
-    <p data-only="4"><b>Repair:</b> reproduces on a staging-like env. Needs <b>staging / prod-ish access</b> to debug, then loops back to Act.</p>
-    <p data-only="5"><b>Handoff:</b> ships it. Needs <b>raise PR, link ticket, deploy</b> access.</p>
+    <p data-only="0">Each step needs tools, state and the right permissions.</p>
+    <p data-only="1"><b>Plan:</b> read the ticket and inspect the repo.</p>
+    <p data-only="2"><b>Act:</b> edit files, run commands and call tools.</p>
+    <p data-only="3"><b>Observe:</b> read logs, exit codes and CI results.</p>
+    <p data-only="4"><b>Repair:</b> reproduce the failure, fix it and run again.</p>
+    <p data-only="5"><b>Handoff:</b> open a PR and link the ticket. Deploy with approval.</p>
   </div>
-  <div id="lpAccess" class="card violet" style="margin-top:14px;min-height:64px"><p style="margin:0;font-size:19pt" id="lpAccessBody">Each highlighted box needs a permission. Watch this space.</p></div>
+  <div id="lpAccess" class="card violet" style="margin-top:14px;min-height:64px"><p style="margin:0;font-size:19pt" id="lpAccessBody">Give each step only the access it needs.</p></div>
   <script>
   (function () {
     const D = {
-      0: 'Each highlighted box needs a permission. Watch this space.',
-      1: '<b>Plan needs:</b> ticket read — Jira / Linear / Asana / Notion — plus repo read. No write yet.',
-      2: '<b>Act needs:</b> GitHub clone (repo write), shell exec, MCP calls — plus AWS / GCP scope to deploy code.'
-      3: '<b>Observe needs:</b> logs, exit codes, diffs, CI output piped back into context.',
-      4: '<b>Repair needs:</b> staging or prod-like access to reproduce and debug — then the loopback arrow fires and Act runs again.',
-      5: '<b>Handoff needs:</b> push the PR on GitHub, close the ticket in Linear / Jira, trigger deploy. The only step that touches prod for real.'
+      0: 'Give each step only the access it needs.',
+      1: '<b>Access:</b> read tickets and repo contents. No write token needed.',
+      2: '<b>Access:</b> a writable local checkout, shell execution and scoped tool credentials. Cloning needs repo read, not remote write.',
+      3: '<b>Access:</b> read logs, diffs and CI output.',
+      4: '<b>Access:</b> test data and staging services. Keep production credentials out of the debug loop.',
+      5: '<b>Access:</b> push a branch, open a PR and update the ticket. Gate production deploys separately.'
     };
     if (window.Deck) Deck.onStep('lp-loop', s => { const b = document.getElementById('lpAccessBody'); if (b) b.innerHTML = D[s] || D[0]; });
   })();
   </script>
   <aside class="notes">
-    Walk the five clicks slowly. Plan: the model reads the ticket and the code — that step already needs ticket access plus repo read.
-    Act: it edits files, runs commands, calls tools — needs repo write, a shell, MCP. Observe: needs logs, exit codes, CI output flowing back.
-    Repair: it reproduces against a staging-like environment — needs staging or prod-ish access to debug — then follows the loopback arrow into Act again.
-    Handoff only happens when acceptance checks pass, and needs permission to raise a PR, link the ticket and deploy.
-    The punchline to land: every one of those verbs needs a real machine.
+    Walk through the five steps. The harness runs locally; models and remote tools may live elsewhere.
+    Separate local file writes from permission to push to GitHub. Cloning only needs read access.
+    Debug against staging or scrubbed test data. A passing test does not grant permission to deploy.
   </aside>
 </section>
 
@@ -395,35 +406,36 @@ window.Deck = (function () {
     #lp-code .big { font-family: var(--head); font-size: 110pt; font-weight: 700; line-height: 1; margin: 0; }
   </style>
   <p class="kicker">code mode</p>
-  <h2>Your model writes <span class="t-amber">code that runs</span></h2>
+  <h2>Let the agent <span class="t-amber">run the code</span></h2>
   <div class="wrap">
     <div class="term">
       <div class="bar"><i></i><i></i><i></i><b>agent: run.sh</b></div>
       <div class="body">
         <p data-at="1">$ grep -r "TODO(auth)" src | head</p>
-        <p data-at="2">$ python probe.py · try 3 fixes</p>
+        <p data-at="2">$ python probe.py --candidates 3</p>
         <p data-at="3">$ pytest tests/auth -x -q</p>
-        <p data-at="4" class="t-green">$ git diff --stat → PR</p>
+        <p data-at="4" class="t-green">$ git diff --stat</p>
       </div>
     </div>
     <div class="out">
       <div data-at="1" class="run">▸ searching 214 files… 6 hits</div>
       <div data-at="2" class="run">▸ fix #2 passes probe (1.8s)</div>
-      <div data-at="3" class="ok">▸ 41 passed, 0 failed ✓</div>
+      <div data-at="3" class="ok">▸ 41 passed, 0 failed</div>
       <div data-at="4" class="ok">▸ done: 3 files, +88 −12</div>
     </div>
   </div>
   <div class="captions">
     <p data-only="0">Code is how your agent gets things done.</p>
     <p data-only="1">One script replaces <b>dozens of tool calls</b>.</p>
-    <p data-only="2">Your model already knows bash, Python, pytest.</p>
+    <p data-only="2">Try a small probe before changing the whole app.</p>
     <p data-only="3">Your <b>files and servers</b> stay live between steps.</p>
-    <p data-only="4">You ship a <b>tested patch</b>, not a guess.</p>
+    <p data-only="4">Review the diff alongside the <b>test results</b>.</p>
   </div>
   <aside class="notes">
-    Code mode means the model may write and execute code instead of only chatting. Click through the four commands.
-    Why it wins: code is compact — one script with loops and retries replaces dozens of tool calls. It reuses model priors — bash, Python, Playwright are already known.
-    And state persists — the shell keeps variables, files and servers across iterations. Land on the verified diff: the output is proven by execution, not asserted.
+    Here the agent uses scripts to search, try fixes and run tests. These commands are an example session.
+    A script can batch work that would otherwise take many tool calls.
+    Files and background services can persist between calls. Shell variables only persist if the harness reuses that shell.
+    Tests provide evidence, not a guarantee. Review the patch too.
   </aside>
 </section>
 
@@ -446,12 +458,12 @@ window.Deck = (function () {
     #lp-mcp #mcpOut { font-size: 21pt; margin: 10px 0 0; }
     #lp-mcp #mcpOut:empty { display: none; }
   </style>
-  <p class="kicker">your agent's tool plug, live</p>
-  <h2>Tools are <em>processes</em> near the VM</h2>
+  <p class="kicker">MCP: one interface for work tools</p>
+  <h2>Some tools are local. Others use <em>HTTP</em>.</h2>
   <div class="stage">
     <div class="col">
-      <div class="box" data-mcp="docs" data-at="1"><b>📚 docs</b><span>local · repo-aware</span></div>
-      <div class="box" data-mcp="github" data-at="1"><b>◆ github</b><span>remote · HTTP</span></div>
+      <div class="box" data-mcp="docs" data-at="1"><b><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-book-open" aria-hidden="true" focusable="false"> <path d="M12 5v16" /> <path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z" /> </svg> Docs</b><span>local · repo-aware</span></div>
+      <div class="box" data-mcp="github" data-at="1"><b><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-github" aria-hidden="true" focusable="false"><title>GitHub</title><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg> GitHub</b><span>remote · HTTP</span></div>
     </div>
     <div class="vm" data-at="1">
       <h3>agent VM</h3>
@@ -459,19 +471,19 @@ window.Deck = (function () {
       <div class="row"><span class="hook" data-hot="2">exec</span><span class="hook" data-hot="2">edit</span><span class="hook" data-hot="3">mcp.call</span></div>
     </div>
     <div class="col">
-      <div class="box" data-mcp="db" data-at="1"><b>▦ db</b><span>local · sandboxed</span></div>
-      <div class="box" data-mcp="tickets" data-at="1"><b>✈ tickets</b><span>remote · HTTP</span></div>
+      <div class="box" data-mcp="db" data-at="1"><b><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-database" aria-hidden="true" focusable="false"> <ellipse cx="12" cy="5" rx="9" ry="3" /> <path d="M3 5V19A9 3 0 0 0 21 19V5" /> <path d="M3 12A9 3 0 0 0 21 12" /> </svg> Database</b><span>local · sandboxed</span></div>
+      <div class="box" data-mcp="tickets" data-at="1"><b><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-linear" aria-hidden="true" focusable="false"><title>Linear</title><path d="M2.886 4.18A11.982 11.982 0 0 1 11.99 0C18.624 0 24 5.376 24 12.009c0 3.64-1.62 6.903-4.18 9.105L2.887 4.18ZM1.817 5.626l16.556 16.556c-.524.33-1.075.62-1.65.866L.951 7.277c.247-.575.537-1.126.866-1.65ZM.322 9.163l14.515 14.515c-.71.172-1.443.282-2.195.322L0 11.358a12 12 0 0 1 .322-2.195Zm-.17 4.862 9.823 9.824a12.02 12.02 0 0 1-9.824-9.824Z"/></svg> Linear</b><span>remote · HTTP</span></div>
     </div>
   </div>
-  <div id="mcpDetail" class="card teal"><p data-only="0">Click any tool box to see what it gives the agent.</p><p data-only="1">MCP = one standard plug shape for all tools.</p><p data-only="2">Local tools touch your repo, <b>so sandbox them</b>.</p><p data-only="3">Remote servers arrive over HTTP with scoped credentials.</p><p id="mcpOut"></p></div>
+  <div id="mcpDetail" class="card teal"><p data-only="0">Click any tool box to see what it gives the agent.</p><p data-only="1">MCP gives tools a common interface.</p><p data-only="2">Local tools touch your repo, <b>so sandbox them</b>.</p><p data-only="3">Remote servers arrive over HTTP with scoped credentials.</p><p id="mcpOut"></p></div>
   <aside class="notes">
-    MCP servers are tool adapters — docs, GitHub, databases, ticketing — exposed through one standard interface.
-    Invite the audience to click each box; the detail card explains it. Local servers run in or next to the VM and share its context, which is exactly why they must be sandboxed too.
-    Steps: 1 shows the plug shape, 2 highlights local exec/edit, 3 highlights remote calls.
+    MCP servers expose tools through a common protocol. The boxes show example integrations, not required deployment choices.
+    Local servers need sandboxing. Remote servers need scoped credentials.
+    Click a box for an example of what that tool can do.
   </aside>
   <script>
   (function () {
-    const D = { docs: '📚 <b>docs server</b> greps the repo + internal wikis. Answers cite file:line, never hallucinated APIs.', github: '<b>github server</b>, remote over HTTP. Opens PRs, reads CI status, posts reviews with a scoped token.', db: '<b>db server</b>, local and sandboxed. Runs read queries against a scrubbed seed DB inside the VM.', tickets: '<b>tickets server</b>, remote over HTTP. Files issues, links them to the diff, updates status.' };
+    const D = { docs: '<b>Docs:</b> search the repo and internal docs. Return source references the agent can check.', github: '<b>GitHub:</b> read CI results, open PRs and post reviews with a scoped token.', db: '<b>Database:</b> query a scrubbed test database inside the sandbox.', tickets: '<b>Linear:</b> read the issue, link the PR and update its status.' };
     const sec = document.getElementById('lp-mcp');
     sec.querySelectorAll('[data-mcp]').forEach(b => b.addEventListener('click', e => {
       e.stopPropagation();
@@ -494,20 +506,20 @@ window.Deck = (function () {
     #lp-verify .good { border: 1px solid var(--green); border-radius: 14px; padding: 14px 20px; }
   </style>
   <p class="kicker">why the machine matters</p>
-  <h2>Trust only what you ran</h2>
+  <h2>Check the patch before handing it over</h2>
   <div class="pipe">
-    <div class="card amber" data-at="1"><p class="e">🔍</p><h3>lint + types</h3><p class="muted">static errors, fast</p></div>
-    <div class="card teal" data-at="2"><p class="e">🔨</p><h3>build</h3><p class="muted">integration breaks</p></div>
-    <div class="card green" data-at="3"><p class="e">🧪</p><h3>tests + browser</h3><p class="muted">runtime truth</p></div>
+    <div class="card amber" data-at="1"><p class="e t-amber"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-search" aria-hidden="true" focusable="false"> <path d="m21 21-4.34-4.34" /> <circle cx="11" cy="11" r="8" /> </svg></p><h3>lint + types</h3><p class="muted">static errors, fast</p></div>
+    <div class="card teal" data-at="2"><p class="e t-teal"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-hammer" aria-hidden="true" focusable="false"> <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9" /> <path d="m18 15 4-4" /> <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5" /> </svg></p><h3>build</h3><p class="muted">dependency and build errors</p></div>
+    <div class="card green" data-at="3"><p class="e t-green"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-flask-conical" aria-hidden="true" focusable="false"> <path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2" /> <path d="M6.453 15h11.094" /> <path d="M8.5 2h7" /> </svg></p><h3>tests + browser</h3><p class="muted">behaviour under test</p></div>
   </div>
   <div class="vs">
-    <div class="bad" data-at="1"><p style="margin:0">❌ <span class="t-coral">plausible patch</span> <span class="muted">, fails next week</span></p></div>
-    <div class="good" data-at="3"><p style="margin:0">✓ <span class="t-green">tested patch</span> <span class="muted">: executed, green</span></p></div>
+    <div class="bad" data-at="1"><p style="margin:0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-circle-x" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="10" /> <path d="m15 9-6 6" /> <path d="m9 9 6 6" /> </svg> <span class="t-coral">plausible patch</span> <span class="muted">· not yet checked</span></p></div>
+    <div class="good" data-at="3"><p style="margin:0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-circle-check" aria-hidden="true" focusable="false"> <circle cx="12" cy="12" r="10" /> <path d="m16 9-5.5 5.5L8 12" /> </svg> <span class="t-green">tested patch</span> <span class="muted">· ready for review</span></p></div>
   </div>
   <aside class="notes">
-    Without in-loop verification, agents optimise for plausible-looking diffs. Click through the three gates: lint and typecheck catch static errors in seconds,
-    the build catches integration breakage, tests and browser checks catch runtime failures. Each gate stops error compounding over long runs.
-    The contrast at the bottom is the sentence to say out loud: no run, no trust.
+    Run lint and types first, then the build, then tests and browser checks.
+    Catching a failure now is cheaper than letting the agent build more changes on top of it.
+    Green checks still need review. They only cover what you tested.
   </aside>
 </section>
 
@@ -527,14 +539,14 @@ window.Deck = (function () {
   </style>
   <div>
     <p class="num">02 / The bill</p>
-    <h1>One VM per chat<br><span class="t-coral">goes broke.</span></h1>
+    <h1>Every open chat.<br><span class="t-coral">An idle VM.</span></h1>
     <p class="sub">You open more chats than you actually use.</p>
   </div>
-  <div class="bill" aria-hidden="true"><p>500 devs × 4 sessions</p><p>= ~2,000 VMs</p><p>× 4 GiB, always on</p><p class="tot">≈ $56k / month</p></div>
+  <div class="bill" aria-hidden="true"><p>500 devs × 4 sessions</p><p>= ~2,000 VMs</p><p>× 4 GiB, always on</p><p class="tot">~$56k / month</p><p>RAM alone · example rates</p></div>
   <aside class="notes">
-    Stop two: the economics. If every open chat holds its own always-on VM, cost scales with open sessions, not useful work.
-    The receipt on the right is the headline: two thousand 4-gig VMs, always on, roughly fifty-six thousand dollars a month in compute alone, before disks and egress.
-    The next three slides derive that number and show where it burns.
+    Suppose 500 developers each keep four sessions open. That is 2,000 VMs.
+    At our example rate, their RAM alone costs about $56,000 a month. CPU and disk come next.
+    These are illustrative rates, not a provider quote.
   </aside>
 </section>
 
@@ -546,32 +558,33 @@ window.Deck = (function () {
     #bl-math .ri.cpu.on { border-color: var(--amber); } #bl-math .ri.ram.on { border-color: var(--coral); } #bl-math .ri.disk.on { border-color: var(--violet); }
     #bl-math .ri .e { font-size: 44pt; margin: 0; }
     #bl-math .ri b { display: block; font-family: var(--head); font-size: 26pt; margin: 6px 0 2px; }
+    #bl-math .cost-breakdown { text-align: left; margin: 20px 0 0 1em; padding-top: 16px; border-top: 1px solid var(--line); }
+    #bl-math .cost-breakdown li { font-size: 17pt; color: var(--muted); margin-bottom: 8px; }
     #bl-math .ri .per { font-family: var(--mono); font-size: 15pt; color: var(--muted); margin: 0; }
     #bl-math .ri .big { font-family: var(--head); font-size: 40pt; font-weight: 700; margin: 8px 0 0; }
     #bl-math .tot { text-align: center; margin-top: 16px; }
   </style>
-  <p class="kicker">the math, per piece</p>
-  <h2>One session burns <span class="t-coral">CPU + RAM + disk</span></h2>
+  <p class="kicker">example budget · 2,000 always-on sessions</p>
+  <h2>What one session <span class="t-coral">costs per month</span></h2>
   <div class="stack">
-    <div class="ri cpu" data-at="1"><p class="e">🔥</p><b>CPU</b><p class="per">2 vCPU &times; ~$25 / mo</p><p class="big t-amber">~$50</p><p class="per">per session / mo &middot; ~$200 per user (&times;4) &middot; ~$100k fleet</p></div>
-    <div class="ri ram" data-at="2"><p class="e">🧠</p><b>RAM</b><p class="per">4 GiB &times; ~$7 / mo</p><p class="big t-coral">~$28</p><p class="per">per session / mo &middot; ~$112 per user (&times;4) &middot; ~$56k fleet</p></div>
-    <div class="ri disk" data-at="3"><p class="e">💾</p><b>Disk</b><p class="per">40 GiB &times; ~$0.10 / mo</p><p class="big t-violet">~$4</p><p class="per">per session / mo &middot; ~$16 per user (&times;4) &middot; ~$8k fleet</p></div>
+    <div class="ri cpu" data-at="1"><p class="e t-amber"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-cpu" aria-hidden="true" focusable="false"> <path d="M12 20v2" /> <path d="M12 2v2" /> <path d="M17 20v2" /> <path d="M17 2v2" /> <path d="M2 12h2" /> <path d="M2 17h2" /> <path d="M2 7h2" /> <path d="M20 12h2" /> <path d="M20 17h2" /> <path d="M20 7h2" /> <path d="M7 20v2" /> <path d="M7 2v2" /> <rect x="4" y="4" width="16" height="16" rx="2" /> <rect x="8" y="8" width="8" height="8" rx="1" /> </svg></p><b>CPU</b><p class="per">2 vCPU &times; ~$25 / mo</p><p class="big t-amber">~$50</p><p class="per">per session / month</p><ul class="cost-breakdown"><li>4 sessions / user: ~$200</li><li>2,000 sessions: ~$100k</li></ul></div>
+    <div class="ri ram" data-at="2"><p class="e t-coral"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-memory-stick" aria-hidden="true" focusable="false"> <path d="M12 12v-2" /> <path d="M12 18v-2" /> <path d="M16 12v-2" /> <path d="M16 18v-2" /> <path d="M2 11h1.5" /> <path d="M20 18v-2" /> <path d="M20.5 11H22" /> <path d="M4 18v-2" /> <path d="M8 12v-2" /> <path d="M8 18v-2" /> <rect x="2" y="6" width="20" height="10" rx="2" /> </svg></p><b>RAM</b><p class="per">4 GiB &times; ~$7 / mo</p><p class="big t-coral">~$28</p><p class="per">per session / month</p><ul class="cost-breakdown"><li>4 sessions / user: ~$112</li><li>2,000 sessions: ~$56k</li></ul></div>
+    <div class="ri disk" data-at="3"><p class="e t-violet"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-hard-drive" aria-hidden="true" focusable="false"> <path d="M10 16h.01" /> <path d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /> <path d="M21.946 12.013H2.054" /> <path d="M6 16h.01" /> </svg></p><b>Disk</b><p class="per">40 GiB &times; ~$0.10 / mo</p><p class="big t-violet">~$4</p><p class="per">per session / month</p><ul class="cost-breakdown"><li>4 sessions / user: ~$16</li><li>2,000 sessions: ~$8k</li></ul></div>
   </div>
   <div class="tot" data-at="3">
     <p class="lead" style="margin:0">~$82 per session &middot; ~$328 per user &middot; <span class="t-coral">~$164k / mo</span> for 500 devs &times; 4 sessions</p>
-    <p class="muted small" style="margin:6px 0 0">Illustrative floor pricing, always-on, before egress and logging. The $56k receipt was RAM alone.</p>
+    <p class="muted small" style="margin:6px 0 0">Example rates, not a quote. Excludes model tokens, egress and logging.</p>
   </div>
   <div class="captions">
     <p data-only="0">The receipt slide counted RAM only. Here is the rest.</p>
-    <p data-only="1">CPUs: two vCPUs per session, ~$50 a month each — the biggest line.</p>
-    <p data-only="2">RAM: four gigs per session, ~$28 — the $56k you already saw.</p>
-    <p data-only="3">Disks: forty gigs of checkout per session, ~$4 — small each, $8k at fleet scale. <b>Total ~$164k/mo.</b></p>
+    <p data-only="1">Two vCPUs: <b>~$50 per session</b> each month.</p>
+    <p data-only="2">Four GiB of RAM: <b>~$28 per session</b>. That is the $56k receipt.</p>
+    <p data-only="3">Disk adds ~$4 per session. Fleet total: <b>~$164k per month</b>.</p>
   </div>
   <aside class="notes">
-    This slide must not repeat the receipt — it dissects it. Click through CPU, then RAM, then disk.
-    Per session, always-on: about fifty dollars of vCPU, twenty-eight of RAM, four of disk — roughly eighty-two dollars per session per month.
-    Multiply by four sessions per user: about three hundred twenty-eight dollars per user. Multiply by five hundred users: on the order of one hundred sixty-four thousand a month.
-    The punchline: the fifty-six thousand on the previous slide was RAM alone. CPUs roughly double it again, and disks add a third line item nobody budgets.
+    Add the three lines: $50 CPU, $28 RAM and $4 disk. That is $82 per session each month.
+    Four sessions per developer cost $328. For 500 developers, the total is $164,000.
+    Actual bills depend on the provider and whether it charges for allocated or used resources.
   </aside>
 </section>
 
@@ -598,32 +611,32 @@ window.Deck = (function () {
   <p class="kicker">where the money goes</p>
   <h2>You wait. Your VM <span class="t-coral">still bills</span>.</h2>
   <div class="bar">
-    <div class="lbl"><span>one session's wall-clock hour</span><span>60 min</span></div>
+    <div class="lbl"><span>example session · about 75% waiting</span><span>60 min</span></div>
     <div class="track">
       <div class="seg w1">▸ run</div><div class="seg w2">read</div><div class="seg w3">think</div><div class="seg w4">review</div>
     </div>
   </div>
   <div class="bar week" data-at="3">
-    <div class="lbl"><span>one session's week — you close the laptop, it stays on</span><span>168 h</span></div>
+    <div class="lbl"><span>example week · 10h active, 158h idle</span><span>168 h</span></div>
     <div class="track">
-      <div class="seg wk-a">~10h active</div><div class="seg wk-b">nights + weekend, billed</div>
+      <div class="seg wk-a" aria-label="10 active hours"></div><div class="seg wk-b">nights + weekend, billed</div>
     </div>
   </div>
   <div class="take" data-at="4">
-    <p class="lead" style="margin:0">Paused overnight and over the weekend? <span class="t-coral">Still billed</span>, unless something parks it.</p>
+    <p class="lead" style="margin:0">Closing your laptop <span class="t-coral">does not stop the cloud VM</span>.</p>
   </div>
   <div class="captions">
-    <p data-only="0">An agent session is idle most of its life.</p>
+    <p data-only="0">An open session need not be doing useful work.</p>
     <p data-only="1">Minutes of real compute per hour…</p>
     <p data-only="2">…then reading, thinking, reviewing diffs. All billed.</p>
-    <p data-only="3">Worse: sessions sit <b>paused-by-you, billed-by-them</b> overnight and all weekend.</p>
-    <p data-only="4">At 75% idle, ~$42k of the $56k RAM line is <b>waiting money</b> — before nights and weekends.</p>
+    <p data-only="3">Nights and weekends count too, unless you <b>stop or suspend the VM</b>.</p>
+    <p data-only="4">If RAM sits idle 75% of the month, <b>~$42k of that $56k buys waiting</b>.</p>
   </div>
   <aside class="notes">
-    Advance the hour bar first: a few minutes of real compute, then long stretches of the human reading, thinking, reviewing diffs — and the VM bills through all of it, from launch until stopped.
-    Then reveal the week bar: roughly ten active hours against a hundred-and-sixty-eight-hour week. Nights, weekends, holidays — sessions nobody closed keep billing because nothing parked them.
-    At seventy-five percent idle inside working hours, about forty-two of the fifty-six thousand RAM line is waiting money — and the overnight and weekend tail makes it worse.
-    The fix is not cheaper VMs; it is not paying for waiting at all.
+    These bars are examples, not usage measurements. The first shows waiting within a session.
+    The second shows a session left on for a week with only ten active hours.
+    Separately, if idle time is 75% of a whole month, it accounts for $42,000 of our RAM estimate.
+    Suspending idle sessions reduces that cost.
   </aside>
 </section>
 
@@ -635,15 +648,16 @@ window.Deck = (function () {
     #bl-meter .card h3 { font-size: 28pt; margin: 6px 0; }
     #bl-meter code { font-size: 17pt; }
   </style>
-  <p class="kicker">the fix, in one sentence</p>
+  <p class="kicker">stop paying for idle compute</p>
   <h2>Pay for the <span class="t-green">seconds</span> your VM runs</h2>
   <div class="split">
-    <div class="card coral" data-at="1"><p class="e">🅿️</p><h3>Park it cheap</h3><p class="muted">paused state → cheap storage<br><code>~$0.02 / GiB-mo</code></p></div>
-    <div class="card green" data-at="2"><p class="e">⚡</p><h3>Pay while it computes</h3><p class="muted">CPU + RAM only while active<br><code>per-second metering</code></p></div>
+    <div class="card coral" data-at="1"><p class="e t-coral"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-archive" aria-hidden="true" focusable="false"> <rect width="20" height="5" x="2" y="3" rx="1" /> <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" /> <path d="M10 12h4" /> </svg></p><h3>Store the idle state</h3><p class="muted">snapshots in object storage<br><code>~$0.02 / GiB-month*</code></p></div>
+    <div class="card green" data-at="2"><p class="e t-green"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-zap" aria-hidden="true" focusable="false"> <path d="M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z" /> </svg></p><h3>Pay while it computes</h3><p class="muted">CPU + RAM only while active<br><code>per-second metering</code></p></div>
   </div>
+  <p class="muted small" data-at="2">* Example object-storage rate. Managed snapshot prices vary.</p>
   <aside class="notes">
-    Pausing does not make compute free — the snapshot still sits on storage. But parked state costs cents per gig-month while idle RAM costs dollars.
-    So the goal shape is serverless: pay storage prices to park, pay compute prices only while the agent actually runs. The next section shows the machinery that makes both halves possible.
+    A paused VM still needs somewhere to store its state. Object storage is usually much cheaper than live RAM.
+    The aim is to stop compute billing while idle, not to make every part of the bill disappear.
   </aside>
 </section>
 
@@ -663,11 +677,12 @@ window.Deck = (function () {
   <div>
     <p class="num">03 / Pause &amp; resume</p>
     <h1>Pause it.<br><span class="t-violet">Don't kill it.</span></h1>
-    <p class="sub">Idle RAM becomes cheap stored snapshots.</p>
+    <p class="sub">Save the state. Release the CPU and RAM.</p>
   </div>
   <div class="zz" aria-hidden="true"><span style="font-size:90pt">Z</span><span style="font-size:64pt;opacity:.6">Z</span><span style="font-size:44pt;opacity:.35">Z</span></div>
   <aside class="notes">
-    Stop three: the first fix. Instead of killing idle VMs and losing everything, or paying to keep them warm, we freeze them: capture their state into snapshots on cheap storage, release the CPU and RAM, and thaw them back in about a second when the human returns.
+    Save the VM state to storage, then release its CPU and RAM.
+    Restoring a small VM can take around a second. Timing depends on the platform, memory size and storage.
   </aside>
 </section>
 
@@ -680,14 +695,15 @@ window.Deck = (function () {
     #ps-split .card code { font-size: 16pt; }
   </style>
   <p class="kicker">state has two layers</p>
-  <h2>Freeze <span class="t-violet">both halves</span></h2>
+  <h2>A full resume needs <span class="t-violet">both kinds of state</span></h2>
   <div class="split">
-    <div class="card violet" data-at="1"><h3>🧠 Execution state</h3><p class="muted">RAM + CPU + device state</p><p><code>memory file + state file</code></p><p class="muted">thawed on demand, page by page</p></div>
-    <div class="card teal" data-at="2"><h3>💾 Filesystem state</h3><p class="muted">writable disk / overlay</p><p><code>block snapshot → object store</code></p><p class="muted">only changed blocks travel</p></div>
+    <div class="card violet" data-at="1"><h3><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-memory-stick" aria-hidden="true" focusable="false"> <path d="M12 12v-2" /> <path d="M12 18v-2" /> <path d="M16 12v-2" /> <path d="M16 18v-2" /> <path d="M2 11h1.5" /> <path d="M20 18v-2" /> <path d="M20.5 11H22" /> <path d="M4 18v-2" /> <path d="M8 12v-2" /> <path d="M8 18v-2" /> <rect x="2" y="6" width="20" height="10" rx="2" /> </svg> Execution state</h3><p class="muted">RAM + CPU + device state</p><p><code>memory file + state file</code></p><p class="muted">restore memory pages as needed</p></div>
+    <div class="card teal" data-at="2"><h3><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-hard-drive" aria-hidden="true" focusable="false"> <path d="M10 16h.01" /> <path d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /> <path d="M21.946 12.013H2.054" /> <path d="M6 16h.01" /> </svg> Filesystem state</h3><p class="muted">writable disk / overlay</p><p><code>block snapshot → object store</code></p><p class="muted">incremental snapshots copy changed blocks</p></div>
   </div>
   <aside class="notes">
-    Two clicks. Execution state is RAM plus CPU and device state — Firecracker writes it as a memory file plus a state file, and on restore pages fault back in on demand.
-    Filesystem state is the writable disk or overlay — snapshotted to block storage, then tiered to object storage. Because the base image is shared, only changed blocks travel. Pause means capturing both, then paying storage-only while idle.
+    Execution state includes memory, CPU registers and device state. Firecracker saves memory and VM state separately.
+    The platform must snapshot the disk too, at a consistent point in time.
+    Lazy paging can speed up restore. Incremental disk snapshots avoid copying unchanged blocks.
   </aside>
 </section>
 
@@ -703,33 +719,67 @@ window.Deck = (function () {
     #ps-cycle .arr { display: grid; place-items: center; font-size: 34pt; color: var(--muted); opacity: .35; transition: all .4s; }
     #ps-cycle .arr.on { opacity: 1; color: var(--teal); }
     #ps-cycle button.btn { margin-top: 22px; }
+    #ps-cycle .controls { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 22px; }
+    #ps-cycle .controls .btn[disabled] { opacity: .45; cursor: default; border-color: var(--line); color: var(--muted); }
+    #ps-cycle .controls .btn[disabled]:hover { border-color: var(--line); color: var(--muted); }
   </style>
-  <p class="kicker">the lifecycle: pause it yourself</p>
-  <h2>Pause in milliseconds, wake in a second.</h2>
+  <p class="kicker">running → paused → resumed</p>
+  <h2>Resume where the process left off.</h2>
   <div class="flow">
-    <div class="st run" data-at="1"><p class="e">🟢</p><b>Running</b><span>CPU + RAM billed</span></div>
+    <div class="st run" data-at="1"><p class="e t-green"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-play" aria-hidden="true" focusable="false"> <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" /> </svg></p><b>Running</b><span>CPU + RAM billed</span></div>
     <div class="arr" data-at="2">→</div>
-    <div class="st frz" data-at="2"><p class="e">❄️</p><b>Paused</b><span>snapshot → storage</span></div>
+    <div class="st frz" data-at="2"><p class="e t-violet"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-snowflake" aria-hidden="true" focusable="false"> <path d="m10 20-1.25-2.5L6 18" /> <path d="M10 4 8.75 6.5 6 6" /> <path d="m14 20 1.25-2.5L18 18" /> <path d="m14 4 1.25 2.5L18 6" /> <path d="m17 21-3-6h-4" /> <path d="m17 3-3 6 1.5 3" /> <path d="M2 12h6.5L10 9" /> <path d="m20 10-1.5 2 1.5 2" /> <path d="M22 12h-6.5L14 15" /> <path d="m4 10 1.5 2L4 14" /> <path d="m7 21 3-6-1.5-3" /> <path d="m7 3 3 6h4" /> </svg></p><b>Paused</b><span>snapshot → storage</span></div>
     <div class="arr" data-at="4">→</div>
-    <div class="st thaw" data-at="4"><p class="e">⚡</p><b>Resumed</b><span>mmap + fault-in</span></div>
+    <div class="st thaw" data-at="4"><p class="e t-teal"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-zap" aria-hidden="true" focusable="false"> <path d="M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z" /> </svg></p><b>Resumed</b><span>mmap + fault-in</span></div>
   </div>
-  <div class="center"><button class="btn" id="psPauseBtn" data-at="2">❄ pause this VM</button> <button class="btn" id="psResumeBtn" data-at="4">⚡ resume it</button></div>
+  <div class="controls"><button type="button" class="btn" id="psPauseBtn" aria-controls="ps-cycle" onclick="event.stopPropagation(); window.psCycleSetStep?.(3)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-pause" aria-hidden="true" focusable="false"> <rect x="14" y="3" width="5" height="18" rx="1" /> <rect x="5" y="3" width="5" height="18" rx="1" /> </svg> <span>Pause this VM</span></button> <button type="button" class="btn" id="psResumeBtn" aria-controls="ps-cycle" onclick="event.stopPropagation(); window.psCycleSetStep?.(4)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-play" aria-hidden="true" focusable="false"> <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" /> </svg> <span>Resume it</span></button></div>
   <div class="captions">
-    <p data-only="0">Two thousand VMs idle? Don't pay for them.</p>
-    <p data-only="1">While the human thinks, the VM burns dollars.</p>
+    <p data-only="0">Pause idle sessions without losing their running processes.</p>
+    <p data-only="1">A running VM still costs money while you review its output.</p>
     <p data-only="2"><b>Pause:</b> memory + disk → snapshots. CPU/RAM released.</p>
-    <p data-only="3">Parked: storage-only. Cents, not dollars.</p>
-    <p data-only="4"><b>Resume:</b> pages fault back on demand. ~1 second.</p>
+    <p data-only="3">Paused: keep the snapshot, release the compute.</p>
+    <p data-only="4"><b>Resume:</b> restore memory on demand. Timing varies by workload.</p>
   </div>
   <aside class="notes">
-    The lifecycle in four clicks. Running bills CPU and RAM. Pause writes the memory file, state file and disk delta to storage and frees the host — try the pause button, the card freezes.
-    Parked state costs storage pennies. Resume maps the memory file back and faults pages in on demand — try resume; small agent VMs typically wake in about a second (restore time grows with memory and vCPUs, no official SLA). Caveat for the Q&A: vsock resets across restore, so network handles must be re-established.
+    Running uses CPU and RAM. Pausing saves state and releases those resources.
+    Resume restores that state rather than starting the app again. The buttons illustrate this; they do not control a real VM.
+    Existing network connections may need to reconnect after restore. Resume time is not a fixed SLA.
   </aside>
   <script>
   (function () {
-    const p = document.getElementById('psPauseBtn'), r = document.getElementById('psResumeBtn');
-    if (p) p.addEventListener('click', e => { e.stopPropagation(); p.classList.add('active'); p.textContent = '❄ frozen ✓'; setTimeout(() => Reveal.nextFragment(), 600); });
-    if (r) r.addEventListener('click', e => { e.stopPropagation(); r.classList.add('active'); r.textContent = '⚡ awake ✓'; setTimeout(() => Reveal.nextFragment(), 300); });
+    const show = (el, visible) => {
+      el.classList.toggle('on', visible);
+      el.inert = !visible;
+      el.setAttribute('aria-hidden', String(!visible));
+    };
+    const nodes = () => ({
+      sec: document.getElementById('ps-cycle'),
+      p: document.getElementById('psPauseBtn'),
+      r: document.getElementById('psResumeBtn')
+    });
+    const sync = s => {
+      const { sec, p, r } = nodes();
+      if (!sec || !p || !r) return;
+      sec.dataset.step = String(s);
+      for (let k = 1; k <= (+sec.dataset.steps || 0); k++) sec.classList.toggle('s' + k, k <= s);
+      sec.querySelectorAll('[data-at]').forEach(el => show(el, s >= +el.dataset.at));
+      sec.querySelectorAll('[data-only]').forEach(el => show(el, el.dataset.only.split(/[ ,]+/).map(Number).includes(s)));
+      p.disabled = s >= 3;
+      r.disabled = s < 3 || s >= 4;
+      p.classList.toggle('active', s === 3);
+      r.classList.toggle('active', s === 4);
+      p.querySelector('span').textContent = s === 3 ? 'Paused' : 'Pause this VM';
+      r.querySelector('span').textContent = s === 4 ? 'Resumed' : 'Resume it';
+    };
+    window.psCycleSetStep = s => {
+      const { p, r } = nodes();
+      if (!p || !r || (s === 3 && p.disabled) || (s === 4 && r.disabled)) return;
+      sync(s);
+      const frag = ({ 0: -1, 1: 0, 2: 1, 3: 2, 4: 3 })[s];
+      if (frag == null) return;
+      try { Reveal.slide(Reveal.getIndices().h, 0, frag); } catch (_) {}
+    };
+    Deck.onStep('ps-cycle', sync);
   })();
   </script>
 </section>
@@ -750,15 +800,16 @@ window.Deck = (function () {
     <div class="stat" data-at="3"><b class="t-violet">~1s</b><span>resume, small VMs*</span></div>
   </div>
   <div class="captions">
-    <p data-only="0">Firecracker was built for exactly this density.</p>
+    <p data-only="0">Small per-VM overhead makes dense fleets possible.</p>
     <p data-only="1">A fresh microVM boots in <b>under 125 milliseconds</b>.</p>
     <p data-only="2">Each one costs <b>under 5 MiB</b> of host overhead.</p>
     <p data-only="3">Resume faults pages in on demand. <b>About a second</b> for small agent VMs — restore time grows with VM size.</p>
-  <p class="muted small" data-at="3">* Firecracker publishes boot ≤125 ms and ≤5 MiB overhead; restore speed is workload-dependent.</p>
   </div>
+  <p class="muted small" style="margin-top:24px" data-at="3">* Published boot and overhead figures. Restore speed depends on the workload.</p>
   <aside class="notes">
-    Why microVMs and not plain containers or full VMs. Firecracker's advertised numbers: under 125 milliseconds to boot, under 5 megabytes of VMM overhead per VM, snapshot restore around a second via mmap plus userfaultfd on-demand paging.
-    Alternatives exist — Kata template cloning for density, gVisor where KVM is unavailable, CRIU for process-level checkpoint — but for thousands of pausable agent VMs, Firecracker-style snapshots are the reference design. Keep hot snapshots on local NVMe, tier cold ones to object storage.
+    Firecracker advertises fast boot and low VMM overhead. Guest RAM and application startup are extra.
+    The one-second restore figure is an example for small VMs, not a Firecracker guarantee.
+    Local NVMe helps with hot snapshots; object storage can hold colder ones.
   </aside>
 </section>
 
@@ -781,19 +832,19 @@ window.Deck = (function () {
   </style>
   <div>
     <p class="num">04 / Share</p>
-    <h1>Never clone<br><span class="t-amber">the whole repo.</span></h1>
-    <p class="sub">One warm copy on the server. Every session borrows it.</p>
+    <h1>Clone once.<br><span class="t-amber">Share the base.</span></h1>
+    <p class="sub">One base checkout. A private writable view per session.</p>
   </div>
   <div class="srv" aria-hidden="true">
-    <b>devserver · beefy machine</b>
+    <b>devserver · shared host</b>
     <div class="warm">warm monorepo · 40 GiB</div>
     <div class="vms"><div class="vm">µVM · chat A</div><div class="vm">µVM · chat B</div></div>
-    <p class="more">&times; a few devservers per fleet</p>
+    <p class="more">&times; hosts for active work</p>
   </div>
   <aside class="notes">
-    Stop four: the second fix. Workplace code is often one giant monorepo — tens of gigs. Copying it per session is slow and wasteful, and most sessions barely touch it.
-    So run a few beefy devservers, each holding one warm checkout — hot in page cache, outside any VM — and start one microVM per user chat inside the devserver.
-    Each microVM forks a copy-on-write view of that warm clone. Only changed blocks cost anything.
+    A large monorepo can take tens of gigabytes. Most tasks change only a small part of it.
+    Keep an immutable base checkout on each host and give sessions copy-on-write views.
+    Each session still needs compute and private state, but it need not duplicate the whole repo.
   </aside>
 </section>
 
@@ -807,12 +858,13 @@ window.Deck = (function () {
   <p class="kicker">the naive way</p>
   <h2>2,000 clones of a <span class="t-coral">40 GiB</span> monorepo?</h2>
   <div class="vs">
-    <div class="card coral" data-at="1"><h3>Full copy each</h3><div class="repo">git clone × 2,000</div><p class="big t-coral">80 TB</p><p class="muted">moved to change three files</p></div>
-    <div class="card green" data-at="2"><h3>CoW view each</h3><div class="repo">clone = metadata only</div><p class="big t-green">~0 GB</p><p class="muted">until a session writes</p></div>
+    <div class="card coral" data-at="1"><h3>Full copy each</h3><div class="repo">git clone × 2,000</div><p class="big t-coral">~78 TiB</p><p class="muted">of duplicate checkouts</p></div>
+    <div class="card green" data-at="2"><h3>CoW view each</h3><div class="repo">clone = metadata only</div><p class="big t-green">Metadata</p><p class="muted">plus each session's changes</p></div>
   </div>
   <aside class="notes">
-    Two clicks. Naive: two thousand full clones of a forty-gig monorepo is eighty terabytes moved and stored — so each agent can change three files.
-    Copy-on-write: a clone is metadata pointing at the same blocks, near-zero cost until a session actually writes. Reads are free and shared; writes pay per changed block.
+    Two thousand 40-GiB checkouts occupy 80,000 GiB, or about 78 TiB, before compression or deduplication.
+    A copy-on-write clone initially shares the base data. It adds metadata, then private data as the session writes.
+    This saves duplicate storage. It does not make reads or compute free.
   </aside>
 </section>
 
@@ -836,40 +888,38 @@ window.Deck = (function () {
     #cw-cow .blk.own { border-color: var(--teal); color: var(--teal); background: rgba(63,220,214,.08); }
     #cw-cow #cowDetail { margin-top: 14px; min-height: 70px; }
     #cw-cow #cowDetail p { font-size: 19pt; margin: 0; }
+    #cw-cow #cowDetail [data-only]:not(.on) { display: none; }
     #cw-cow #cowOut { font-size: 19pt; margin: 8px 0 0; }
     #cw-cow #cowOut:empty { display: none; }
     #cw-cow .fleet { text-align: center; margin-top: 10px; }
   </style>
   <p class="kicker">one devserver, up close — click a microVM</p>
-  <h2>A few devservers. <em>MicroVMs</em> inside.</h2>
+  <h2>One host. Many <em>isolated sessions</em>.</h2>
   <div class="srv">
-    <span class="tag">devserver · beefy machine · 128 GiB RAM, fast SSD</span>
-    <div class="warm" data-at="1"><b>🔥 warm repo clone · 40 GiB</b><span>lives on the devserver, outside every VM · hot in page cache</span></div>
-    <p class="fork-lbl" data-at="2">&#9495; each microVM gets a CoW clone of it as its disk &#9495;</p>
+    <span class="tag">example host · 128 GiB RAM · fast SSD</span>
+    <div class="warm" data-at="1"><b><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-layers" aria-hidden="true" focusable="false"> <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" /> <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" /> <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" /> </svg> warm repo clone · 40 GiB</b><span>immutable base on the host · shared by each session</span></div>
+    <p class="fork-lbl" data-at="2">Each microVM attaches its own copy-on-write disk.</p>
     <div class="vms">
-      <div class="uvm" data-sess="a" data-at="2"><h3>µVM · chat A</h3><div><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span><span class="blk own" data-at="3">✎ auth.ts</span></div><p class="muted" style="font-size:15pt;margin:6px 0 0">click me</p></div>
-      <div class="uvm" data-sess="b" data-at="2"><h3>µVM · chat B</h3><div><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span></div><p class="muted" style="font-size:15pt;margin:6px 0 0">read-only so far</p></div>
-      <div class="uvm" data-sess="c" data-at="2"><h3>µVM · chat C</h3><div><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span></div><p class="muted" style="font-size:15pt;margin:6px 0 0">just forked</p></div>
+      <div class="uvm" data-sess="a" data-at="2"><h3>µVM · chat A</h3><div><span class="blk shared"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-layers" aria-hidden="true" focusable="false"> <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" /> <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" /> <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" /> </svg> shared</span><span class="blk own" data-at="3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-pencil" aria-hidden="true" focusable="false"> <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /> <path d="m15 5 4 4" /> </svg> auth.ts</span></div><p class="muted" style="font-size:15pt;margin:6px 0 0">select for details</p></div>
+      <div class="uvm" data-sess="b" data-at="2"><h3>µVM · chat B</h3><div><span class="blk shared"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-layers" aria-hidden="true" focusable="false"> <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" /> <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" /> <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" /> </svg> shared base</span></div><p class="muted" style="font-size:15pt;margin:6px 0 0">read-only so far</p></div>
+      <div class="uvm" data-sess="c" data-at="2"><h3>µVM · chat C</h3><div><span class="blk shared"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-layers" aria-hidden="true" focusable="false"> <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" /> <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" /> <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" /> </svg> shared base</span></div><p class="muted" style="font-size:15pt;margin:6px 0 0">just forked</p></div>
     </div>
   </div>
-  <p class="fleet muted small">fleet = a few of these devservers · 500 devs &times; 4 chats spread across them · each chat = one microVM</p>
-  <div id="cowDetail" class="card amber"><p data-only="0">A devserver, not a VM per chat. Watch it fill up.</p><p data-only="1">One warm clone sits on the devserver's SSD — <b>outside</b> every microVM, hot in page cache.</p><p data-only="2">Each chat starts a microVM that <b>forks a CoW view</b>: metadata only, ~0 bytes, instant.</p><p data-only="3">A writes <b>auth.ts</b> → only that file copies up into its private layer. The rest stays shared.</p><p data-only="4">B and C changed nothing → still <b>pay nothing</b>. Unmodified files share the host page cache too.</p><p id="cowOut"></p></div>
+  <p class="fleet muted small">Size the host pool for active sessions. Pause idle VMs and keep their private state.</p>
+  <div id="cowDetail" class="card amber"><p data-only="0">One VM per chat, without a full repo copy per VM.</p><p data-only="1">The host keeps one <b>immutable base</b> on its SSD.</p><p data-only="2">Each VM gets a <b>writable clone</b> that shares the base blocks.</p><p data-only="3">A edits <b>auth.ts</b>. Its changed blocks become private.</p><p data-only="4">B and C still share the base. No duplicate repo data yet.</p><p id="cowOut"></p></div>
   <aside class="notes">
-    The heart of the talk — let the audience click the microVMs. There is no VM per chat floating in the cloud: there are a few beefy devservers, and each one holds a single warm
-    clone of the monorepo on its fast SSD, outside every VM, hot in the host page cache.
-    Each user chat starts a microVM inside a devserver, and that microVM forks a copy-on-write view of the warm clone — metadata pointing at the same blocks, instant, near-zero bytes.
-    When chat A edits auth.ts, only that file copies up into its private layer. Chats B and C changed nothing and pay nothing — and unmodified files share the host page cache,
-    so hundreds of chats on one box do not need hundreds of copies in RAM either.
-    Implementation notes for Q&A: on the host, OverlayFS merges the shared lowerdir with a private upperdir per microVM, or ZFS hands each one a writable block-level clone
-    of a snapshot — either way each microVM gets its CoW view attached as its own virtio-blk disk. (Honest footnote: upstream Firecracker has no virtiofs support, so the
-    sharing happens at the block layer, not as a shared folder.)
+    Each chat still gets a microVM. What changes is the storage underneath it.
+    The host shares an immutable base; each VM gets a private writable disk view.
+    Block-level clones can back virtio-blk devices. OverlayFS is a file-level alternative, not itself a VM disk device.
+    Upstream Firecracker does not support virtiofs. Do not assume host storage sharing also deduplicates guest RAM.
+    Size the fleet for active CPU and memory, not just the number of stored sessions.
   </aside>
   <script>
   (function () {
     const D = {
-      a: '🟢 <b>Chat A</b> owns <b>1 file</b> (auth.ts, 12 KiB) inside its microVM. Everything else is shared blocks of the devserver clone. Reads cost nothing.',
-      b: '🔵 <b>Chat B</b> owns <b>0 bytes</b>. Pure CoW fork of the warm clone. When it writes, only touched files copy up.',
-      c: '🟣 <b>Chat C</b> just forked — same story: metadata view, boots in milliseconds, pays nothing until it writes.'
+      a: '<b>Chat A:</b> edited auth.ts. Changed blocks live in its private clone; the base is untouched.',
+      b: '<b>Chat B:</b> no repo edits yet. It shares the base data and has its own clone metadata.',
+      c: '<b>Chat C:</b> just started from the same base. It needs compute, but not another full checkout.'
     };
     const sec = document.getElementById('cw-cow');
     sec.querySelectorAll('[data-sess]').forEach(b => b.addEventListener('click', e => {
@@ -895,13 +945,13 @@ window.Deck = (function () {
     #cw-edit .pick { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
   </style>
   <p class="kicker">what "copy on write" literally means</p>
-  <h2>Reads stay shared. Writes <span class="t-amber">copy once</span>.</h2>
+  <h2>Read the base. <span class="t-amber">Keep edits private.</span></h2>
   <div class="flow">
-    <div class="st" data-at="1"><p class="e">📖</p><b>Read</b><span>served from base</span></div>
+    <div class="st" data-at="1"><p class="e t-violet"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-book-open" aria-hidden="true" focusable="false"> <path d="M12 5v16" /> <path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z" /> </svg></p><b>Read</b><span>served from base</span></div>
     <div class="arr" data-at="2">→</div>
-    <div class="st" data-at="2" style="border-color: var(--amber)"><p class="e">✎</p><b>First write</b><span>copy_up that file</span></div>
+    <div class="st" data-at="2" style="border-color: var(--amber)"><p class="e t-amber"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-pencil" aria-hidden="true" focusable="false"> <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /> <path d="m15 5 4 4" /> </svg></p><b>First write</b><span>copy_up that file</span></div>
     <div class="arr" data-at="3">→</div>
-    <div class="st" data-at="3" style="border-color: var(--teal)"><p class="e">🔀</p><b>Diverged</b><span>private layer grows</span></div>
+    <div class="st" data-at="3" style="border-color: var(--teal)"><p class="e t-teal"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-git-fork" aria-hidden="true" focusable="false"> <circle cx="12" cy="18" r="3" /> <circle cx="6" cy="6" r="3" /> <circle cx="18" cy="6" r="3" /> <path d="M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9" /> <path d="M12 12v3" /> </svg></p><b>Diverged</b><span>private layer grows</span></div>
   </div>
   <div class="pick" data-at="3">
     <button class="btn" data-fs="overlay">OverlayFS · file-level</button>
@@ -909,23 +959,22 @@ window.Deck = (function () {
     <button class="btn" data-fs="btrfs">btrfs · extents</button>
   </div>
   <div class="captions">
-    <p data-only="0">Reads never copy anything.</p>
+    <p data-only="0">OverlayFS copies files; block-level clones copy smaller units.</p>
     <p data-only="1">Reads come from the shared lower tree.</p>
-    <p data-only="2">First write to a file <b>copies just that file</b> up. Deletes become whiteouts.</p>
-    <p data-only="3">Pick a filesystem. Trade-offs differ, the pattern holds.</p>
+    <p data-only="2">In OverlayFS, the first write <b>copies up the file</b>. Deletes create whiteouts.</p>
+    <p data-only="3">Choose file-level or block-level sharing for your workload.</p>
   </div>
   <aside class="notes">
-    Spell out the literal mechanism. Reads are served from the shared base — zero cost. The first write to a file copies just that file into the private upper layer; deletions become whiteout markers.
-    The buttons compare implementations: OverlayFS is ubiquitous and file-granular, great for read-mostly repos; ZFS clones share at block level with native snapshots — better for heavy writes, costs running ZFS; btrfs snapshots subvolumes with extent-level sharing, the Linux-native middle ground.
-    And pause composes with this: pausing captures two things together — the microVM's memory and device state in one snapshot file, and the per-session
-    writable layer as a disk snapshot. Firecracker manages the disk side separately, so a platform snapshots both and restores both.
+    The diagram shows OverlayFS: reads use the base, and the first write copies a file into the private upper layer.
+    ZFS clones and btrfs snapshots share smaller units: blocks or extents.
+    For pause and resume, capture the private disk state consistently with the VM memory and device state.
   </aside>
   <script>
   (function () {
     const D = {
-      overlay: 'OverlayFS: shared <b>lowerdir</b> + private <b>upperdir</b> per session. Ubiquitous, simple, file-granular copy_up.',
-      zfs: 'ZFS: snapshot the warm dataset, hand each session a <b>writable clone</b>. Block-level sharing, native replication. Operate ZFS.',
-      btrfs: 'btrfs: read-write <b>subvolume snapshots</b>. Fast metadata ops, shared extents until written. Linux-native.'
+      overlay: '<b>OverlayFS:</b> read-only lowerdir, private upperdir. First writes copy whole files; deletes use whiteouts.',
+      zfs: '<b>ZFS:</b> writable clones of a snapshot. Shares blocks; requires a ZFS storage stack.',
+      btrfs: '<b>btrfs:</b> writable subvolume snapshots. Shares extents until they change.'
     };
     const sec = document.getElementById('cw-edit');
     sec.querySelectorAll('[data-fs]').forEach(b => b.addEventListener('click', e => {
@@ -956,14 +1005,14 @@ window.Deck = (function () {
   </style>
   <div>
     <p class="num">05 / How it works</p>
-    <h1>Three ideas<br>do the work.</h1>
-    <p class="sub">Cheap object storage, shared files, one owner per sandbox.</p>
+    <h1>Store the state.<br>Track the session.</h1>
+    <p class="sub">Object storage, writable layers and a coordinator.</p>
   </div>
   <div class="trio" aria-hidden="true"><div class="t">snapshots → object store</div><div class="t">one repo, many views</div><div class="t">one owner per sandbox</div></div>
   <aside class="notes">
-    Stop five: the technology layer. Forget brand names for a minute. Every pausable platform is built from the same three ideas:
-    snapshots parked in cheap object storage, one repo shared through copy-on-write, and a single owner object coordinating each sandbox.
-    Next slide makes each one clickable, using Cloudflare's stack as the concrete example.
+    These are useful building blocks, not a blueprint every provider follows.
+    Cloudflare gives us a concrete example: R2 for backups, writable layers for edits and Durable Objects for coordination.
+    Its filesystem backups do not preserve live RAM.
   </aside>
 </section>
 
@@ -982,32 +1031,31 @@ window.Deck = (function () {
     #pm-tech #techOutBody:empty { display: none; }
     #pm-tech #techOutBody { margin-top: 8px !important; }
   </style>
-  <p class="kicker">three ideas, click each one</p>
-  <h2>Where state sleeps, how files share, who is in charge</h2>
+  <p class="kicker"><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-cloudflare" aria-hidden="true" focusable="false"><title>Cloudflare</title><path d="M16.5088 16.8447c.1475-.5068.0908-.9707-.1553-1.3154-.2246-.3164-.6045-.499-1.0615-.5205l-8.6592-.1123a.1559.1559 0 0 1-.1333-.0713c-.0283-.042-.0351-.0986-.021-.1553.0278-.084.1123-.1484.2036-.1562l8.7359-.1123c1.0351-.0489 2.1601-.8868 2.5537-1.9136l.499-1.3013c.0215-.0561.0293-.1128.0147-.168-.5625-2.5463-2.835-4.4453-5.5499-4.4453-2.5039 0-4.6284 1.6177-5.3876 3.8614-.4927-.3658-1.1187-.5625-1.794-.499-1.2026.119-2.1665 1.083-2.2861 2.2856-.0283.31-.0069.6128.0635.894C1.5683 13.171 0 14.7754 0 16.752c0 .1748.0142.3515.0352.5273.0141.083.0844.1475.1689.1475h15.9814c.0909 0 .1758-.0645.2032-.1553l.12-.4268zm2.7568-5.5634c-.0771 0-.1611 0-.2383.0112-.0566 0-.1054.0415-.127.0976l-.3378 1.1744c-.1475.5068-.0918.9707.1543 1.3164.2256.3164.6055.498 1.0625.5195l1.8437.1133c.0557 0 .1055.0263.1329.0703.0283.043.0351.1074.0214.1562-.0283.084-.1132.1485-.204.1553l-1.921.1123c-1.041.0488-2.1582.8867-2.5527 1.914l-.1406.3585c-.0283.0713.0215.1416.0986.1416h6.5977c.0771 0 .1474-.0489.169-.126.1122-.4082.1757-.837.1757-1.2803 0-2.6025-2.125-4.727-4.7344-4.727"/></svg> Cloudflare · a concrete example</p>
+  <h2>Three parts of a restorable sandbox</h2>
   <div class="grid">
-    <div class="t c1" data-t="store" data-at="1"><b class="t-violet">Object storage</b><span>snapshots sleep here</span><br><code>R2 · squashfs · meta.json</code></div>
+    <div class="t c1" data-t="store" data-at="1"><b class="t-violet">Object storage</b><span>durable filesystem backups</span><br><code>R2 · squashfs · meta.json</code></div>
     <div class="t c2" data-t="cow" data-at="2"><b class="t-amber">Shared files</b><span>one repo, many views</span><br><code>lowerdir + upperdir</code></div>
     <div class="t c3" data-t="owner" data-at="3"><b class="t-teal">One owner</b><span>a coordinator per sandbox</span><br><code>Durable Object + alarms</code></div>
   </div>
-  <div id="techOut" class="card violet"><p>Click a card to see each idea on Cloudflare.</p><p id="techOutBody"></p></div>
+  <div id="techOut" class="card violet"><p class="muted small">Select a component for implementation details.</p><div id="techOutBody" aria-live="polite"></div></div>
   <div class="captions">
-    <p data-only="0">Three ideas, every platform.</p>
+    <p data-only="0">This example restores files, not running processes.</p>
     <p data-only="1">Snapshots are just files in <b>object storage</b>.</p>
-    <p data-only="2">Repos are shared with <b>copy-on-write</b>, same as section 4.</p>
+    <p data-only="2">A read-only base plus a <b>writable layer</b> keeps edits separate.</p>
     <p data-only="3">Each sandbox gets <b>one owner</b> that outlives its container.</p>
   </div>
   <aside class="notes">
-    Walk the three clicks using Cloudflare as the concrete example. One: object storage. A backup is a directory compressed to squashfs, uploaded to R2 next to a small metadata file.
-    Restoring downloads both and mounts the archive read-only with a writable layer on top. It runs at object-storage speed, not disk speed — that is the honest trade.
-    Two: shared files. That read-only mount plus writable upper layer is overlayfs — the same lowerdir/upperdir shape from section four. The industry keeps rediscovering copy-on-write.
-    Three: one owner. A Durable Object is a single-threaded coordinator with private transactional storage — SQLite, key-value, alarms that wake it later. The container is disposable; the owner remembers. That split is what lets a sandbox sleep for hours and still know what it was doing.
+    A backup stores a directory archive and metadata in R2. Restore fetches them and adds a writable layer.
+    That is slower than keeping a live local disk, but it survives the container being replaced.
+    A Durable Object coordinates the sandbox and can persist session metadata. Applications must choose what to save.
   </aside>
   <script>
   (function () {
     const D = {
-      store: '<b>Object storage.</b> Cloudflare backups land in R2 as <b>data.sqsh + meta.json</b> (3-day default TTL). Restore downloads both, then FUSE-mounts the archive read-only. Cheap and durable; slower than local disk.',
-      cow: '<b>Shared files.</b> The restored backup becomes the read-only <b>lower layer</b>; new writes go to an <b>upper layer</b>. Re-restore and the upper layer is discarded. Overlayfs, ZFS clones, same idea everywhere.',
-      owner: '<b>One owner:</b> a <b>Durable Object</b>, one ID, one single-threaded instance, private SQLite + KV storage, <b>alarms</b> that wake it later. The container can die; the owner keeps the plan, the backup handles, the credentials.'
+      store: '<ul class="detail-list"><li><b>R2:</b> stores the archive and metadata.</li><li><b>Retention:</b> 3-day default backup TTL.</li><li><b>Restore:</b> download and mount the archive. Slower than local disk.</li></ul>',
+      cow: '<ul class="detail-list"><li><b>Base:</b> the restored archive stays read-only.</li><li><b>Edits:</b> new writes go into a private upper layer.</li><li><b>Restore again:</b> save any edits you need before replacing that layer.</li></ul>',
+      owner: '<ul class="detail-list"><li><b>Identity:</b> one Durable Object coordinates each sandbox.</li><li><b>State:</b> durable storage holds session metadata and backup references.</li><li><b>Lifecycle:</b> alarms can schedule work after the container stops.</li></ul>'
     };
     const sec = document.getElementById('pm-tech');
     sec.querySelectorAll('[data-t]').forEach(b => b.addEventListener('click', e => {
@@ -1022,10 +1070,7 @@ window.Deck = (function () {
 
 
 <!-- ===== part: 60-services.html ===== -->
-<!-- ============================================================
-     60 / Where to run it — Railway side-project + six hosts
-     ids: sv-divider, sv-rail, sv-ent, sv-bill
-     ============================================================ -->
+<!-- 60 / Where to run it: Railway, hosted options and billing -->
 
 <section id="sv-divider" class="divider">
   <style>
@@ -1036,113 +1081,110 @@ window.Deck = (function () {
   </style>
   <div style="max-width: 900px;">
     <p class="num">06 / Where to run it</p>
-    <h1>Try it on a<br><span class="t-amber">side project.</span></h1>
-    <p class="sub">Sandboxes and cloud agents — both on Railway.</p>
+    <h1>Start with<br><span class="t-amber">a side project.</span></h1>
+    <p class="sub"><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-railway" aria-hidden="true" focusable="false"><title>Railway</title><path d="M.113 10.27A13.026 13.026 0 000 11.48h18.23c-.064-.125-.15-.237-.235-.347-3.117-4.027-4.793-3.677-7.19-3.78-.8-.034-1.34-.048-4.524-.048-1.704 0-3.555.005-5.358.01-.234.63-.459 1.24-.567 1.737h9.342v1.216H.113v.002zm18.26 2.426H.009c.02.326.05.645.094.961h16.955c.754 0 1.179-.429 1.315-.96zm-17.318 4.28s2.81 6.902 10.93 7.024c4.855 0 9.027-2.883 10.92-7.024H1.056zM11.988 0C7.5 0 3.593 2.466 1.531 6.108l4.75-.005v-.002c3.71 0 3.849.016 4.573.047l.448.016c1.563.052 3.485.22 4.996 1.364.82.621 2.007 1.99 2.712 2.965.654.902.842 1.94.396 2.934-.408.914-1.289 1.458-2.353 1.458H.391s.099.42.249.886h22.748A12.026 12.026 0 0024 12.005C24 5.377 18.621 0 11.988 0z"/></svg> Try Railway before building your own fleet.</p>
   </div>
-  <div class="stack" aria-hidden="true"><div class="c">Sandbox.create()</div><div class="c">.checkpoint("ready")</div><div class="c">.fork() → 50 tasks</div></div>
+  <div class="stack" aria-hidden="true"><div class="c">Sandbox.create()</div><div class="c">.checkpoint("ready")</div><div class="c">.fork() → parallel tasks</div></div>
   <aside class="notes">
-    Stop six: where to run all of this. Start with a side project on Railway, which has both doors: short-lived sandboxes, one per task, and persistent
-    cloud agents, one dev machine you return to. Both come with coding agents preinstalled and per-second metering. Then the service grid: six hosted
-    options built on the same ideas from section five, different logos on the invoice.
+    Start small. Railway offers persistent cloud agents and short-lived sandboxes.
+    Try a task, measure its runtime and idle time, then decide what you need from a larger platform.
   </aside>
 </section>
 
 <section id="sv-rail" class="stepper" data-steps="4">
   <style>
     #sv-rail .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 24px; }
-    #sv-rail .st { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px 24px; opacity: .38; transition: all .4s var(--ease); }
-    #sv-rail .st.on { opacity: 1; transform: translateY(-6px); border-color: rgba(255,180,84,.6); }
-    #sv-rail .st .n { font-family: var(--head); font-size: 40pt; font-weight: 700; color: var(--amber); line-height: 1; margin: 0; }
-    #sv-rail .st b { display: block; font-family: var(--head); font-size: 24pt; margin: 6px 0 4px; }
-    #sv-rail .st span { font-size: 19pt; color: var(--muted); }
-    #sv-rail .st code { font-size: 15pt; display: inline-block; margin-top: 8px; }
-    #sv-rail .honest { text-align: center; margin-top: 16px; }
+    #sv-rail .st { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px 24px; opacity: .38; transition: all .4s var(--ease); }
+    #sv-rail .st.on { opacity: 1; transform: translateY(-4px); border-color: rgba(255,180,84,.6); }
+    #sv-rail .st h3 { font-size: 24pt; margin: 0 0 12px; }
+    #sv-rail .st h3 .icon { color: var(--amber); }
+    #sv-rail .st li { font-size: 18pt; color: var(--muted); margin-bottom: 6px; }
+    #sv-rail .st code { font-size: 15pt; display: inline-block; margin-top: 12px; }
+    #sv-rail .honest { margin-top: 18px; }
   </style>
-  <p class="kicker">side project on Railway: two doors, same building</p>
-  <h2>Sandboxes per task, agents that persist</h2>
+  <p class="kicker"><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-railway" aria-hidden="true" focusable="false"><title>Railway</title><path d="M.113 10.27A13.026 13.026 0 000 11.48h18.23c-.064-.125-.15-.237-.235-.347-3.117-4.027-4.793-3.677-7.19-3.78-.8-.034-1.34-.048-4.524-.048-1.704 0-3.555.005-5.358.01-.234.63-.459 1.24-.567 1.737h9.342v1.216H.113v.002zm18.26 2.426H.009c.02.326.05.645.094.961h16.955c.754 0 1.179-.429 1.315-.96zm-17.318 4.28s2.81 6.902 10.93 7.024c4.855 0 9.027-2.883 10.92-7.024H1.056zM11.988 0C7.5 0 3.593 2.466 1.531 6.108l4.75-.005v-.002c3.71 0 3.849.016 4.573.047l.448.016c1.563.052 3.485.22 4.996 1.364.82.621 2.007 1.99 2.712 2.965.654.902.842 1.94.396 2.934-.408.914-1.289 1.458-2.353 1.458H.391s.099.42.249.886h22.748A12.026 12.026 0 0024 12.005C24 5.377 18.621 0 11.988 0z"/></svg> Railway · two ways to run an agent</p>
+  <h2>A machine to keep, or a sandbox per task</h2>
   <div class="grid">
-    <div class="st" data-at="1"><p class="n">1</p><b>Cloud agent</b><span>Your dev machine in the cloud. Claude, Codex, OpenCode preinstalled.</span><br><code>railway code --claude</code></div>
-    <div class="st" data-at="2"><p class="n">2</p><b>Sandboxes</b><span>One throwaway Linux VM per task, beside your Postgres and Redis.</span><br><code>Sandbox.create() · --private-network</code></div>
-    <div class="st" data-at="3"><p class="n">3</p><b>Checkpoint &amp; fork</b><span>Clone the repo once, install once, snapshot it — boot every task from there.</span><br><code>checkpoint("repo-ready") → fork()</code></div>
-    <div class="st" data-at="4"><p class="n">4</p><b>Metered per second</b><span>CPU + RAM while running. Sleep the agent, destroy the sandbox, stop paying.</span><br><code>railway ca sleep · sandbox.destroy()</code></div>
+    <div class="st" data-at="1"><h3><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-terminal" aria-hidden="true" focusable="false"> <path d="M12 19h8" /> <path d="m4 17 6-6-6-6" /> </svg> Cloud agent</h3><ul><li>Persistent dev machine in the cloud</li><li>Claude, Codex and OpenCode preinstalled</li></ul><code>railway code --claude</code></div>
+    <div class="st" data-at="2"><h3><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-server" aria-hidden="true" focusable="false"> <rect width="20" height="8" x="2" y="2" rx="2" ry="2" /> <rect width="20" height="8" x="2" y="14" rx="2" ry="2" /> <line x1="6" x2="6.01" y1="6" y2="6" /> <line x1="6" x2="6.01" y1="18" y2="18" /> </svg> Sandbox</h3><ul><li>Isolated Linux VM for each task</li><li>Private networking to project services</li></ul><code>Sandbox.create()</code></div>
+    <div class="st" data-at="3"><h3><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-git-fork" aria-hidden="true" focusable="false"> <circle cx="12" cy="18" r="3" /> <circle cx="6" cy="6" r="3" /> <circle cx="18" cy="6" r="3" /> <path d="M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9" /> <path d="M12 12v3" /> </svg> Checkpoint &amp; fork</h3><ul><li>Clone the repo and install dependencies once</li><li>Start each task from the saved disk</li></ul><code>checkpoint("repo-ready") → fork()</code></div>
+    <div class="st" data-at="4"><h3><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-pause" aria-hidden="true" focusable="false"> <rect x="14" y="3" width="5" height="18" rx="1" /> <rect x="5" y="3" width="5" height="18" rx="1" /> </svg> Stop when done</h3><ul><li>Sleep an agent to keep its files</li><li>Destroy a sandbox after saving its output</li></ul><code>railway ca sleep · sandbox.destroy()</code></div>
   </div>
-  <p class="honest muted small" data-at="4">Honest trade: checkpoints save disk, not live RAM. Sleep keeps files, stops processes. Destroyed sandboxes bill nothing.</p>
+  <p class="honest muted small" data-at="4">Checkpoints keep disk state, not live RAM. Sleep stops processes; retained storage may still cost money.</p>
   <div class="captions">
-    <p data-only="0">Two ways in — pick per side project.</p>
-    <p data-only="1"><b>Cloud agent:</b> SSH or desktop app in, credentials carried, files persist, sleep when done.</p>
-    <p data-only="2"><b>Sandboxes:</b> an isolated VM per task, on the private network with your real services.</p>
-    <p data-only="3"><b>Checkpoint once,</b> then fork per task. The repo-review demo fans out one sandbox per agent.</p>
-    <p data-only="4">Both meter <b>per second</b>. Sleep or destroy, <b>the meter stops</b>.</p>
+    <p data-only="0">Choose based on how long you need the workspace.</p>
+    <p data-only="1"><b>Cloud agent:</b> return to the same files across sessions.</p>
+    <p data-only="2"><b>Sandbox:</b> give each task its own environment.</p>
+    <p data-only="3"><b>Checkpoint once.</b> Avoid repeating setup for every task.</p>
+    <p data-only="4">Stop the compute when the task ends. Check what storage remains.</p>
   </div>
   <aside class="notes">
-    Walk the four clicks. One: a cloud agent is a persistent dev machine — railway code with Claude, Codex or OpenCode, six harnesses preinstalled in the image,
-    credentials carried from your laptop, files on disk across disconnects, sleep to stop compute while keeping files.
-    Two: sandboxes are the opposite shape — short-lived isolated Linux VMs, one per task, optionally on the project's private network so the agent tests
-    against your real Postgres, Redis and internal APIs instead of mocks.
-    Three: amortise setup — clone once, install once, sign agents in once, checkpoint the disk as repo-ready, then create or fork one sandbox per task from it.
-    Railway's own repo-review demo does exactly this: one sandbox per agent, in parallel.
-    Four: both bill per second on CPU and memory actually used. Sleep the agent or destroy the sandbox and billing stops.
-    Say the honest trade out loud: checkpoints preserve disk, not live RAM. Sleep keeps files but stops processes. For a side project that is exactly the right trade.
+    A cloud agent is a dev machine you return to. A sandbox is a workspace for one task.
+    Both can use prepared disk state. Neither disk checkpoints nor sleep preserve running processes.
+    Use scoped credentials and test services on the private network. Save the result before destroying a sandbox.
+    Compute and retained storage are separate billing questions.
   </aside>
 </section>
 
 <section id="sv-ent" class="stepper" data-steps="3">
   <style>
-    #sv-ent .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 22px; }
-    #sv-ent .p { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; cursor: pointer; transition: all .35s var(--ease); opacity: .45; }
-    #sv-ent .p.on { opacity: 1; }
-    #sv-ent .p b { font-family: var(--head); font-size: 22pt; display: block; margin: 0; }
-    #sv-ent .p span { font-family: var(--mono); font-size: 14pt; color: var(--muted); }
-    #sv-ent .p .fit { display: inline-block; font-family: var(--mono); font-size: 13pt; border-radius: 8px; padding: 2px 10px; margin-top: 8px; border: 1px solid var(--line); color: var(--muted); }
-    #sv-ent.s1 .p.ram { border-color: var(--green); box-shadow: 0 0 22px rgba(127,227,164,.25); }
-    #sv-ent.s1 .p.ram .fit { color: #06130c; background: var(--green); border-color: var(--green); }
+    #sv-ent .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 22px; }
+    #sv-ent .p { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; cursor: pointer; text-align: left; color: var(--text); transition: border-color .25s; }
+    #sv-ent .p b { font-family: var(--head); font-size: 22pt; display: flex; align-items: center; gap: 12px; margin: 0 0 6px; }
+    #sv-ent .p .kind { display: block; font-family: var(--mono); font-size: 15pt; color: var(--muted); }
+    #sv-ent .p .fit { display: inline-block; font-family: var(--mono); font-size: 15pt; border-radius: 6px; padding: 3px 8px; margin-top: 10px; background: var(--panel-2); }
+    #sv-ent.s1 .p.ram { border-color: var(--green); }
+    #sv-ent.s1 .p.ram .fit { color: var(--green); }
     #sv-ent.s2 .p.snap { border-color: var(--violet); }
-    #sv-ent.s2 .p.snap .fit { color: var(--violet); border-color: var(--violet); }
-    #sv-ent .p.sel { border-color: var(--teal) !important; box-shadow: 0 0 0 4px rgba(63,220,214,.15), 0 0 24px rgba(63,220,214,.3) !important; }
-    #sv-ent #svDetail { margin-top: 14px; min-height: 74px; }
-    #sv-ent #svDetail p { font-size: 19pt; margin: 0; }
-    #sv-ent #svOut { font-size: 19pt; margin: 10px 0 0; }
-    #sv-ent #svOut:empty { display: none; }
+    #sv-ent.s2 .p.snap .fit { color: var(--violet); }
+    #sv-ent .p.sel { border-color: var(--teal) !important; background: #17272d; box-shadow: 0 0 0 2px rgba(63,220,214,.18); }
+    #sv-ent #svDetail { margin-top: 18px; padding: 18px 22px; min-height: 194px; }
+    #sv-ent #svDetail > p { margin: 0 0 12px; }
+    #sv-ent .details-grid { display: grid; grid-template-columns: 1fr 1fr 1.15fr; gap: 26px; }
+    #sv-ent .details-grid h4 { font-family: var(--mono); font-size: 15pt; color: var(--teal); margin: 0 0 10px; }
+    #sv-ent .details-grid li { font-size: 17pt; margin-bottom: 7px; }
+    #sv-ent .details-grid a { font-size: 15pt; }
   </style>
-  <p class="kicker">six hosted options. Click any platform</p>
-  <h2>Which keep RAM, which start fresh?</h2>
+  <p class="kicker">six hosted options · select a platform</p>
+  <h2>Will your processes survive the pause?</h2>
   <div class="grid">
-    <div class="p ram" data-p="e2b" data-at="1"><b>E2B ★</b><span>Firecracker · pause()</span><br><span class="fit">RAM + fs · ~1s resume</span></div>
-    <div class="p ram" data-p="daytona" data-at="1"><b>Daytona ★</b><span>VM sandbox · pause</span><br><span class="fit">RAM + fs · disk-only parked</span></div>
-    <div class="p ram" data-p="fly" data-at="1"><b>Fly Machines</b><span>suspend via snapshots</span><br><span class="fit">RAM kept · 100s of ms</span></div>
-    <div class="p snap" data-p="vercel" data-at="2"><b>Vercel Sandbox</b><span>stop() → snapshot</span><br><span class="fit">filesystem only</span></div>
-    <div class="p snap" data-p="cf" data-at="2"><b>Cloudflare</b><span>backup → R2</span><br><span class="fit">filesystem only</span></div>
-    <div class="p snap" data-p="modal" data-at="2"><b>Modal</b><span>snapshots → clones</span><br><span class="fit">restorable, 30-day TTL</span></div>
+    <button type="button" class="p ram" data-p="e2b" data-at="1" aria-pressed="false"><b><svg viewBox="0 0 32 30" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-e2b" aria-hidden="true" focusable="false"><metadata>E2B size-specific symbol artwork</metadata><path d="M24.0029 7.87695V11.5781H12.3447C11.9881 11.5783 11.6982 11.8679 11.6982 12.2246V12.5029C11.6982 12.8596 11.9881 13.1493 12.3447 13.1494H24.0029V16.8506H12.3447C11.9881 16.8507 11.6982 17.1404 11.6982 17.4971V17.7754C11.6983 18.132 11.9881 18.4208 12.3447 18.4209H24.0029V22.123H10.4717C9.10509 22.1227 7.99709 21.0142 7.99707 19.6475V10.3516C7.99729 8.98505 9.1052 7.8773 10.4717 7.87695H24.0029Z" fill="white"/></svg> E2B</b><span class="kind">Firecracker microVMs</span><span class="fit">Memory + filesystem</span></button>
+    <button type="button" class="p ram" data-p="daytona" data-at="1" aria-pressed="false"><b><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 123 28" fill="none" class="icon" data-icon-name="brand-daytona" aria-hidden="true" focusable="false"> <path fill="currentColor" d="M10.2981 12.5327V12.396V12.2593V12.1226V11.9858V11.8491V11.7124V11.5757V11.439V11.3023V11.1655V11.0288V10.8921V10.7554V10.6187V10.4819V10.3452V10.2085V10.0718V9.93506V9.79834V9.66163V9.52491V9.38819V9.25147V9.11475V8.97803V8.84131V8.70459V8.56788V8.43116V8.29444V8.15772V8.021V7.88428V7.74756V7.61085V7.47413V7.33741V7.20069V7.06397V6.92725V6.79053V6.65381V6.5171V6.38038V6.24366V6.10694V5.97022V5.8335V5.69678V5.56006V5.42335V5.28663V5.14991V5.06604H10.1614H10.0247H9.88793H9.75121H9.6145H9.47778H9.34106H9.20434H9.06762H8.9309H8.79418H8.65746H8.52075H8.38403H8.24731H8.11059H7.97387H7.83715L7.70043 5.06606H7.56371H7.427H7.30722V5.20278V5.3395V5.47621V5.61293V5.74965V5.88637V6.02309V6.15981V6.29653V6.43325V6.56996V6.70668V6.8434V6.98012V7.11684V7.25356V7.39028V7.527V7.66371V7.80043V7.93715V8.07387V8.21059V8.34731V8.48403V8.62075V8.75746V8.89418V9.0309V9.16762V9.30434V9.44106V9.57778V9.7145V9.85121V9.98793V10.1247V10.2614V10.3981V10.5348V10.6715V10.8082V10.945V11.0817V11.2184V11.3551V11.4918V11.6286V11.7653V11.902V12.0387V12.1754V12.3122V12.4489V12.5327H7.44394H7.58065H7.71737H7.85409H7.99081H8.12753H8.26425H8.40097H8.53769H8.6744H8.81112H8.94784H9.08456H9.22128H9.358H9.49472H9.63145H9.76817H9.90487H10.0416H10.1783H10.2981V12.396V12.2593V12.1226V11.9858V11.8491V11.7124V11.5757V11.439V11.3023V11.1655V11.0288V10.8921V10.7554V10.6187V10.4819V10.3452V10.2085V10.0718V9.93506V9.79834V9.66163V9.52491V9.38819V9.25147V9.11475V8.97803V8.84131V8.70459V8.56788V8.43116V8.29444V8.15772V8.021V7.88428V7.74756V7.61085V7.47413V7.33741V7.20069V7.06397V6.92725V6.79053V6.65381V6.5171V6.38038V6.24366V6.10694V5.97022V5.8335V5.69678V5.56006V5.42335V5.28663V5.14991V5.06604" /> <path fill="currentColor" d="M10.2981 5.06604L10.1614 5.06606H10.0247H9.88793H9.75121H9.6145H9.47778H9.34106H9.20434H9.06762H8.9309H8.79418H8.65746H8.52075H8.38403H8.24731H8.11059H7.97387H7.83715H7.70043H7.56371H7.427H7.30722" /> <path fill="currentColor" d="M10.3458 15.5824L10.2491 15.4857L10.1525 15.389L10.0558 15.2923L9.9591 15.1957L9.86243 15.099L9.76576 15.0023L9.66908 14.9056L9.57241 14.8089L9.47573 14.7123L9.37906 14.6156L9.28239 14.5189L9.18571 14.4223L9.08904 14.3256L8.99237 14.2289L8.89569 14.1322L8.799 14.0356L8.70233 13.9389L8.60566 13.8422L8.50898 13.7455L8.41231 13.6488L8.31564 13.5522L8.21896 13.4555L8.12229 13.3588L8.02561 13.2622L7.92894 13.1655L7.83227 13.0688L7.73559 12.9721L7.63892 12.8755L7.54225 12.7788L7.44557 12.6821L7.34888 12.5854L7.25221 12.4888L7.15554 12.3921L7.05886 12.2954L6.96219 12.1987L6.86551 12.1021L6.76884 12.0054L6.67217 11.9087L6.57549 11.812L6.47882 11.7154L6.38215 11.6187L6.28547 11.522L6.1888 11.4253L6.09212 11.3287L5.99545 11.232L5.89876 11.1353L5.80209 11.0386L5.70542 10.942L5.60874 10.8453L5.51207 10.7486L5.41539 10.6519L5.31872 10.5553L5.22205 10.4586L5.12537 10.3619L5.0287 10.2652L4.93203 10.1686L4.83535 10.0719L4.7493 9.98584L4.65261 10.0825L4.55594 10.1792L4.45927 10.2759L4.36259 10.3725L4.26592 10.4692L4.16924 10.5659L4.07257 10.6626L3.9759 10.7592L3.87922 10.8559L3.78255 10.9526L3.68587 11.0493L3.5892 11.1459L3.49253 11.2426L3.39585 11.3393L3.29917 11.436L3.20249 11.5326L3.10582 11.6293L3.00914 11.726L2.91247 11.8227L2.8158 11.9193L2.71912 12.016L2.63443 12.1007L2.7311 12.1974L2.82777 12.294L2.92445 12.3907L3.02112 12.4874L3.11781 12.5841L3.21448 12.6808L3.31116 12.7774L3.40783 12.8741L3.5045 12.9708L3.60118 13.0675L3.69785 13.1641L3.79453 13.2608L3.8912 13.3575L3.98787 13.4541L4.08455 13.5508L4.18122 13.6475L4.27789 13.7442L4.37457 13.8408L4.47124 13.9375L4.56793 14.0342L4.6646 14.1309L4.76128 14.2276L4.85795 14.3242L4.95462 14.4209L5.0513 14.5176L5.14797 14.6142L5.24465 14.7109L5.34132 14.8076L5.43799 14.9043L5.53467 15.0009L5.63134 15.0976L5.72801 15.1943L5.82469 15.291L5.92138 15.3876L6.01805 15.4843L6.11472 15.581L6.2114 15.6777L6.30807 15.7743L6.40475 15.871L6.50142 15.9677L6.59809 16.0644L6.69477 16.161L6.79144 16.2577L6.88811 16.3544L6.98479 16.4511L7.08146 16.5477L7.17814 16.6444L7.27481 16.7411L7.3715 16.8378L7.46817 16.9344L7.56484 17.0311L7.66152 17.1278L7.75819 17.2245L7.85487 17.3211L7.95154 17.4178L8.04821 17.5145L8.14489 17.6112L8.23094 17.6972L8.32761 17.6005L8.42429 17.5039L8.52096 17.4072L8.61765 17.3105L8.71432 17.2138L8.81099 17.1172L8.90767 17.0205L9.00434 16.9238L9.10102 16.8271L9.19769 16.7305L9.29436 16.6338L9.39104 16.5371L9.48771 16.4404L9.58439 16.3438L9.68106 16.2471L9.77773 16.1504L9.87441 16.0537L9.97108 15.9571L10.0678 15.8604L10.1644 15.7637L10.2611 15.667L10.3458 15.5824Z" /> <path fill="currentColor" d="M2.63443 12.1007L2.7311 12.1974L2.82777 12.294L2.92445 12.3907L3.02112 12.4874L3.11781 12.5841L3.21448 12.6808L3.31116 12.7774L3.40783 12.8741L3.5045 12.9708L3.60118 13.0674L3.69785 13.1641L3.79453 13.2608L3.8912 13.3575L3.98787 13.4541L4.08455 13.5508L4.18122 13.6475L4.27789 13.7442L4.37457 13.8408L4.47124 13.9375L4.56793 14.0342L4.6646 14.1309L4.76128 14.2275L4.85795 14.3242L4.95462 14.4209L5.0513 14.5176L5.14797 14.6142L5.24465 14.7109L5.34132 14.8076L5.43799 14.9043L5.53467 15.0009L5.63134 15.0976L5.72802 15.1943L5.82469 15.291L5.92138 15.3876L6.01805 15.4843L6.11472 15.581L6.2114 15.6777L6.30807 15.7743L6.40475 15.871L6.50142 15.9677L6.59809 16.0644L6.69477 16.161L6.79144 16.2577L6.88812 16.3544L6.98479 16.4511L7.08146 16.5477L7.17814 16.6444L7.27481 16.7411L7.3715 16.8378L7.46817 16.9344L7.56485 17.0311L7.66152 17.1278L7.75819 17.2245L7.85487 17.3211L7.95154 17.4178L8.04822 17.5145L8.14489 17.6112L8.23094 17.6972" /> <path fill="currentColor" d="M8.23092 17.6972L8.3276 17.6005L8.42427 17.5039L8.52096 17.4072L8.61763 17.3105L8.7143 17.2138L8.81098 17.1172L8.90765 17.0205L9.00433 16.9238L9.101 16.8271L9.19767 16.7305L9.29435 16.6338L9.39102 16.5371L9.4877 16.4404L9.58437 16.3438L9.68104 16.2471L9.77772 16.1504L9.87439 16.0537L9.97106 15.9571L10.0678 15.8604L10.1644 15.7637L10.2611 15.667L10.3458 15.5824" /> <path fill="currentColor" d="M12.536 17.705H12.3993H12.2625H12.1258H11.9891H11.8524H11.7157H11.5789H11.4422H11.3055H11.1688H11.0321H10.8954H10.7586H10.6219H10.4852H10.3485H10.2118H10.075H9.93832H9.8016H9.66488H9.52816H9.39144H9.25473H9.11801H8.98129H8.84457H8.70785H8.57113H8.43441H8.29769H8.16098H8.02426H7.88754H7.75082H7.6141H7.47738H7.34066H7.20394H7.06723H6.93051H6.79379H6.65707H6.52035H6.38363H6.24691H6.11019H5.97348H5.83676H5.70004H5.56332H5.4266H5.28988H5.15316H5.01644H4.87973H4.74301H4.60629H4.46957H4.33285H4.17331V17.8417V17.9785V18.1152V18.2519V18.3886V18.5253V18.6621V18.7988V18.9355V19.0722V19.2089V19.3456V19.4824V19.6191V19.7558V19.8925V20.0292V20.166V20.3027V20.4394V20.5761V20.6959H4.31003H4.44675H4.58347H4.72019H4.85691H4.99363H5.13034H5.26706H5.40378H5.5405H5.67722H5.81394H5.95066H6.08738H6.22409H6.36081H6.49753H6.63425H6.77097H6.90769H7.04441H7.18113H7.31784H7.45456H7.59128H7.728H7.86472H8.00144H8.13816H8.27488H8.41159H8.54831H8.68503H8.82175H8.95847H9.09519H9.23191H9.36863H9.50534H9.64206H9.77878H9.9155H10.0522H10.1889H10.3257H10.4624H10.5991H10.7358H10.8725H11.0093H11.146H11.2827H11.4194H11.5561H11.6928H11.8296H11.9663H12.103H12.2397H12.3764H12.536V20.5592V20.4225V20.2857V20.149V20.0123V19.8756V19.7389V19.6021V19.4654V19.3287V19.192V19.0553V18.9186V18.7818V18.6451V18.5084V18.3717V18.235V18.0982V17.9615V17.8248V17.705Z" /> <path fill="currentColor" d="M15.5856 17.6573L15.4889 17.754L15.3923 17.8506L15.2956 17.9473L15.1989 18.044L15.1022 18.1407L15.0056 18.2373L14.9089 18.334L14.8122 18.4307L14.7155 18.5274L14.6189 18.624L14.5222 18.7207L14.4255 18.8174L14.3288 18.914L14.2322 19.0107L14.1355 19.1074L14.0388 19.2041L13.9422 19.3008L13.8455 19.3974L13.7488 19.4941L13.6521 19.5908L13.5554 19.6875L13.4588 19.7841L13.3621 19.8808L13.2654 19.9775L13.1687 20.0741L13.0721 20.1708L12.9754 20.2675L12.8787 20.3642L12.7821 20.4608L12.6854 20.5575L12.5887 20.6542L12.492 20.7509L12.3953 20.8475L12.2987 20.9442L12.202 21.0409L12.1053 21.1376L12.0087 21.2342L11.912 21.3309L11.8153 21.4276L11.7186 21.5243L11.622 21.6209L11.5253 21.7176L11.4286 21.8143L11.3319 21.911L11.2353 22.0076L11.1386 22.1043L11.0419 22.201L10.9452 22.2977L10.8486 22.3943L10.7519 22.491L10.6552 22.5877L10.5585 22.6844L10.4619 22.781L10.3652 22.8777L10.2685 22.9744L10.1718 23.0711L10.0752 23.1677L9.97849 23.2644L9.88181 23.3611L9.78514 23.4578L9.68847 23.5544L9.59178 23.6511L9.4951 23.7478L9.35554 23.8874L9.45222 23.984L9.54889 24.0807L9.64556 24.1774L9.74224 24.2741L9.83891 24.3707L9.93558 24.4674L10.0323 24.5641L10.1289 24.6608L10.2256 24.7574L10.3223 24.8541L10.419 24.9508L10.5156 25.0475L10.6123 25.1441L10.709 25.2408L10.8057 25.3375L10.9023 25.4342L10.999 25.5308L11.0957 25.6275L11.1924 25.7242L11.289 25.8209L11.3857 25.9175L11.4704 26.0022L11.5671 25.9056L11.6638 25.8089L11.7604 25.7122L11.8571 25.6155L11.9538 25.5189L12.0504 25.4222L12.1471 25.3255L12.2438 25.2288L12.3405 25.1322L12.4372 25.0355L12.5338 24.9388L12.6305 24.8421L12.7272 24.7455L12.8238 24.6488L12.9205 24.5521L13.0172 24.4554L13.1139 24.3588L13.2105 24.2621L13.3072 24.1654L13.4039 24.0687L13.5006 23.9721L13.5973 23.8754L13.6939 23.7787L13.7906 23.682L13.8873 23.5854L13.9839 23.4887L14.0806 23.392L14.1773 23.2953L14.274 23.1987L14.3706 23.102L14.4673 23.0053L14.564 22.9086L14.6607 22.812L14.7573 22.7153L14.854 22.6186L14.9507 22.5219L15.0474 22.4253L15.144 22.3286L15.2407 22.2319L15.3374 22.1352L15.4341 22.0386L15.5307 21.9419L15.6274 21.8452L15.7241 21.7485L15.8208 21.6519L15.9174 21.5552L16.0141 21.4585L16.1108 21.3618L16.2075 21.2652L16.3041 21.1685L16.4008 21.0718L16.4975 20.9751L16.5942 20.8785L16.6908 20.7818L16.7875 20.6851L16.8842 20.5884L16.9809 20.4918L17.0775 20.3951L17.1742 20.2984L17.2709 20.2017L17.3676 20.1051L17.4642 20.0084L17.5609 19.9117L17.7005 19.7721L17.6038 19.6755L17.5071 19.5788L17.4105 19.4821L17.3138 19.3855L17.2171 19.2888L17.1204 19.1921L17.0238 19.0954L16.9271 18.9987L16.8304 18.9021L16.7337 18.8054L16.6371 18.7087L16.5404 18.612L16.4437 18.5154L16.347 18.4187L16.2504 18.322L16.1537 18.2254L16.057 18.1287L15.9603 18.032L15.8637 17.9353L15.767 17.8387L15.6703 17.742L15.5856 17.6573Z" /> <path fill="currentColor" d="M11.4704 26.0022L11.5671 25.9056L11.6638 25.8089L11.7604 25.7122L11.8571 25.6155L11.9538 25.5189L12.0505 25.4222L12.1471 25.3255L12.2438 25.2288L12.3405 25.1322L12.4372 25.0355L12.5338 24.9388L12.6305 24.8421L12.7272 24.7455L12.8239 24.6488L12.9205 24.5521L13.0172 24.4554L13.1139 24.3588L13.2106 24.2621L13.3072 24.1654L13.4039 24.0687L13.5006 23.9721L13.5972 23.8754L13.6939 23.7787L13.7906 23.682L13.8873 23.5854L13.984 23.4887L14.0806 23.392L14.1773 23.2953L14.274 23.1987L14.3707 23.102L14.4673 23.0053L14.564 22.9086L14.6607 22.812L14.7573 22.7153L14.854 22.6186L14.9507 22.5219L15.0474 22.4253L15.1441 22.3286L15.2407 22.2319L15.3374 22.1352L15.4341 22.0386L15.5308 21.9419L15.6274 21.8452L15.7241 21.7485L15.8208 21.6519L15.9174 21.5552L16.0141 21.4585L16.1108 21.3619L16.2075 21.2652L16.3041 21.1685L16.4008 21.0718L16.4975 20.9751L16.5942 20.8785L16.6909 20.7818L16.7875 20.6851L16.8842 20.5884L16.9809 20.4918L17.0775 20.3951L17.1742 20.2984L17.2709 20.2018L17.3676 20.1051L17.4642 20.0084L17.5609 19.9117L17.7005 19.7722" /> <path fill="currentColor" d="M17.7005 19.7721L17.6038 19.6755L17.5071 19.5788L17.4104 19.4821L17.3138 19.3855L17.2171 19.2888L17.1204 19.1921L17.0237 19.0954L16.927 18.9987L16.8304 18.9021L16.7337 18.8054L16.637 18.7087L16.5404 18.612L16.4437 18.5154L16.347 18.4187L16.2503 18.322L16.1537 18.2254L16.057 18.1287L15.9603 18.032L15.8636 17.9353L15.767 17.8387L15.6703 17.742L15.5856 17.6573" /> <path fill="currentColor" d="M20.6991 15.4671H20.5624H20.4257H20.289H20.1523H20.0155H19.8788H19.7421H19.6054H19.4687H19.332H19.1952H19.0585H18.9218H18.7851H18.6484H18.5116H18.3749H18.2382H18.1015H17.9648H17.828H17.7083V15.6038V15.7406V15.8773V16.014V16.1507V16.2874V16.4241V16.5609V16.6976V16.8343V16.971V17.1077V17.2445V17.3812V17.5179V17.6546V17.7913V17.9281V18.0648V18.2015V18.3382V18.4749V18.6116V18.7484V18.8851V19.0218V19.1585V19.2952V19.432V19.5687V19.7054V19.8421V19.9788V20.1156V20.2523V20.389V20.5257V20.6624V20.7991V20.9359V21.0726V21.2093V21.346V21.4827V21.6195V21.7562V21.8929V22.0296V22.1663V22.3031V22.4398V22.5765V22.7132V22.8499V22.9866V23.1234V23.2601V23.3968V23.5335V23.6702V23.807V23.9437V24.0804L17.7083 24.2171V24.3538V24.4906V24.6273V24.7258H17.845H17.9817H18.1184H18.2551H18.3918H18.5286H18.6653H18.802H18.9387H19.0754H19.2122H19.3489H19.4856H19.6223H19.759H19.8958H20.0325H20.1692H20.3059H20.4426H20.5793H20.6991" /> <path fill="currentColor" d="M20.6991 24.7258V24.5891V24.4524V24.3156V24.1789V24.0422V23.9055V23.7688V23.632V23.4953V23.3586V23.2219V23.0852V22.9484V22.8117V22.675L20.6992 22.5383V22.4016V22.2649V22.1281V21.9914V21.8547V21.718V21.5813V21.4445V21.3078V21.1711V21.0344V20.8977V20.7609V20.6242V20.4875V20.3508V20.2141V20.0774V19.9406V19.8039V19.6672V19.5305V19.3938V19.257V19.1203V18.9836V18.8469V18.7102V18.5734V18.4367V18.3V18.1633V18.0266V17.8899V17.7531V17.6164V17.4797V17.343V17.2063V17.0695V16.9328V16.7961V16.6594V16.5227V16.3859V16.2492V16.1125V15.9758V15.8391V15.7024V15.5656V15.4671V15.6038V15.7406V15.8773V16.014V16.1507V16.2874V16.4241V16.5609V16.6976V16.8343V16.971V17.1077V17.2445V17.3812V17.5179V17.6546V17.7913V17.9281V18.0648V18.2015V18.3382V18.4749V18.6116V18.7484V18.8851V19.0218V19.1585V19.2952V19.432V19.5687V19.7054V19.8421V19.9788V20.1156V20.2523V20.389V20.5257V20.6624V20.7991V20.9359V21.0726V21.2093V21.346V21.4827V21.6195V21.7562V21.8929V22.0296V22.1663V22.3031V22.4398V22.5765L20.6991 22.7132V22.8499V22.9866V23.1234V23.2601V23.3968V23.5335V23.6702V23.807V23.9437V24.0804V24.2171V24.3538V24.4906V24.6273V24.7258Z" /> <path fill="currentColor" d="M26.6391 17.1663L26.5424 17.0696L26.4457 16.9729L26.3491 16.8762L26.2524 16.7796L26.1557 16.6829L26.059 16.5862L25.9624 16.4895L25.8657 16.3929L25.769 16.2962L25.6723 16.1995L25.5757 16.1028L25.479 16.0062L25.3823 15.9095L25.2856 15.8128L25.189 15.7161L25.0923 15.6195L24.9956 15.5228L24.8989 15.4261L24.8023 15.3294L24.7056 15.2328L24.6089 15.1361L24.5122 15.0394L24.4156 14.9427L24.3189 14.8461L24.2222 14.7494L24.1255 14.6527L24.0289 14.556L23.9322 14.4594L23.8355 14.3627L23.7388 14.266L23.6422 14.1693L23.5455 14.0727L23.4488 13.976L23.3521 13.8793L23.2555 13.7827L23.1588 13.686L23.0621 13.5893L22.9654 13.4926L22.8688 13.3959L22.7721 13.2993L22.6754 13.2026L22.5787 13.1059L22.4821 13.0092L22.3854 12.9126L22.2887 12.8159L22.1921 12.7192L22.0954 12.6226L21.9987 12.5259L21.902 12.4292L21.8053 12.3325L21.7087 12.2358L21.612 12.1392L21.5153 12.0425L21.4186 11.9458L21.322 11.8491L21.2253 11.7525L21.1286 11.6558L21.032 11.5591L20.9353 11.4625L20.8386 11.3658L20.7419 11.2691L20.6452 11.1724L20.5486 11.0758L20.4519 10.9791L20.3552 10.8824L20.2586 10.7857L20.1619 10.689L20.0652 10.5924L19.9685 10.4957L19.8719 10.399L19.7754 10.3026L19.6788 10.3993L19.5821 10.496L19.4854 10.5926L19.3887 10.6893L19.2921 10.786L19.1954 10.8827L19.0987 10.9793L19.002 11.076L18.9054 11.1727L18.8087 11.2694L18.712 11.366L18.6153 11.4627L18.5187 11.5594L18.422 11.6561L18.3253 11.7527L18.2286 11.8494L18.132 11.9461L18.0353 12.0428L17.9386 12.1394L17.8419 12.2361L17.7453 12.3328L17.6606 12.4175L17.7573 12.5141L17.8539 12.6108L17.9506 12.7075L18.0473 12.8042L18.1439 12.9009L18.2406 12.9975L18.3373 13.0942L18.434 13.1909L18.5306 13.2876L18.6273 13.3842L18.724 13.4809L18.8207 13.5776L18.9173 13.6742L19.014 13.7709L19.1107 13.8676L19.2074 13.9643L19.304 14.061L19.4007 14.1576L19.4974 14.2543L19.5941 14.351L19.6907 14.4477L19.7874 14.5443L19.8841 14.641L19.9808 14.7377L20.0774 14.8343L20.1741 14.931L20.2708 15.0277L20.3675 15.1244L20.4641 15.221L20.5608 15.3177L20.6575 15.4144L20.7542 15.5111L20.8508 15.6078L20.9475 15.7044L21.0442 15.8011L21.1409 15.8978L21.2375 15.9944L21.3342 16.0911L21.4309 16.1878L21.5276 16.2845L21.6242 16.3811L21.7209 16.4778L21.8176 16.5745L21.9143 16.6712L22.0109 16.7678L22.1076 16.8645L22.2043 16.9612L22.301 17.0579L22.3976 17.1545L22.4943 17.2512L22.591 17.3479L22.6877 17.4446L22.7843 17.5412L22.881 17.6379L22.9777 17.7346L23.0744 17.8313L23.171 17.9279L23.2677 18.0246L23.3644 18.1213L23.4611 18.218L23.5577 18.3146L23.6544 18.4113L23.7511 18.508L23.8478 18.6047L23.9444 18.7013L24.0411 18.798L24.1378 18.8947L24.2345 18.9914L24.3311 19.088L24.4278 19.1847L24.5242 19.2811" /> <path fill="currentColor" d="M24.5242 19.2811L24.6208 19.1845L24.7175 19.0878L24.8142 18.9911L24.9109 18.8944L25.0075 18.7978L25.1042 18.7011L25.2009 18.6044L25.2976 18.5077L25.3942 18.4111L25.4909 18.3144L25.5876 18.2177L25.6843 18.121L25.7809 18.0244L25.8776 17.9277L25.9743 17.831L26.071 17.7343L26.1676 17.6377L26.2643 17.541L26.361 17.4443L26.4577 17.3476L26.5543 17.251L26.639 17.1663" /> <path fill="currentColor" d="M19.7754 10.3026L19.6788 10.3993L19.5821 10.496L19.4854 10.5926L19.3887 10.6893L19.2921 10.786L19.1954 10.8827L19.0987 10.9793L19.002 11.076L18.9054 11.1727L18.8087 11.2694L18.712 11.366L18.6153 11.4627L18.5187 11.5594L18.422 11.6561L18.3253 11.7527L18.2286 11.8494L18.132 11.9461L18.0353 12.0428L17.9386 12.1394L17.8419 12.2361L17.7453 12.3328L17.6606 12.4175" /> <path fill="currentColor" d="M19.7754 10.3026L19.8721 10.3993L19.9688 10.496L20.0655 10.5926L20.1621 10.6893L20.2588 10.786L20.3555 10.8827L20.4521 10.9793L20.5488 11.076L20.6455 11.1727L20.7422 11.2694L20.8388 11.366L20.9355 11.4627L21.0322 11.5594L21.1289 11.6561L21.2256 11.7527L21.3222 11.8494L21.4189 11.9461L21.5156 12.0428L21.6122 12.1394L21.7089 12.2361L21.8056 12.3328L21.9023 12.4295L21.9989 12.5261L22.0956 12.6228L22.1923 12.7195L22.289 12.8162L22.3857 12.9128L22.4823 13.0095L22.579 13.1062L22.6757 13.2029L22.7723 13.2995L22.869 13.3962L22.9657 13.4929L23.0624 13.5895L23.159 13.6862L23.2557 13.7829L23.3524 13.8796L23.4491 13.9763L23.5457 14.0729L23.6424 14.1696L23.7391 14.2663L23.8358 14.363L23.9324 14.4596L24.0291 14.5563L24.1258 14.653L24.2225 14.7496L24.3191 14.8463L24.4158 14.943L24.5125 15.0397L24.6092 15.1363L24.7058 15.233L24.8025 15.3297L24.8992 15.4264L24.9959 15.5231L25.0925 15.6197L25.1892 15.7164L25.2859 15.8131L25.3826 15.9097L25.4792 16.0064L25.5759 16.1031L25.6726 16.1998L25.7693 16.2964L25.8659 16.3931L25.9626 16.4898L26.0593 16.5865L26.156 16.6832L26.2526 16.7798L26.3493 16.8765L26.446 16.9732L26.5427 17.0698L26.6391 17.1663" /> <path fill="currentColor" d="M15.4704 10.2948H15.6071H15.7438H15.8806H16.0173H16.154H16.2907H16.4274H16.5641H16.7009H16.8376H16.9743H17.111H17.2477H17.3845H17.5212H17.6579H17.7946H17.9313H18.0681H18.2048H18.3415H18.4782H18.6149H18.7516H18.8884H19.0251H19.1618H19.2985H19.4352H19.572H19.7087H19.8454H19.9821H20.1188H20.2556H20.3923H20.529H20.6657H20.8024H20.9391H21.0759H21.2126H21.3493H21.486H21.6227H21.7595H21.8962H22.0329H22.1696H22.3063H22.4431H22.5798H22.7165H22.8532H22.9899H23.1266H23.2634H23.4001H23.5368H23.6735H23.8102H23.947H24.0837H24.2204H24.3571H24.4938H24.6306H24.7673H24.904H25.0407H25.1774H25.3141H25.4509H25.6251V10.1581V10.0214V9.88467V9.74795V9.61123V9.47451V9.3378V9.20108V9.06436V8.92764V8.79092V8.6542V8.51748V8.38077V8.24405V8.10733V7.97061V7.83389V7.69717V7.56045V7.42373V7.30395" /> <path fill="currentColor" d="M25.6251 7.30395H25.4884H25.3516H25.2149H25.0782H24.9415H24.8048H24.668H24.5313H24.3946H24.2579H24.1212H23.9844H23.8477H23.711H23.5743H23.4376H23.3009H23.1641H23.0274H22.8907H22.754H22.6173H22.4805H22.3438H22.2071H22.0704H21.9337H21.7969H21.6602H21.5235H21.3868H21.2501H21.1134H20.9766H20.8399H20.7032H20.5665H20.4298H20.293H20.1563H20.0196H19.8829H19.7462H19.6094H19.4727H19.336H19.1993H19.0626H18.9259H18.7891H18.6524H18.5157H18.379H18.2423H18.1055H17.9688H17.8321H17.6954H17.5587H17.4219H17.2852H17.1485H17.0118H16.8751H16.7383H16.6016H16.4649H16.3282H16.1915H16.0547H15.918H15.7813H15.6446H15.4704V7.44067V7.57739V7.71411V7.85083V7.98755V8.12427V8.26099V8.3977V8.53442V8.67114V8.80786V8.94458V9.0813V9.21802V9.35473V9.49145V9.62817V9.76489V9.90161V10.0383V10.175V10.2948H15.6071H15.7438H15.8806H16.0173H16.154H16.2907H16.4274H16.5641H16.7009H16.8376H16.9743H17.111H17.2477H17.3845H17.5212H17.6579H17.7946H17.9313H18.0681H18.2048H18.3415H18.4782H18.6149H18.7516H18.8884H19.0251H19.1618H19.2985H19.4352H19.572H19.7087H19.8454H19.9821H20.1188H20.2556H20.3923H20.529H20.6657H20.8024H20.9391H21.0759H21.2126H21.3493H21.486H21.6227H21.7595H21.8962H22.0329H22.1696H22.3063H22.4431H22.5798H22.7165H22.8532H22.9899H23.1266H23.2634H23.4001H23.5368H23.6735H23.8102H23.947H24.0837H24.2204H24.3571H24.4938H24.6306H24.7673H24.904H25.0407H25.1774H25.3141H25.4509H25.6251" /> <path fill="currentColor" d="M12.4208 10.3426L12.5174 10.2459L12.6141 10.1492L12.7108 10.0525L12.8075 9.95584L12.9041 9.85917L13.0008 9.7625L13.0975 9.66582L13.1942 9.56915L13.2908 9.47248L13.3875 9.3758L13.4842 9.27913L13.5809 9.18245L13.6775 9.08578L13.7742 8.98911L13.8709 8.89243L13.9676 8.79576L14.0642 8.69908L14.1609 8.6024L14.2576 8.50572L14.3542 8.40905L14.4509 8.31238L14.5476 8.2157L14.6443 8.11903L14.741 8.02235L14.8376 7.92568L14.9343 7.82901L15.031 7.73233L15.1277 7.63566L15.2243 7.53898L15.321 7.44231L15.4177 7.34564L15.5143 7.24896L15.611 7.15229L15.7077 7.0556L15.8044 6.95893L15.9011 6.86225L15.9977 6.76558L16.0944 6.66891L16.1911 6.57223L16.2878 6.47556L16.3844 6.37888L16.4811 6.28221L16.5778 6.18554L16.6744 6.08886L16.7711 5.99219L16.8678 5.89552L16.9645 5.79884L17.0611 5.70215L17.1578 5.60548L17.2545 5.50881L17.3512 5.41213L17.4479 5.31546L17.5445 5.21879L17.6412 5.12211L17.7379 5.02544L17.8345 4.92876L17.9312 4.83209L18.0279 4.73542L18.1246 4.63874L18.2212 4.54207L18.3179 4.44539L18.4146 4.34872L18.5113 4.25205L18.6079 4.15537L18.7046 4.05869L18.8013 3.96201L18.898 3.86534L18.9946 3.76866L19.0913 3.67199L19.188 3.57532L19.2847 3.47864L19.3813 3.38197L19.478 3.2853L19.5747 3.18862L19.6714 3.09195L19.768 2.99527L19.918 2.84533L19.8213 2.74866L19.7246 2.65199L19.628 2.55531L19.5313 2.45864L19.4346 2.36196L19.3379 2.26529L19.2412 2.16862L19.1446 2.07193L19.0479 1.97526L18.9512 1.87858L18.8546 1.78191L18.7579 1.68523L18.6612 1.58856L18.5645 1.49189L18.4679 1.39521L18.3712 1.29854L18.2745 1.20187L18.1778 1.10519L18.0812 1.00852L17.9845 0.911844L17.8878 0.81517L17.8031 0.730473L17.7064 0.827147L17.6098 0.92382L17.5131 1.02049L17.4164 1.11717L17.3197 1.21384L17.2231 1.31052L17.1264 1.40719L17.0297 1.50386L16.933 1.60054L16.8364 1.69721L16.7397 1.79388L16.643 1.89056L16.5463 1.98725L16.4497 2.08392L16.353 2.18059L16.2563 2.27727L16.1596 2.37394L16.063 2.47062L15.9663 2.56729L15.8696 2.66396L15.7729 2.76064L15.6763 2.85731L15.5796 2.95398L15.4829 3.05066L15.3862 3.14733L15.2896 3.24401L15.1929 3.34068L15.0962 3.43735L14.9995 3.53404L14.9029 3.63072L14.8062 3.72739L14.7095 3.82406L14.6128 3.92074L14.5162 4.01741L14.4195 4.11408L14.3228 4.21076L14.2261 4.30743L14.1295 4.40411L14.0328 4.50078L13.9361 4.59745L13.8394 4.69413L13.7428 4.7908L13.6461 4.88747L13.5494 4.98416L13.4527 5.08084L13.3561 5.17751L13.2594 5.27418L13.1627 5.37086L13.066 5.46753L12.9694 5.56421L12.8727 5.66088L12.776 5.75755L12.6793 5.85423L12.5827 5.9509L12.486 6.04757L12.3893 6.14425L12.2927 6.24092L12.196 6.33761L12.0993 6.43428L12.0026 6.53096L11.9059 6.62763L11.8093 6.72431L11.7126 6.82098L11.6159 6.91765L11.5192 7.01433L11.4226 7.111L11.3259 7.20767L11.2292 7.30435L11.1326 7.40102L11.0359 7.4977L10.9392 7.59437L10.8425 7.69104L10.7458 7.78772L10.6492 7.88439L10.5525 7.98108L10.4558 8.07775L10.3059 8.22768L10.4026 8.32435L10.4992 8.42103L10.5959 8.51771L10.6926 8.61439L10.7893 8.71106L10.8859 8.80773L10.9826 8.90441L11.0793 9.00108L11.176 9.09776L11.2726 9.19443L11.3693 9.2911L11.466 9.38778L11.5627 9.48445L11.6593 9.58113L11.756 9.6778L11.8527 9.77447L11.9494 9.87115L12.046 9.96783L12.1427 10.0645L12.2394 10.1612L12.3361 10.2579L12.4208 10.3426Z" /> <path fill="currentColor" d="M17.8031 0.730473L17.7064 0.827146L17.6098 0.92382L17.5131 1.02049L17.4164 1.11717L17.3197 1.21384L17.2231 1.31052L17.1264 1.40719L17.0297 1.50386L16.933 1.60054L16.8364 1.69721L16.7397 1.79388L16.643 1.89056L16.5463 1.98725L16.4497 2.08392L16.353 2.18059L16.2563 2.27727L16.1596 2.37394L16.063 2.47062L15.9663 2.56729L15.8696 2.66396L15.7729 2.76064L15.6763 2.85731L15.5796 2.95398L15.4829 3.05066L15.3862 3.14733L15.2896 3.24401L15.1929 3.34068L15.0962 3.43735L14.9995 3.53404L14.9029 3.63071L14.8062 3.72739L14.7095 3.82406L14.6128 3.92074L14.5162 4.01741L14.4195 4.11408L14.3228 4.21076L14.2261 4.30743L14.1295 4.40411L14.0328 4.50078L13.9361 4.59745L13.8394 4.69413L13.7428 4.7908L13.6461 4.88747L13.5494 4.98416L13.4528 5.08084L13.3561 5.17751L13.2594 5.27418L13.1627 5.37086L13.066 5.46753L12.9694 5.5642L12.8727 5.66088L12.776 5.75755L12.6793 5.85423L12.5827 5.9509L12.486 6.04757L12.3893 6.14425L12.2927 6.24092L12.196 6.33761L12.0993 6.43428L12.0026 6.53096L11.9059 6.62763L11.8093 6.7243L11.7126 6.82098L11.6159 6.91765L11.5192 7.01433L11.4226 7.111L11.3259 7.20767L11.2292 7.30435L11.1326 7.40102L11.0359 7.49769L10.9392 7.59437L10.8425 7.69104L10.7459 7.78772L10.6492 7.88439L10.5525 7.98108L10.4558 8.07775L10.3059 8.22768" /> <path fill="currentColor" d="M10.3059 8.22768L10.4026 8.32435L10.4992 8.42103L10.5959 8.51772L10.6926 8.61439L10.7893 8.71106L10.8859 8.80774L10.9826 8.90441L11.0793 9.00108L11.176 9.09776L11.2726 9.19443L11.3693 9.29111L11.466 9.38778L11.5627 9.48445L11.6593 9.58113L11.756 9.6778L11.8527 9.77448L11.9494 9.87115L12.046 9.96784L12.1427 10.0645L12.2394 10.1612L12.3361 10.2579L12.4208 10.3426" /> <path fill="currentColor" d="M40.7481 5.5656C45.9107 5.5656 49.2859 8.77608 49.2859 14.0328C49.2859 19.2895 45.9107 22.5 40.7481 22.5H34.2566V5.5656H40.7481ZM37.1495 20.0422H40.6423C44.0409 20.0422 46.3576 17.9724 46.3576 14.0328C46.3576 10.0932 44.0409 8.02344 40.6423 8.02344H37.1495V20.0422ZM58.3651 15.0794C58.7415 15.0794 59.0119 14.809 59.0119 14.4326C59.0119 12.8568 57.93 12.163 56.2131 12.163C54.4961 12.163 53.4495 12.8215 53.2848 14.221H50.6741C50.8152 11.4926 52.9908 10.0697 56.2366 10.0697C59.4823 10.0697 61.6815 11.5162 61.6815 14.7031V22.5H59.106V20.9947C58.4475 21.7709 57.1068 22.7352 54.696 22.7352C51.9559 22.7352 50.0508 21.3475 50.0508 19.0308C50.0508 16.5965 51.8031 15.0794 55.5192 15.0794H58.3651ZM52.8262 18.8662C52.8262 19.9246 53.7552 20.6066 55.237 20.6066C57.2244 20.6066 59.0119 19.56 59.0119 17.3138V17.0669H55.7074C53.5435 17.0669 52.8262 17.8195 52.8262 18.8662ZM65.0489 10.3519L68.4945 19.56L71.9402 10.3519H74.8802L67.9889 27.204H65.0371L67.0128 22.5353L62.0265 10.3519H65.0489ZM75.7393 10.3519V7.12968H78.5264V10.3519H81.9603V12.504H78.5264V19.1014C78.5264 19.8893 78.9027 20.195 79.6671 20.195H81.9015V22.5H79.0909C76.9858 22.5 75.7393 21.4181 75.7393 19.3483V12.504H73.0345V10.3519H75.7393ZM82.3941 16.4201C82.3941 12.2806 85.0284 10.0697 88.7916 10.0697C92.5665 10.0697 95.2008 12.2806 95.2008 16.4201C95.2008 20.5714 92.5665 22.7822 88.7916 22.7822C85.0284 22.7822 82.3941 20.5714 82.3941 16.4201ZM85.2165 16.4201C85.2165 19.1366 86.6395 20.5949 88.7916 20.5949C90.9554 20.5949 92.3784 19.1366 92.3784 16.4201C92.3784 13.7153 90.9554 12.257 88.7916 12.257C86.6395 12.257 85.2165 13.7153 85.2165 16.4201ZM99.3559 11.7631C100.332 10.5871 101.731 10.0932 103.378 10.0932C106.247 10.0932 108.011 11.5632 108.011 14.5502V22.5H105.224V14.7972C105.224 13.1155 104.319 12.3276 102.672 12.3276C100.873 12.3276 99.45 13.3507 99.45 15.7027V22.5H96.6629V10.3519H99.3559V11.7631ZM117.675 15.0794C118.051 15.0794 118.322 14.809 118.322 14.4326C118.322 12.8568 117.24 12.163 115.523 12.163C113.806 12.163 112.759 12.8215 112.595 14.221H109.984C110.125 11.4926 112.301 10.0697 115.546 10.0697C118.792 10.0697 120.991 11.5162 120.991 14.7031V22.5H118.416V20.9947C117.757 21.7709 116.417 22.7352 114.006 22.7352C111.266 22.7352 109.361 21.3475 109.361 19.0308C109.361 16.5965 111.113 15.0794 114.829 15.0794H117.675ZM112.136 18.8662C112.136 19.9246 113.065 20.6066 114.547 20.6066C116.534 20.6066 118.322 19.56 118.322 17.3138V17.0669H115.017C112.853 17.0669 112.136 17.8195 112.136 18.8662Z" /> </svg><span class="sr-only">Daytona</span></b><span class="kind">VM sandbox mode</span><span class="fit">Memory + filesystem</span></button>
+    <button type="button" class="p ram" data-p="fly" data-at="1" aria-pressed="false"><b><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-flyio" aria-hidden="true" focusable="false"><title>Fly.io</title><path d="M11.987 0c-2.45-.01-5.002.925-6.541 2.897-1.17 1.502-1.664 3.474-1.49 5.356.29 2.112 1.476 3.96 2.676 5.672a41.5 41.5 0 0 0 4.216 4.831c-1.063.832-1.943 2.286-1.357 3.644.821 2.32 4.665 2.05 5.122-.372.39-1.288-.694-2.533-1.428-3.309 2.388-2.431 4.706-5.036 6.17-8.145.595-1.32.902-2.802.614-4.24-.28-2.341-1.823-4.473-3.967-5.46C14.76.266 13.364.016 11.987 0m-.236 1.577v15.534C9.881 13.483 7.724 9.266 8.73 5.069c.35-1.539 1.253-3.309 3.02-3.492m1.996.04c1.534.357 3.031 1.096 3.906 2.48 1.3 1.93 1.318 4.55.1 6.521-1.268 2.395-3.06 4.463-4.916 6.415 1.472-2.974 3.074-6.106 3.182-9.5-.043-2.08-.438-4.612-2.272-5.916M11.97 20.103c.848.342 1.597 1.983.153 2.173-.664.15-1.367-.599-.995-1.222.213-.355.488-.73.842-.95"/></svg> Fly Machines</b><span class="kind">Machine suspend</span><span class="fit">Memory + filesystem</span></button>
+    <button type="button" class="p snap" data-p="vercel" data-at="2" aria-pressed="false"><b><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-vercel" aria-hidden="true" focusable="false"><title>Vercel</title><path d="m12 1.608 12 20.784H0Z"/></svg> Vercel</b><span class="kind">Sandbox snapshots</span><span class="fit">Filesystem restore</span></button>
+    <button type="button" class="p snap" data-p="cf" data-at="2" aria-pressed="false"><b><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-cloudflare" aria-hidden="true" focusable="false"><title>Cloudflare</title><path d="M16.5088 16.8447c.1475-.5068.0908-.9707-.1553-1.3154-.2246-.3164-.6045-.499-1.0615-.5205l-8.6592-.1123a.1559.1559 0 0 1-.1333-.0713c-.0283-.042-.0351-.0986-.021-.1553.0278-.084.1123-.1484.2036-.1562l8.7359-.1123c1.0351-.0489 2.1601-.8868 2.5537-1.9136l.499-1.3013c.0215-.0561.0293-.1128.0147-.168-.5625-2.5463-2.835-4.4453-5.5499-4.4453-2.5039 0-4.6284 1.6177-5.3876 3.8614-.4927-.3658-1.1187-.5625-1.794-.499-1.2026.119-2.1665 1.083-2.2861 2.2856-.0283.31-.0069.6128.0635.894C1.5683 13.171 0 14.7754 0 16.752c0 .1748.0142.3515.0352.5273.0141.083.0844.1475.1689.1475h15.9814c.0909 0 .1758-.0645.2032-.1553l.12-.4268zm2.7568-5.5634c-.0771 0-.1611 0-.2383.0112-.0566 0-.1054.0415-.127.0976l-.3378 1.1744c-.1475.5068-.0918.9707.1543 1.3164.2256.3164.6055.498 1.0625.5195l1.8437.1133c.0557 0 .1055.0263.1329.0703.0283.043.0351.1074.0214.1562-.0283.084-.1132.1485-.204.1553l-1.921.1123c-1.041.0488-2.1582.8867-2.5527 1.914l-.1406.3585c-.0283.0713.0215.1416.0986.1416h6.5977c.0771 0 .1474-.0489.169-.126.1122-.4082.1757-.837.1757-1.2803 0-2.6025-2.125-4.727-4.7344-4.727"/></svg> Cloudflare</b><span class="kind">Sandbox backups in R2</span><span class="fit">Filesystem restore</span></button>
+    <button type="button" class="p snap" data-p="modal" data-at="2" aria-pressed="false"><b><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-modal" aria-hidden="true" focusable="false"><title>Modal</title><path d="M4.89 5.57 0 14.002l2.521 4.4h5.05l4.396-7.718 4.512 7.709 4.996.037L24 14.057l-4.857-8.452-5.073-.015-2.076 3.598L9.94 5.57Zm.837.729h3.787l1.845 3.252H7.572Zm9.189.021 3.803.012 4.228 7.355-3.736-.027zm-9.82.346L6.94 9.914l-4.209 7.389-1.892-3.3Zm9.187.014 4.297 7.343-1.892 3.282-4.3-7.344zm-6.713 3.6h3.79l-4.212 7.394H3.361Zm11.64 4.109 3.74.027-1.893 3.281-3.74-.027z"/></svg> Modal</b><span class="kind">Filesystem snapshot flow</span><span class="fit">Filesystem restore</span></button>
   </div>
-  <div id="svDetail" class="card teal"><p>Click a card for timeouts, caps and pricing. ★ means true pause and resume.</p><p id="svOut"></p></div>
+  <div id="svDetail" class="card teal" aria-live="polite"><p class="muted small">Select a platform for state, limits and billing. These compare the modes shown above.</p><div id="svOut"></div></div>
   <div class="captions">
-    <p data-only="0">Six services, two shapes.</p>
-    <p data-only="1"><b>RAM-preserving:</b> E2B, Daytona VMs and Fly keep memory.</p>
-    <p data-only="2"><b>Snapshot-restart:</b> the rest restore files into a fresh session.</p>
-    <p data-only="3">Railway, previous slide: cloud agents plus checkpoint-and-fork sandboxes.</p>
+    <p data-only="0">First decide whether you need running processes or just saved files.</p>
+    <p data-only="1"><b>Memory preserved:</b> E2B, Daytona VM mode and Fly suspend.</p>
+    <p data-only="2"><b>Files restored:</b> restart your processes in a new session.</p>
+    <p data-only="3">Check current limits and rates before choosing. APIs and plans change.</p>
   </div>
   <aside class="notes">
-    Let the audience click cards; details appear below. Step 1 lights up the RAM-preserving row: E2B pauses the live VM with memory included and resumes in about a second, paused free;
-    Daytona VM sandboxes preserve memory on pause and bill disk-only while parked; Fly suspends the whole VM including RAM and wakes in hundreds of milliseconds.
-    Step 2 covers snapshot-restart: Vercel stop auto-snapshots the filesystem with tiered timeouts; Cloudflare backs directories up to R2 with a 3-day default TTL and restores them as an overlay;
-    Modal snapshots become restorable clones. Step 3 points back: Railway did cloud agents plus checkpoint-and-fork sandboxes on the previous slide — start with a side project there.
+    The rows compare specific modes, not every feature each company offers.
+    The top row can preserve memory. The bottom row shows filesystem restore workflows.
+    Click each card for short notes on state, limits and billing. Follow its docs link for current details.
+    Fly suspend snapshots may be lost during maintenance. Daytona VM pause is distinct from its container lifecycle.
   </aside>
   <script>
   (function () {
     const D = {
-      e2b: '<b>E2B:</b> pausable Firecracker microVMs. Timeout action <b>kill or pause + autoResume</b>; 1h Hobby / 24h Pro continuous run. Per-second while running, <b>paused free</b>. Concurrency to tens of thousands at scale.',
-      daytona: '<b>Daytona:</b> containers by default, <b>VM sandboxes</b> for agents. VM auto-pause 60 min default. PAYG reserved vCPU/RAM/disk; <b>paused = disk only</b>, archived containers free.',
-      fly: '<b>Fly Machines:</b> Machines API, suspend via Firecracker snapshots, resume in <b>hundreds of ms</b>. Snapshots can be discarded on deploy or maintenance. Running = CPU/RAM preset; suspended = storage only.',
-      vercel: '<b>Vercel Sandbox:</b> <b>stop() auto-snapshots the filesystem</b>; resume = new session from snapshot. 5 min default timeout, 45 min Hobby / 24 h Pro+. Billed active CPU + provisioned memory + creations + snapshot storage.',
-      cf: '<b>Cloudflare Sandbox:</b> container per Durable Object, <b>createBackup/restoreBackup to R2</b> (3-day TTL). 10 min idle sleep default. Billed every 10 ms; memory/disk provisioned. GA April 2026.',
-      modal: '<b>Modal:</b> sandboxes with <b>filesystem snapshots → clones</b> (30-day TTL); snapshotting ends the sandbox. Per-second at max(requested, actual). Huge concurrency, restart-shaped.'
+      e2b: { state: ['Saves memory and filesystem', 'Resume in about a second'], limits: ['1h Hobby / 24h Pro run limit', 'Timeout: kill, or pause with auto-resume'], billing: ['Per-second compute while running', 'No compute charge while paused'], url: 'https://e2b.dev/docs' },
+      daytona: { state: ['VM pause keeps memory', 'Container lifecycle differs'], limits: ['VM auto-pause: 60 min default', 'Check VM availability for your account'], billing: ['Allocated CPU, RAM and disk', 'Paused VMs: disk charges remain'], url: 'https://www.daytona.io/docs/' },
+      fly: { state: ['Suspend keeps VM memory', 'Resume can take hundreds of ms'], limits: ['Deploys or maintenance can discard state', 'Use durable storage for important files'], billing: ['Running: machine CPU/RAM rates', 'Suspended: retained storage still bills'], url: 'https://fly.io/docs/machines/' },
+      vercel: { state: ['stop() snapshots the filesystem', 'Restore starts a new session'], limits: ['5 min default timeout', '45 min Hobby / 24h Pro+ maximum'], billing: ['Active CPU + provisioned memory', 'Sandbox creations', 'Snapshot storage'], url: 'https://vercel.com/docs/vercel-sandbox' },
+      cf: { state: ['Directory backups in R2', 'Restore adds a writable layer'], limits: ['10 min default idle sleep', '3-day default backup TTL'], billing: ['CPU usage', 'Provisioned memory and disk', 'R2 storage and operations'], url: 'https://developers.cloudflare.com/sandbox/' },
+      modal: { state: ['Filesystem snapshots create new sandboxes', 'This flow does not restore live RAM'], limits: ['Filesystem snapshots: 30-day TTL', 'Snapshotting ends the sandbox'], billing: ['Per-second resource billing', 'CPU/RAM: requested or used, whichever is higher', 'Check retained-storage charges'], url: 'https://modal.com/docs/guide/sandbox' }
     };
     const sec = document.getElementById('sv-ent');
-    sec.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', e => {
+    const list = items => '<ul>' + items.map(item => '<li>' + item + '</li>').join('') + '</ul>';
+    sec.querySelectorAll('[data-p]').forEach(button => button.addEventListener('click', e => {
       e.stopPropagation();
-      sec.querySelectorAll('[data-p]').forEach(x => x.classList.remove('sel'));
-      b.classList.add('sel');
-      document.getElementById('svOut').innerHTML = D[b.dataset.p];
+      sec.querySelectorAll('[data-p]').forEach(item => { item.classList.toggle('sel', item === button); item.setAttribute('aria-pressed', String(item === button)); });
+      const d = D[button.dataset.p];
+      document.getElementById('svOut').innerHTML = '<div class="details-grid"><div><h4>State</h4>' + list(d.state) + '</div><div><h4>Limits</h4>' + list(d.limits) + '</div><div><h4>Billing</h4>' + list(d.billing) + '<a href="' + d.url + '">Current docs &amp; rates →</a></div></div>';
     }));
   })();
   </script>
@@ -1151,21 +1193,20 @@ window.Deck = (function () {
 <section id="sv-bill" class="stepper" data-steps="2">
   <style>
     #sv-bill .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 26px; }
-    #sv-bill .card { text-align: center; padding: 28px 24px; }
-    #sv-bill .card .e { font-size: 50pt; margin: 0; }
-    #sv-bill ul { list-style: none; margin: 14px 0 0; padding: 0; }
-    #sv-bill li { font-family: var(--mono); font-size: 16pt; margin-bottom: 8px; }
+    #sv-bill .card { padding: 28px; }
+    #sv-bill .card .e { font-size: 44pt; margin: 0 0 12px; }
+    #sv-bill li { font-size: 21pt; margin-bottom: 14px; }
   </style>
-  <p class="kicker">what parking costs</p>
-  <h2>Running bills you; parked costs pennies.</h2>
+  <p class="kicker">read the bill in two parts</p>
+  <h2>Stopping compute is not always a $0 bill</h2>
   <div class="cols">
-    <div class="card coral" data-at="1"><p class="e">🔥</p><h3>While running</h3><ul><li>CPU + RAM actually used, per second</li><li>+ creations, egress</li><li class="muted">every service meters this</li></ul></div>
-    <div class="card green" data-at="2"><p class="e">❄️</p><h3>While parked</h3><ul><li>E2B paused: <b class="t-green">free</b></li><li>Daytona / Fly: <b class="t-green">disk only</b></li><li>Vercel / CF / Modal: <b class="t-green">snapshot storage</b></li><li>Railway destroyed: <b class="t-green">$0</b></li></ul></div>
+    <div class="card coral" data-at="1"><p class="e t-coral"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-cpu" aria-hidden="true" focusable="false"> <path d="M12 20v2" /> <path d="M12 2v2" /> <path d="M17 20v2" /> <path d="M17 2v2" /> <path d="M2 12h2" /> <path d="M2 17h2" /> <path d="M2 7h2" /> <path d="M20 12h2" /> <path d="M20 17h2" /> <path d="M20 7h2" /> <path d="M7 20v2" /> <path d="M7 2v2" /> <rect x="4" y="4" width="16" height="16" rx="2" /> <rect x="8" y="8" width="8" height="8" rx="1" /> </svg></p><h3>While running</h3><ul><li>CPU: used or allocated, by provider</li><li>RAM: often provisioned capacity</li><li>Disk, network and creation fees may apply</li><li>Model tokens are a separate cost</li></ul></div>
+    <div class="card green" data-at="2"><p class="e t-green"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-archive" aria-hidden="true" focusable="false"> <rect width="20" height="5" x="2" y="3" rx="1" /> <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" /> <path d="M10 12h4" /> </svg></p><h3>After stopping</h3><ul><li>Pause can end compute charges</li><li>Snapshots, disks and backups may still bill</li><li>Retention limits affect how long state survives</li><li>Delete state only after saving the result</li></ul></div>
   </div>
   <aside class="notes">
-    Two clicks. While running, everyone meters CPU plus RAM per second, plus creations and egress — that is the same everywhere.
-    While parked, the bill collapses: E2B paused sandboxes are free, Daytona and Fly charge disk only, Vercel, Cloudflare and Modal charge snapshot or backup storage, and a destroyed Railway sandbox bills nothing at all.
-    That collapse is the whole business case: the waiting money from section two goes nearly to zero.
+    Providers meter resources differently. Do not assume every service bills only actual CPU and RAM use.
+    Pausing reduces compute cost, but retained state can still have a bill and an expiry date.
+    Check both before leaving hundreds of sessions idle.
   </aside>
 </section>
 
@@ -1196,47 +1237,47 @@ window.Deck = (function () {
     #fn-full #fnOut { font-size: 19pt; margin: 10px 0 0; }
     #fn-full #fnOut:empty { display: none; }
   </style>
-  <p class="kicker">the whole machine. Click any part</p>
+  <p class="kicker">the full system · select a component</p>
   <h2>One system, wired together</h2>
   <div class="map">
     <div class="col">
-      <div class="nd s1" data-n="model" data-at="1"><b>🧠 model</b><span>plans, writes code</span></div>
-      <div class="nd s2" data-n="loop" data-at="2"><b>↻ loop</b><span>act → observe → repair</span></div>
-      <div class="nd s2" data-n="mcp" data-at="2"><b>◉ MCP</b><span>docs · gh · db</span></div>
+      <div class="nd s1" data-n="model" data-at="1"><b><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-brain" aria-hidden="true" focusable="false"> <path d="M12 18V5" /> <path d="M15 13a4.17 4.17 0 0 1-3-4 4.17 4.17 0 0 1-3 4" /> <path d="M17.598 6.5A3 3 0 1 0 12 5a3 3 0 1 0-5.598 1.5" /> <path d="M17.997 5.125a4 4 0 0 1 2.526 5.77" /> <path d="M18 18a4 4 0 0 0 2-7.464" /> <path d="M19.967 17.483A4 4 0 1 1 12 18a4 4 0 1 1-7.967-.517" /> <path d="M6 18a4 4 0 0 1-2-7.464" /> <path d="M6.003 5.125a4 4 0 0 0-2.526 5.77" /> </svg> Model</b><span>plans, writes code</span></div>
+      <div class="nd s2" data-n="loop" data-at="2"><b><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-refresh-cw" aria-hidden="true" focusable="false"> <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /> <path d="M21 3v5h-5" /> <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /> <path d="M8 16H3v5" /> </svg> Loop</b><span>act → observe → repair</span></div>
+      <div class="nd s2" data-n="mcp" data-at="2"><b><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-plug" aria-hidden="true" focusable="false"> <path d="M12 22v-5" /> <path d="M15 8V2" /> <path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" /> <path d="M9 8V2" /> </svg> MCP</b><span>docs · gh · db</span></div>
     </div>
     <div class="core" data-at="1">
       <h3>agent VM</h3><p>one pausable microVM per session</p>
-      <div><span class="hook" data-hot="2">exec</span> <span class="hook" data-hot="3">snapshot</span> <span class="hook" data-hot="4">virtiofs</span></div>
+      <div><span class="hook" data-hot="2">exec</span> <span class="hook" data-hot="3">snapshot</span> <span class="hook" data-hot="4">CoW disk</span></div>
     </div>
     <div class="col">
-      <div class="nd s3" data-n="snap" data-at="3"><b>❄️ snapshots</b><span>RAM + disk → store</span></div>
-      <div class="nd s4" data-n="cow" data-at="4"><b>▦ warm repo</b><span>CoW views, ~0 bytes</span></div>
-      <div class="nd s5" data-n="bill" data-at="5"><b>⚡ run it</b><span>Railway + fleets</span></div>
+      <div class="nd s3" data-n="snap" data-at="3"><b><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-snowflake" aria-hidden="true" focusable="false"> <path d="m10 20-1.25-2.5L6 18" /> <path d="M10 4 8.75 6.5 6 6" /> <path d="m14 20 1.25-2.5L18 18" /> <path d="m14 4 1.25 2.5L18 6" /> <path d="m17 21-3-6h-4" /> <path d="m17 3-3 6 1.5 3" /> <path d="M2 12h6.5L10 9" /> <path d="m20 10-1.5 2 1.5 2" /> <path d="M22 12h-6.5L14 15" /> <path d="m4 10 1.5 2L4 14" /> <path d="m7 21 3-6-1.5-3" /> <path d="m7 3 3 6h4" /> </svg> Snapshots</b><span>RAM + disk → store</span></div>
+      <div class="nd s4" data-n="cow" data-at="4"><b><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-layers" aria-hidden="true" focusable="false"> <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" /> <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" /> <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" /> </svg> Shared repo</b><span>shared base, private edits</span></div>
+      <div class="nd s5" data-n="bill" data-at="5"><b><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-cloud" aria-hidden="true" focusable="false"> <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" /> </svg> Hosting</b><span>Railway + fleets</span></div>
     </div>
   </div>
-  <div id="fnDetail" class="card teal"><p>Click any box. Each is one section of this talk, wired together.</p><p id="fnOut"></p></div>
+  <div id="fnDetail" class="card teal"><p>Select a component for a quick recap.</p><p id="fnOut"></p></div>
   <div class="captions">
-    <p data-only="0">Tonight's whole story, on one slide.</p>
+    <p data-only="0">The pieces fit together like this.</p>
     <p data-only="1">The model plans and writes code…</p>
     <p data-only="2">…the loop executes it, tools plug in…</p>
     <p data-only="3">…idle state freezes into snapshots…</p>
     <p data-only="4">…repos are shared copy-on-write…</p>
-    <p data-only="5">…and the meter only runs <b>while computing</b>.</p>
+    <p data-only="5">…and idle sessions stop consuming <b>CPU and RAM</b>.</p>
   </div>
   <aside class="notes">
-    The payoff slide — advance all five steps, then invite clicks. Each box is one section of the talk: the model, the loop with MCP tools, snapshots, the warm CoW repo, and where to run each.
-    Say it as one sentence: the model plans, the loop runs code against a shared repo view, idle VMs freeze into cheap snapshots, and you pay compute only while the agent works.
-    Every box is clickable for Q&A detours back into any section.
+    Bring the pieces together: a model, a tool loop, an isolated workspace, snapshots and shared storage.
+    Hosted platforms provide different combinations. Pick the parts your workload needs.
+    Use the boxes to recap a section during questions.
   </aside>
   <script>
   (function () {
     const D = {
-      model: '🧠 <b>Model</b> (§1) plans and writes programs in code mode. Knows bash, Python, pytest already. Token-efficient, composable.',
-      loop: '↻ <b>Loop</b> (§1): plan → act → observe → repair until checks pass. Lint, build, tests inside the loop: no run, no trust.',
-      mcp: '◉ <b>MCP</b> (§1) is one plug shape for docs, GitHub, DBs, tickets. Local servers share the VM, so they get sandboxed too.',
-      snap: '❄️ <b>Snapshots</b> (§3): memory + device state frozen to one snapshot, disk delta to another; CPU/RAM released. Resume maps pages back on demand — about a second for small VMs. Firecracker: &lt;125 ms boot, &lt;5 MiB overhead.',
-      cow: '▦ <b>Warm repo</b> (§4): one checkout per beefy devserver, per-chat microVM with its own CoW disk clone. Reads shared, writes copy up. Page cache shared.',
-      bill: '⚡ <b>Where to run</b> (§5+§6). Railway: cloud agents that sleep, sandboxes you checkpoint and destroy. Hosts: E2B and Daytona keep RAM; the rest restart from snapshots. Parked state costs pennies.'
+      model: '<b>Model:</b> chooses the next action and writes code. The harness runs its tool calls.',
+      loop: '<b>Loop:</b> act, read the result and repair failures. Run lint, builds and tests before handoff.',
+      mcp: '<b>MCP:</b> a common interface for docs, GitHub, databases and tickets. Sandbox local tools; scope remote credentials.',
+      snap: '<b>Snapshots:</b> save memory, VM state and disk consistently. Release compute, then restore when needed.',
+      cow: '<b>Shared repo:</b> one immutable base per host. Each session keeps its own edits without duplicating the whole checkout.',
+      bill: '<b>Hosting:</b> choose persistent agents or per-task sandboxes. Check memory retention, timeouts and storage charges.'
     };
     const sec = document.getElementById('fn-full');
     sec.querySelectorAll('[data-n]').forEach(b => b.addEventListener('click', e => {
@@ -1256,17 +1297,16 @@ window.Deck = (function () {
     #fn-take .card .big { font-family: var(--head); font-size: 56pt; font-weight: 700; line-height: 1; margin: 0; }
     #fn-take .card h3 { font-size: 26pt; margin: 8px 0; }
   </style>
-  <p class="kicker">take it home</p>
-  <h2>Three sentences</h2>
+  <p class="kicker">what to remember</p>
+  <h2>Run it. Pause it. Share the base.</h2>
   <div class="row">
-    <div class="card amber" data-at="1"><p class="big t-amber">run it</p><h3>Your agent needs a computer</h3><p class="muted">Loop, code, tests. All of it executes.</p></div>
-    <div class="card violet" data-at="2"><p class="big t-violet">freeze it</p><h3>Idle time can sit in storage</h3><p class="muted">Snapshots and shared repos shrink the bill.</p></div>
-    <div class="card green" data-at="3"><p class="big t-green">rent it</p><h3>You can rent all of this</h3><p class="muted">A side project first, hosted fleets next.</p></div>
+    <div class="card amber" data-at="1"><p class="big t-amber"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-terminal" aria-hidden="true" focusable="false"> <path d="M12 19h8" /> <path d="m4 17 6-6-6-6" /> </svg></p><h3>Run the checks</h3><p class="muted">Give the agent a real workspace. Test its patch before handoff.</p></div>
+    <div class="card violet" data-at="2"><p class="big t-violet"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-pause" aria-hidden="true" focusable="false"> <rect x="14" y="3" width="5" height="18" rx="1" /> <rect x="5" y="3" width="5" height="18" rx="1" /> </svg></p><h3>Pause idle sessions</h3><p class="muted">Save the state instead of holding CPU and RAM.</p></div>
+    <div class="card green" data-at="3"><p class="big t-green"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"  class="icon" data-icon-name="lucide-layers" aria-hidden="true" focusable="false"> <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" /> <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" /> <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" /> </svg></p><h3>Share the base repo</h3><p class="muted">Keep edits private. Avoid a full checkout for every task.</p></div>
   </div>
   <aside class="notes">
-    Three sentences to carry out. Agents need computers: everything that makes them good — the loop, code mode, verification — is execution.
-    Idle is storable: snapshots turn waiting RAM into cheap storage, and copy-on-write means repos are barely copied at all.
-    And you can rent it: sandboxes and cloud agents with per-second metering already exist — start with a side project, not with a VM fleet.
+    Three practical choices: run checks, pause idle sessions and share unchanged repo data.
+    You can try these with hosted services before operating your own fleet.
   </aside>
 </section>
 
@@ -1278,14 +1318,15 @@ window.Deck = (function () {
     #fn-close .src { margin-top: 26px; font-family: var(--mono); font-size: 14pt; color: var(--muted); max-width: 1000px; line-height: 1.6; }
   </style>
   <div>
-    <p class="kicker">thank you, questions</p>
-    <h1>Give every agent<br>a cloud to live in.</h1>
-    <div class="links"><a href="https://github.com/firecracker-microvm/firecracker">▸ firecracker</a><a href="https://docs.railway.com/sandboxes">▸ railway sandboxes</a><a href="https://developers.cloudflare.com/sandbox/">▸ cloudflare sandbox</a><a href="https://www.e2b.dev/docs">▸ e2b docs</a></div>
-    <p class="src">sources: research/01–08 in this folder · pricing figures illustrative, check provider pages · slide deck: reveal.js, press S for notes</p>
+    <p class="kicker">thanks · questions?</p>
+    <h1>Try one task.<br>Measure what it costs.</h1>
+    <div class="links"><a href="https://github.com/firecracker-microvm/firecracker"><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-github" aria-hidden="true" focusable="false"><title>GitHub</title><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg> Firecracker</a><a href="https://docs.railway.com/sandboxes"><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-railway" aria-hidden="true" focusable="false"><title>Railway</title><path d="M.113 10.27A13.026 13.026 0 000 11.48h18.23c-.064-.125-.15-.237-.235-.347-3.117-4.027-4.793-3.677-7.19-3.78-.8-.034-1.34-.048-4.524-.048-1.704 0-3.555.005-5.358.01-.234.63-.459 1.24-.567 1.737h9.342v1.216H.113v.002zm18.26 2.426H.009c.02.326.05.645.094.961h16.955c.754 0 1.179-.429 1.315-.96zm-17.318 4.28s2.81 6.902 10.93 7.024c4.855 0 9.027-2.883 10.92-7.024H1.056zM11.988 0C7.5 0 3.593 2.466 1.531 6.108l4.75-.005v-.002c3.71 0 3.849.016 4.573.047l.448.016c1.563.052 3.485.22 4.996 1.364.82.621 2.007 1.99 2.712 2.965.654.902.842 1.94.396 2.934-.408.914-1.289 1.458-2.353 1.458H.391s.099.42.249.886h22.748A12.026 12.026 0 0024 12.005C24 5.377 18.621 0 11.988 0z"/></svg> Railway</a><a href="https://developers.cloudflare.com/sandbox/"><svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-cloudflare" aria-hidden="true" focusable="false"><title>Cloudflare</title><path d="M16.5088 16.8447c.1475-.5068.0908-.9707-.1553-1.3154-.2246-.3164-.6045-.499-1.0615-.5205l-8.6592-.1123a.1559.1559 0 0 1-.1333-.0713c-.0283-.042-.0351-.0986-.021-.1553.0278-.084.1123-.1484.2036-.1562l8.7359-.1123c1.0351-.0489 2.1601-.8868 2.5537-1.9136l.499-1.3013c.0215-.0561.0293-.1128.0147-.168-.5625-2.5463-2.835-4.4453-5.5499-4.4453-2.5039 0-4.6284 1.6177-5.3876 3.8614-.4927-.3658-1.1187-.5625-1.794-.499-1.2026.119-2.1665 1.083-2.2861 2.2856-.0283.31-.0069.6128.0635.894C1.5683 13.171 0 14.7754 0 16.752c0 .1748.0142.3515.0352.5273.0141.083.0844.1475.1689.1475h15.9814c.0909 0 .1758-.0645.2032-.1553l.12-.4268zm2.7568-5.5634c-.0771 0-.1611 0-.2383.0112-.0566 0-.1054.0415-.127.0976l-.3378 1.1744c-.1475.5068-.0918.9707.1543 1.3164.2256.3164.6055.498 1.0625.5195l1.8437.1133c.0557 0 .1055.0263.1329.0703.0283.043.0351.1074.0214.1562-.0283.084-.1132.1485-.204.1553l-1.921.1123c-1.041.0488-2.1582.8867-2.5527 1.914l-.1406.3585c-.0283.0713.0215.1416.0986.1416h6.5977c.0771 0 .1474-.0489.169-.126.1122-.4082.1757-.837.1757-1.2803 0-2.6025-2.125-4.727-4.7344-4.727"/></svg> Cloudflare</a><a href="https://www.e2b.dev/docs"><svg viewBox="0 0 32 30" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon" data-icon-name="brand-e2b" aria-hidden="true" focusable="false"><metadata>E2B size-specific symbol artwork</metadata><path d="M24.0029 7.87695V11.5781H12.3447C11.9881 11.5783 11.6982 11.8679 11.6982 12.2246V12.5029C11.6982 12.8596 11.9881 13.1493 12.3447 13.1494H24.0029V16.8506H12.3447C11.9881 16.8507 11.6982 17.1404 11.6982 17.4971V17.7754C11.6983 18.132 11.9881 18.4208 12.3447 18.4209H24.0029V22.123H10.4717C9.10509 22.1227 7.99709 21.0142 7.99707 19.6475V10.3516C7.99729 8.98505 9.1052 7.8773 10.4717 7.87695H24.0029Z" fill="white"/></svg> E2B</a></div>
+    <p class="src">Prices are illustrative; check current provider rates.</p>
   </div>
   <aside class="notes">
-    Close warmly and open the floor. The one-liner: give every agent a cloud to live in — a pausable VM, a shared view of the repo, and a meter that only runs while it computes.
-    Links go to Firecracker and the two RAM-preserving sandbox docs for anyone who wants to build this next week. Offer the research folder and Q&A detours via the previous slide's clickable map.
+    Pick one real task and run it in a hosted sandbox. Measure setup time, active time, idle time and cost.
+    Those numbers will tell you more than choosing a platform from a feature grid.
+    Open for questions. The links are there for anyone who wants the details.
   </aside>
 </section>
 

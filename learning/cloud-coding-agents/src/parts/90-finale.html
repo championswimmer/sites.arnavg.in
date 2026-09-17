@@ -23,47 +23,47 @@
     #fn-full #fnOut { font-size: 19pt; margin: 10px 0 0; }
     #fn-full #fnOut:empty { display: none; }
   </style>
-  <p class="kicker">the whole machine. Click any part</p>
+  <p class="kicker">the full system · select a component</p>
   <h2>One system, wired together</h2>
   <div class="map">
     <div class="col">
-      <div class="nd s1" data-n="model" data-at="1"><b>🧠 model</b><span>plans, writes code</span></div>
-      <div class="nd s2" data-n="loop" data-at="2"><b>↻ loop</b><span>act → observe → repair</span></div>
-      <div class="nd s2" data-n="mcp" data-at="2"><b>◉ MCP</b><span>docs · gh · db</span></div>
+      <div class="nd s1" data-n="model" data-at="1"><b><i data-icon="lucide-brain"></i> Model</b><span>plans, writes code</span></div>
+      <div class="nd s2" data-n="loop" data-at="2"><b><i data-icon="lucide-refresh-cw"></i> Loop</b><span>act → observe → repair</span></div>
+      <div class="nd s2" data-n="mcp" data-at="2"><b><i data-icon="lucide-plug"></i> MCP</b><span>docs · gh · db</span></div>
     </div>
     <div class="core" data-at="1">
       <h3>agent VM</h3><p>one pausable microVM per session</p>
-      <div><span class="hook" data-hot="2">exec</span> <span class="hook" data-hot="3">snapshot</span> <span class="hook" data-hot="4">virtiofs</span></div>
+      <div><span class="hook" data-hot="2">exec</span> <span class="hook" data-hot="3">snapshot</span> <span class="hook" data-hot="4">CoW disk</span></div>
     </div>
     <div class="col">
-      <div class="nd s3" data-n="snap" data-at="3"><b>❄️ snapshots</b><span>RAM + disk → store</span></div>
-      <div class="nd s4" data-n="cow" data-at="4"><b>▦ warm repo</b><span>CoW views, ~0 bytes</span></div>
-      <div class="nd s5" data-n="bill" data-at="5"><b>⚡ run it</b><span>Railway + fleets</span></div>
+      <div class="nd s3" data-n="snap" data-at="3"><b><i data-icon="lucide-snowflake"></i> Snapshots</b><span>RAM + disk → store</span></div>
+      <div class="nd s4" data-n="cow" data-at="4"><b><i data-icon="lucide-layers"></i> Shared repo</b><span>shared base, private edits</span></div>
+      <div class="nd s5" data-n="bill" data-at="5"><b><i data-icon="lucide-cloud"></i> Hosting</b><span>Railway + fleets</span></div>
     </div>
   </div>
-  <div id="fnDetail" class="card teal"><p>Click any box. Each is one section of this talk, wired together.</p><p id="fnOut"></p></div>
+  <div id="fnDetail" class="card teal"><p>Select a component for a quick recap.</p><p id="fnOut"></p></div>
   <div class="captions">
-    <p data-only="0">Tonight's whole story, on one slide.</p>
+    <p data-only="0">The pieces fit together like this.</p>
     <p data-only="1">The model plans and writes code…</p>
     <p data-only="2">…the loop executes it, tools plug in…</p>
     <p data-only="3">…idle state freezes into snapshots…</p>
     <p data-only="4">…repos are shared copy-on-write…</p>
-    <p data-only="5">…and the meter only runs <b>while computing</b>.</p>
+    <p data-only="5">…and idle sessions stop consuming <b>CPU and RAM</b>.</p>
   </div>
   <aside class="notes">
-    The payoff slide — advance all five steps, then invite clicks. Each box is one section of the talk: the model, the loop with MCP tools, snapshots, the warm CoW repo, and where to run each.
-    Say it as one sentence: the model plans, the loop runs code against a shared repo view, idle VMs freeze into cheap snapshots, and you pay compute only while the agent works.
-    Every box is clickable for Q&A detours back into any section.
+    Bring the pieces together: a model, a tool loop, an isolated workspace, snapshots and shared storage.
+    Hosted platforms provide different combinations. Pick the parts your workload needs.
+    Use the boxes to recap a section during questions.
   </aside>
   <script>
   (function () {
     const D = {
-      model: '🧠 <b>Model</b> (§1) plans and writes programs in code mode. Knows bash, Python, pytest already. Token-efficient, composable.',
-      loop: '↻ <b>Loop</b> (§1): plan → act → observe → repair until checks pass. Lint, build, tests inside the loop: no run, no trust.',
-      mcp: '◉ <b>MCP</b> (§1) is one plug shape for docs, GitHub, DBs, tickets. Local servers share the VM, so they get sandboxed too.',
-      snap: '❄️ <b>Snapshots</b> (§3): memory + device state frozen to one snapshot, disk delta to another; CPU/RAM released. Resume maps pages back on demand — about a second for small VMs. Firecracker: &lt;125 ms boot, &lt;5 MiB overhead.',
-      cow: '▦ <b>Warm repo</b> (§4): one checkout per beefy devserver, per-chat microVM with its own CoW disk clone. Reads shared, writes copy up. Page cache shared.',
-      bill: '⚡ <b>Where to run</b> (§5+§6). Railway: cloud agents that sleep, sandboxes you checkpoint and destroy. Hosts: E2B and Daytona keep RAM; the rest restart from snapshots. Parked state costs pennies.'
+      model: '<b>Model:</b> chooses the next action and writes code. The harness runs its tool calls.',
+      loop: '<b>Loop:</b> act, read the result and repair failures. Run lint, builds and tests before handoff.',
+      mcp: '<b>MCP:</b> a common interface for docs, GitHub, databases and tickets. Sandbox local tools; scope remote credentials.',
+      snap: '<b>Snapshots:</b> save memory, VM state and disk consistently. Release compute, then restore when needed.',
+      cow: '<b>Shared repo:</b> one immutable base per host. Each session keeps its own edits without duplicating the whole checkout.',
+      bill: '<b>Hosting:</b> choose persistent agents or per-task sandboxes. Check memory retention, timeouts and storage charges.'
     };
     const sec = document.getElementById('fn-full');
     sec.querySelectorAll('[data-n]').forEach(b => b.addEventListener('click', e => {
@@ -83,17 +83,16 @@
     #fn-take .card .big { font-family: var(--head); font-size: 56pt; font-weight: 700; line-height: 1; margin: 0; }
     #fn-take .card h3 { font-size: 26pt; margin: 8px 0; }
   </style>
-  <p class="kicker">take it home</p>
-  <h2>Three sentences</h2>
+  <p class="kicker">what to remember</p>
+  <h2>Run it. Pause it. Share the base.</h2>
   <div class="row">
-    <div class="card amber" data-at="1"><p class="big t-amber">run it</p><h3>Your agent needs a computer</h3><p class="muted">Loop, code, tests. All of it executes.</p></div>
-    <div class="card violet" data-at="2"><p class="big t-violet">freeze it</p><h3>Idle time can sit in storage</h3><p class="muted">Snapshots and shared repos shrink the bill.</p></div>
-    <div class="card green" data-at="3"><p class="big t-green">rent it</p><h3>You can rent all of this</h3><p class="muted">A side project first, hosted fleets next.</p></div>
+    <div class="card amber" data-at="1"><p class="big t-amber"><i data-icon="lucide-terminal"></i></p><h3>Run the checks</h3><p class="muted">Give the agent a real workspace. Test its patch before handoff.</p></div>
+    <div class="card violet" data-at="2"><p class="big t-violet"><i data-icon="lucide-pause"></i></p><h3>Pause idle sessions</h3><p class="muted">Save the state instead of holding CPU and RAM.</p></div>
+    <div class="card green" data-at="3"><p class="big t-green"><i data-icon="lucide-layers"></i></p><h3>Share the base repo</h3><p class="muted">Keep edits private. Avoid a full checkout for every task.</p></div>
   </div>
   <aside class="notes">
-    Three sentences to carry out. Agents need computers: everything that makes them good — the loop, code mode, verification — is execution.
-    Idle is storable: snapshots turn waiting RAM into cheap storage, and copy-on-write means repos are barely copied at all.
-    And you can rent it: sandboxes and cloud agents with per-second metering already exist — start with a side project, not with a VM fleet.
+    Three practical choices: run checks, pause idle sessions and share unchanged repo data.
+    You can try these with hosted services before operating your own fleet.
   </aside>
 </section>
 
@@ -105,13 +104,14 @@
     #fn-close .src { margin-top: 26px; font-family: var(--mono); font-size: 14pt; color: var(--muted); max-width: 1000px; line-height: 1.6; }
   </style>
   <div>
-    <p class="kicker">thank you, questions</p>
-    <h1>Give every agent<br>a cloud to live in.</h1>
-    <div class="links"><a href="https://github.com/firecracker-microvm/firecracker">▸ firecracker</a><a href="https://docs.railway.com/sandboxes">▸ railway sandboxes</a><a href="https://developers.cloudflare.com/sandbox/">▸ cloudflare sandbox</a><a href="https://www.e2b.dev/docs">▸ e2b docs</a></div>
-    <p class="src">sources: research/01–08 in this folder · pricing figures illustrative, check provider pages · slide deck: reveal.js, press S for notes</p>
+    <p class="kicker">thanks · questions?</p>
+    <h1>Try one task.<br>Measure what it costs.</h1>
+    <div class="links"><a href="https://github.com/firecracker-microvm/firecracker"><i data-icon="brand-github"></i> Firecracker</a><a href="https://docs.railway.com/sandboxes"><i data-icon="brand-railway"></i> Railway</a><a href="https://developers.cloudflare.com/sandbox/"><i data-icon="brand-cloudflare"></i> Cloudflare</a><a href="https://www.e2b.dev/docs"><i data-icon="brand-e2b"></i> E2B</a></div>
+    <p class="src">Prices are illustrative; check current provider rates.</p>
   </div>
   <aside class="notes">
-    Close warmly and open the floor. The one-liner: give every agent a cloud to live in — a pausable VM, a shared view of the repo, and a meter that only runs while it computes.
-    Links go to Firecracker and the two RAM-preserving sandbox docs for anyone who wants to build this next week. Offer the research folder and Q&A detours via the previous slide's clickable map.
+    Pick one real task and run it in a hosted sandbox. Measure setup time, active time, idle time and cost.
+    Those numbers will tell you more than choosing a platform from a feature grid.
+    Open for questions. The links are there for anyone who wants the details.
   </aside>
 </section>

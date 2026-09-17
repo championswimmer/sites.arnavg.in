@@ -20,7 +20,7 @@
     @keyframes inFloat { 0%,100% { margin-top: 0; } 50% { margin-top: -14px; } }
   </style>
   <div style="max-width: 880px;">
-    <p class="kicker">a talk about where coding agents really run</p>
+    <p class="kicker">coding agents, beyond your laptop</p>
     <h1>Why your coding agent needs <span class="t-teal">a cloud</span></h1>
     <p class="sub">The computer behind the chat.</p>
   </div>
@@ -32,10 +32,9 @@
     <span class="hook chip" style="left:90%;top:70%">MCP tools</span>
   </div>
   <aside class="notes">
-    Welcome. You all use coding agents. This talk is about the half nobody sees: the machine each agent lives on.
-    I will show you what the agent does with that machine, why one VM per chat goes broke at workplace scale,
-    and the two tricks that fix it: pausing VMs into snapshots, and sharing one repo with copy-on-write.
-    Drive with clicker or arrows. Press S for these notes, F for fullscreen. Several diagrams are clickable — try them.
+    We spend a lot of time talking about models. This talk is about the computer running the agent.
+    We will follow one session, work out what it costs, then look at snapshots and shared repos.
+    Use the arrows to advance. S opens notes; F goes fullscreen. The diagrams have clickable details.
   </aside>
 </section>
 
@@ -46,15 +45,15 @@
     #in-hands .q.on .n { color: var(--teal); }
     #in-hands .q p.t { font-family: var(--head); font-size: 36pt; margin: 0; line-height: 1.15; }
   </style>
-  <p class="kicker">three questions, honest hands</p>
+  <p class="kicker">quick show of hands</p>
   <h2 style="margin-bottom: 46px;">Keep your hand up if…</h2>
   <div class="q" data-at="1"><p class="n">1</p><p class="t">you used an AI coding agent this week</p></div>
-  <div class="q" data-at="2"><p class="n">2</p><p class="t">you connect to that agent <span class="t-amber">from your phone</span> while it keeps running on your laptop</p></div>
-  <div class="q" data-at="3"><p class="n">3</p><p class="t">you can start sessions from mobile that arrive with your <span class="t-teal">repo cloned, tickets linked</span> and can deploy to prod</p></div>
+  <div class="q" data-at="2"><p class="n">2</p><p class="t">you check on it <span class="t-amber">from your phone</span>, while it runs on your laptop</p></div>
+  <div class="q" data-at="3"><p class="n">3</p><p class="t">you start it from your phone with the <span class="t-teal">repo, tickets and deploy tools</span> ready</p></div>
   <aside class="notes">
-    Question 2 drops most of the room: staying connected to that same session from your phone, with Claude or Codex mobile, while it keeps running on your laptop. (Expect fewer hands here.)
-    Question 3 should leave almost nobody: starting sessions from mobile that begin with your repo already cloned, have access to tickets, and can deploy to prod. (Expect almost nobody.)
-    That funnel is the talk. We know agents work. We barely run them in the cloud. And almost nobody has them wired into work yet. Today is about closing those two gaps.
+    Pause after each question and see which hands stay up. Do not assume the answer.
+    Checking a laptop session from your phone is one thing. Starting a cloud session with the repo and work tools ready is another.
+    That second setup is what we are building towards.
   </aside>
 </section>
 
@@ -76,33 +75,32 @@
     <div class="card coral" data-at="2">
       <p class="big t-coral">2</p>
       <h3>The bill</h3>
-      <p class="muted">One VM per chat breaks</p>
+      <p class="muted">The cost of idle VMs</p>
     </div>
     <div class="card violet" data-at="3">
       <p class="big t-violet">3</p>
-      <h3>Pause &amp; share</h3>
-      <p class="muted">Snapshots, shared repos</p>
+      <h3>Pause &amp; resume</h3>
+      <p class="muted">Save state, release compute</p>
     </div>
     <div class="card teal" data-at="4">
       <p class="big t-teal">4</p>
-      <h3>How it works</h3>
-      <p class="muted">Storage, sharing, owners</p>
+      <h3>Share the repo</h3>
+      <p class="muted">A base copy, private edits</p>
     </div>
     <div class="card amber" data-at="5">
       <p class="big t-amber">5</p>
-      <h3>Where to run it</h3>
-      <p class="muted">Side project first, six hosts</p>
+      <h3>How it works</h3>
+      <p class="muted">Storage and coordination</p>
     </div>
     <div class="card green" data-at="6">
       <p class="big t-green">6</p>
-      <h3>The whole system</h3>
-      <p class="muted">Wired together, Q&amp;A</p>
+      <h3>Where to run it</h3>
+      <p class="muted">Railway and six alternatives</p>
     </div>
   </div>
   <aside class="notes">
-    Six stops. First, what an agent session actually does with its machine — the loop, running code, tools, and why it must verify by running things.
-    Second, the bill: what thousands of always-on VMs cost and where the money really burns.
-    Third, the two fixes: pause VMs into snapshots and resume in a second, and share one warm repo with copy-on-write.
-    Fourth, the three ideas underneath every platform. Fifth, where to run it: try it on a side project first, then six hosted options. Sixth, the whole system on one slide for Q&A.
+    Start with the agent loop and its tools. Then look at the bill.
+    Snapshots reduce idle compute; copy-on-write avoids duplicate repos.
+    We will look at the storage behind those ideas, compare hosted options, and finish with the full system.
   </aside>
 </section>

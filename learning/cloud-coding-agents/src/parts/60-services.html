@@ -1,7 +1,4 @@
-<!-- ============================================================
-     60 / Where to run it — Railway side-project + six hosts
-     ids: sv-divider, sv-rail, sv-ent, sv-bill
-     ============================================================ -->
+<!-- 60 / Where to run it: Railway, hosted options and billing -->
 
 <section id="sv-divider" class="divider">
   <style>
@@ -12,113 +9,110 @@
   </style>
   <div style="max-width: 900px;">
     <p class="num">06 / Where to run it</p>
-    <h1>Try it on a<br><span class="t-amber">side project.</span></h1>
-    <p class="sub">Sandboxes and cloud agents — both on Railway.</p>
+    <h1>Start with<br><span class="t-amber">a side project.</span></h1>
+    <p class="sub"><i data-icon="brand-railway"></i> Try Railway before building your own fleet.</p>
   </div>
-  <div class="stack" aria-hidden="true"><div class="c">Sandbox.create()</div><div class="c">.checkpoint("ready")</div><div class="c">.fork() → 50 tasks</div></div>
+  <div class="stack" aria-hidden="true"><div class="c">Sandbox.create()</div><div class="c">.checkpoint("ready")</div><div class="c">.fork() → parallel tasks</div></div>
   <aside class="notes">
-    Stop six: where to run all of this. Start with a side project on Railway, which has both doors: short-lived sandboxes, one per task, and persistent
-    cloud agents, one dev machine you return to. Both come with coding agents preinstalled and per-second metering. Then the service grid: six hosted
-    options built on the same ideas from section five, different logos on the invoice.
+    Start small. Railway offers persistent cloud agents and short-lived sandboxes.
+    Try a task, measure its runtime and idle time, then decide what you need from a larger platform.
   </aside>
 </section>
 
 <section id="sv-rail" class="stepper" data-steps="4">
   <style>
     #sv-rail .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 24px; }
-    #sv-rail .st { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px 24px; opacity: .38; transition: all .4s var(--ease); }
-    #sv-rail .st.on { opacity: 1; transform: translateY(-6px); border-color: rgba(255,180,84,.6); }
-    #sv-rail .st .n { font-family: var(--head); font-size: 40pt; font-weight: 700; color: var(--amber); line-height: 1; margin: 0; }
-    #sv-rail .st b { display: block; font-family: var(--head); font-size: 24pt; margin: 6px 0 4px; }
-    #sv-rail .st span { font-size: 19pt; color: var(--muted); }
-    #sv-rail .st code { font-size: 15pt; display: inline-block; margin-top: 8px; }
-    #sv-rail .honest { text-align: center; margin-top: 16px; }
+    #sv-rail .st { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px 24px; opacity: .38; transition: all .4s var(--ease); }
+    #sv-rail .st.on { opacity: 1; transform: translateY(-4px); border-color: rgba(255,180,84,.6); }
+    #sv-rail .st h3 { font-size: 24pt; margin: 0 0 12px; }
+    #sv-rail .st h3 .icon { color: var(--amber); }
+    #sv-rail .st li { font-size: 18pt; color: var(--muted); margin-bottom: 6px; }
+    #sv-rail .st code { font-size: 15pt; display: inline-block; margin-top: 12px; }
+    #sv-rail .honest { margin-top: 18px; }
   </style>
-  <p class="kicker">side project on Railway: two doors, same building</p>
-  <h2>Sandboxes per task, agents that persist</h2>
+  <p class="kicker"><i data-icon="brand-railway"></i> Railway · two ways to run an agent</p>
+  <h2>A machine to keep, or a sandbox per task</h2>
   <div class="grid">
-    <div class="st" data-at="1"><p class="n">1</p><b>Cloud agent</b><span>Your dev machine in the cloud. Claude, Codex, OpenCode preinstalled.</span><br><code>railway code --claude</code></div>
-    <div class="st" data-at="2"><p class="n">2</p><b>Sandboxes</b><span>One throwaway Linux VM per task, beside your Postgres and Redis.</span><br><code>Sandbox.create() · --private-network</code></div>
-    <div class="st" data-at="3"><p class="n">3</p><b>Checkpoint &amp; fork</b><span>Clone the repo once, install once, snapshot it — boot every task from there.</span><br><code>checkpoint("repo-ready") → fork()</code></div>
-    <div class="st" data-at="4"><p class="n">4</p><b>Metered per second</b><span>CPU + RAM while running. Sleep the agent, destroy the sandbox, stop paying.</span><br><code>railway ca sleep · sandbox.destroy()</code></div>
+    <div class="st" data-at="1"><h3><i data-icon="lucide-terminal"></i> Cloud agent</h3><ul><li>Persistent dev machine in the cloud</li><li>Claude, Codex and OpenCode preinstalled</li></ul><code>railway code --claude</code></div>
+    <div class="st" data-at="2"><h3><i data-icon="lucide-server"></i> Sandbox</h3><ul><li>Isolated Linux VM for each task</li><li>Private networking to project services</li></ul><code>Sandbox.create()</code></div>
+    <div class="st" data-at="3"><h3><i data-icon="lucide-git-fork"></i> Checkpoint &amp; fork</h3><ul><li>Clone the repo and install dependencies once</li><li>Start each task from the saved disk</li></ul><code>checkpoint("repo-ready") → fork()</code></div>
+    <div class="st" data-at="4"><h3><i data-icon="lucide-pause"></i> Stop when done</h3><ul><li>Sleep an agent to keep its files</li><li>Destroy a sandbox after saving its output</li></ul><code>railway ca sleep · sandbox.destroy()</code></div>
   </div>
-  <p class="honest muted small" data-at="4">Honest trade: checkpoints save disk, not live RAM. Sleep keeps files, stops processes. Destroyed sandboxes bill nothing.</p>
+  <p class="honest muted small" data-at="4">Checkpoints keep disk state, not live RAM. Sleep stops processes; retained storage may still cost money.</p>
   <div class="captions">
-    <p data-only="0">Two ways in — pick per side project.</p>
-    <p data-only="1"><b>Cloud agent:</b> SSH or desktop app in, credentials carried, files persist, sleep when done.</p>
-    <p data-only="2"><b>Sandboxes:</b> an isolated VM per task, on the private network with your real services.</p>
-    <p data-only="3"><b>Checkpoint once,</b> then fork per task. The repo-review demo fans out one sandbox per agent.</p>
-    <p data-only="4">Both meter <b>per second</b>. Sleep or destroy, <b>the meter stops</b>.</p>
+    <p data-only="0">Choose based on how long you need the workspace.</p>
+    <p data-only="1"><b>Cloud agent:</b> return to the same files across sessions.</p>
+    <p data-only="2"><b>Sandbox:</b> give each task its own environment.</p>
+    <p data-only="3"><b>Checkpoint once.</b> Avoid repeating setup for every task.</p>
+    <p data-only="4">Stop the compute when the task ends. Check what storage remains.</p>
   </div>
   <aside class="notes">
-    Walk the four clicks. One: a cloud agent is a persistent dev machine — railway code with Claude, Codex or OpenCode, six harnesses preinstalled in the image,
-    credentials carried from your laptop, files on disk across disconnects, sleep to stop compute while keeping files.
-    Two: sandboxes are the opposite shape — short-lived isolated Linux VMs, one per task, optionally on the project's private network so the agent tests
-    against your real Postgres, Redis and internal APIs instead of mocks.
-    Three: amortise setup — clone once, install once, sign agents in once, checkpoint the disk as repo-ready, then create or fork one sandbox per task from it.
-    Railway's own repo-review demo does exactly this: one sandbox per agent, in parallel.
-    Four: both bill per second on CPU and memory actually used. Sleep the agent or destroy the sandbox and billing stops.
-    Say the honest trade out loud: checkpoints preserve disk, not live RAM. Sleep keeps files but stops processes. For a side project that is exactly the right trade.
+    A cloud agent is a dev machine you return to. A sandbox is a workspace for one task.
+    Both can use prepared disk state. Neither disk checkpoints nor sleep preserve running processes.
+    Use scoped credentials and test services on the private network. Save the result before destroying a sandbox.
+    Compute and retained storage are separate billing questions.
   </aside>
 </section>
 
 <section id="sv-ent" class="stepper" data-steps="3">
   <style>
-    #sv-ent .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 22px; }
-    #sv-ent .p { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; cursor: pointer; transition: all .35s var(--ease); opacity: .45; }
-    #sv-ent .p.on { opacity: 1; }
-    #sv-ent .p b { font-family: var(--head); font-size: 22pt; display: block; margin: 0; }
-    #sv-ent .p span { font-family: var(--mono); font-size: 14pt; color: var(--muted); }
-    #sv-ent .p .fit { display: inline-block; font-family: var(--mono); font-size: 13pt; border-radius: 8px; padding: 2px 10px; margin-top: 8px; border: 1px solid var(--line); color: var(--muted); }
-    #sv-ent.s1 .p.ram { border-color: var(--green); box-shadow: 0 0 22px rgba(127,227,164,.25); }
-    #sv-ent.s1 .p.ram .fit { color: #06130c; background: var(--green); border-color: var(--green); }
+    #sv-ent .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 22px; }
+    #sv-ent .p { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; cursor: pointer; text-align: left; color: var(--text); transition: border-color .25s; }
+    #sv-ent .p b { font-family: var(--head); font-size: 22pt; display: flex; align-items: center; gap: 12px; margin: 0 0 6px; }
+    #sv-ent .p .kind { display: block; font-family: var(--mono); font-size: 15pt; color: var(--muted); }
+    #sv-ent .p .fit { display: inline-block; font-family: var(--mono); font-size: 15pt; border-radius: 6px; padding: 3px 8px; margin-top: 10px; background: var(--panel-2); }
+    #sv-ent.s1 .p.ram { border-color: var(--green); }
+    #sv-ent.s1 .p.ram .fit { color: var(--green); }
     #sv-ent.s2 .p.snap { border-color: var(--violet); }
-    #sv-ent.s2 .p.snap .fit { color: var(--violet); border-color: var(--violet); }
-    #sv-ent .p.sel { border-color: var(--teal) !important; box-shadow: 0 0 0 4px rgba(63,220,214,.15), 0 0 24px rgba(63,220,214,.3) !important; }
-    #sv-ent #svDetail { margin-top: 14px; min-height: 74px; }
-    #sv-ent #svDetail p { font-size: 19pt; margin: 0; }
-    #sv-ent #svOut { font-size: 19pt; margin: 10px 0 0; }
-    #sv-ent #svOut:empty { display: none; }
+    #sv-ent.s2 .p.snap .fit { color: var(--violet); }
+    #sv-ent .p.sel { border-color: var(--teal) !important; background: #17272d; box-shadow: 0 0 0 2px rgba(63,220,214,.18); }
+    #sv-ent #svDetail { margin-top: 18px; padding: 18px 22px; min-height: 194px; }
+    #sv-ent #svDetail > p { margin: 0 0 12px; }
+    #sv-ent .details-grid { display: grid; grid-template-columns: 1fr 1fr 1.15fr; gap: 26px; }
+    #sv-ent .details-grid h4 { font-family: var(--mono); font-size: 15pt; color: var(--teal); margin: 0 0 10px; }
+    #sv-ent .details-grid li { font-size: 17pt; margin-bottom: 7px; }
+    #sv-ent .details-grid a { font-size: 15pt; }
   </style>
-  <p class="kicker">six hosted options. Click any platform</p>
-  <h2>Which keep RAM, which start fresh?</h2>
+  <p class="kicker">six hosted options · select a platform</p>
+  <h2>Will your processes survive the pause?</h2>
   <div class="grid">
-    <div class="p ram" data-p="e2b" data-at="1"><b>E2B ★</b><span>Firecracker · pause()</span><br><span class="fit">RAM + fs · ~1s resume</span></div>
-    <div class="p ram" data-p="daytona" data-at="1"><b>Daytona ★</b><span>VM sandbox · pause</span><br><span class="fit">RAM + fs · disk-only parked</span></div>
-    <div class="p ram" data-p="fly" data-at="1"><b>Fly Machines</b><span>suspend via snapshots</span><br><span class="fit">RAM kept · 100s of ms</span></div>
-    <div class="p snap" data-p="vercel" data-at="2"><b>Vercel Sandbox</b><span>stop() → snapshot</span><br><span class="fit">filesystem only</span></div>
-    <div class="p snap" data-p="cf" data-at="2"><b>Cloudflare</b><span>backup → R2</span><br><span class="fit">filesystem only</span></div>
-    <div class="p snap" data-p="modal" data-at="2"><b>Modal</b><span>snapshots → clones</span><br><span class="fit">restorable, 30-day TTL</span></div>
+    <button type="button" class="p ram" data-p="e2b" data-at="1" aria-pressed="false"><b><i data-icon="brand-e2b"></i> E2B</b><span class="kind">Firecracker microVMs</span><span class="fit">Memory + filesystem</span></button>
+    <button type="button" class="p ram" data-p="daytona" data-at="1" aria-pressed="false"><b><i data-icon="brand-daytona"></i><span class="sr-only">Daytona</span></b><span class="kind">VM sandbox mode</span><span class="fit">Memory + filesystem</span></button>
+    <button type="button" class="p ram" data-p="fly" data-at="1" aria-pressed="false"><b><i data-icon="brand-flyio"></i> Fly Machines</b><span class="kind">Machine suspend</span><span class="fit">Memory + filesystem</span></button>
+    <button type="button" class="p snap" data-p="vercel" data-at="2" aria-pressed="false"><b><i data-icon="brand-vercel"></i> Vercel</b><span class="kind">Sandbox snapshots</span><span class="fit">Filesystem restore</span></button>
+    <button type="button" class="p snap" data-p="cf" data-at="2" aria-pressed="false"><b><i data-icon="brand-cloudflare"></i> Cloudflare</b><span class="kind">Sandbox backups in R2</span><span class="fit">Filesystem restore</span></button>
+    <button type="button" class="p snap" data-p="modal" data-at="2" aria-pressed="false"><b><i data-icon="brand-modal"></i> Modal</b><span class="kind">Filesystem snapshot flow</span><span class="fit">Filesystem restore</span></button>
   </div>
-  <div id="svDetail" class="card teal"><p>Click a card for timeouts, caps and pricing. ★ means true pause and resume.</p><p id="svOut"></p></div>
+  <div id="svDetail" class="card teal" aria-live="polite"><p class="muted small">Select a platform for state, limits and billing. These compare the modes shown above.</p><div id="svOut"></div></div>
   <div class="captions">
-    <p data-only="0">Six services, two shapes.</p>
-    <p data-only="1"><b>RAM-preserving:</b> E2B, Daytona VMs and Fly keep memory.</p>
-    <p data-only="2"><b>Snapshot-restart:</b> the rest restore files into a fresh session.</p>
-    <p data-only="3">Railway, previous slide: cloud agents plus checkpoint-and-fork sandboxes.</p>
+    <p data-only="0">First decide whether you need running processes or just saved files.</p>
+    <p data-only="1"><b>Memory preserved:</b> E2B, Daytona VM mode and Fly suspend.</p>
+    <p data-only="2"><b>Files restored:</b> restart your processes in a new session.</p>
+    <p data-only="3">Check current limits and rates before choosing. APIs and plans change.</p>
   </div>
   <aside class="notes">
-    Let the audience click cards; details appear below. Step 1 lights up the RAM-preserving row: E2B pauses the live VM with memory included and resumes in about a second, paused free;
-    Daytona VM sandboxes preserve memory on pause and bill disk-only while parked; Fly suspends the whole VM including RAM and wakes in hundreds of milliseconds.
-    Step 2 covers snapshot-restart: Vercel stop auto-snapshots the filesystem with tiered timeouts; Cloudflare backs directories up to R2 with a 3-day default TTL and restores them as an overlay;
-    Modal snapshots become restorable clones. Step 3 points back: Railway did cloud agents plus checkpoint-and-fork sandboxes on the previous slide — start with a side project there.
+    The rows compare specific modes, not every feature each company offers.
+    The top row can preserve memory. The bottom row shows filesystem restore workflows.
+    Click each card for short notes on state, limits and billing. Follow its docs link for current details.
+    Fly suspend snapshots may be lost during maintenance. Daytona VM pause is distinct from its container lifecycle.
   </aside>
   <script>
   (function () {
     const D = {
-      e2b: '<b>E2B:</b> pausable Firecracker microVMs. Timeout action <b>kill or pause + autoResume</b>; 1h Hobby / 24h Pro continuous run. Per-second while running, <b>paused free</b>. Concurrency to tens of thousands at scale.',
-      daytona: '<b>Daytona:</b> containers by default, <b>VM sandboxes</b> for agents. VM auto-pause 60 min default. PAYG reserved vCPU/RAM/disk; <b>paused = disk only</b>, archived containers free.',
-      fly: '<b>Fly Machines:</b> Machines API, suspend via Firecracker snapshots, resume in <b>hundreds of ms</b>. Snapshots can be discarded on deploy or maintenance. Running = CPU/RAM preset; suspended = storage only.',
-      vercel: '<b>Vercel Sandbox:</b> <b>stop() auto-snapshots the filesystem</b>; resume = new session from snapshot. 5 min default timeout, 45 min Hobby / 24 h Pro+. Billed active CPU + provisioned memory + creations + snapshot storage.',
-      cf: '<b>Cloudflare Sandbox:</b> container per Durable Object, <b>createBackup/restoreBackup to R2</b> (3-day TTL). 10 min idle sleep default. Billed every 10 ms; memory/disk provisioned. GA April 2026.',
-      modal: '<b>Modal:</b> sandboxes with <b>filesystem snapshots → clones</b> (30-day TTL); snapshotting ends the sandbox. Per-second at max(requested, actual). Huge concurrency, restart-shaped.'
+      e2b: { state: ['Saves memory and filesystem', 'Resume in about a second'], limits: ['1h Hobby / 24h Pro run limit', 'Timeout: kill, or pause with auto-resume'], billing: ['Per-second compute while running', 'No compute charge while paused'], url: 'https://e2b.dev/docs' },
+      daytona: { state: ['VM pause keeps memory', 'Container lifecycle differs'], limits: ['VM auto-pause: 60 min default', 'Check VM availability for your account'], billing: ['Allocated CPU, RAM and disk', 'Paused VMs: disk charges remain'], url: 'https://www.daytona.io/docs/' },
+      fly: { state: ['Suspend keeps VM memory', 'Resume can take hundreds of ms'], limits: ['Deploys or maintenance can discard state', 'Use durable storage for important files'], billing: ['Running: machine CPU/RAM rates', 'Suspended: retained storage still bills'], url: 'https://fly.io/docs/machines/' },
+      vercel: { state: ['stop() snapshots the filesystem', 'Restore starts a new session'], limits: ['5 min default timeout', '45 min Hobby / 24h Pro+ maximum'], billing: ['Active CPU + provisioned memory', 'Sandbox creations', 'Snapshot storage'], url: 'https://vercel.com/docs/vercel-sandbox' },
+      cf: { state: ['Directory backups in R2', 'Restore adds a writable layer'], limits: ['10 min default idle sleep', '3-day default backup TTL'], billing: ['CPU usage', 'Provisioned memory and disk', 'R2 storage and operations'], url: 'https://developers.cloudflare.com/sandbox/' },
+      modal: { state: ['Filesystem snapshots create new sandboxes', 'This flow does not restore live RAM'], limits: ['Filesystem snapshots: 30-day TTL', 'Snapshotting ends the sandbox'], billing: ['Per-second resource billing', 'CPU/RAM: requested or used, whichever is higher', 'Check retained-storage charges'], url: 'https://modal.com/docs/guide/sandbox' }
     };
     const sec = document.getElementById('sv-ent');
-    sec.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', e => {
+    const list = items => '<ul>' + items.map(item => '<li>' + item + '</li>').join('') + '</ul>';
+    sec.querySelectorAll('[data-p]').forEach(button => button.addEventListener('click', e => {
       e.stopPropagation();
-      sec.querySelectorAll('[data-p]').forEach(x => x.classList.remove('sel'));
-      b.classList.add('sel');
-      document.getElementById('svOut').innerHTML = D[b.dataset.p];
+      sec.querySelectorAll('[data-p]').forEach(item => { item.classList.toggle('sel', item === button); item.setAttribute('aria-pressed', String(item === button)); });
+      const d = D[button.dataset.p];
+      document.getElementById('svOut').innerHTML = '<div class="details-grid"><div><h4>State</h4>' + list(d.state) + '</div><div><h4>Limits</h4>' + list(d.limits) + '</div><div><h4>Billing</h4>' + list(d.billing) + '<a href="' + d.url + '">Current docs &amp; rates →</a></div></div>';
     }));
   })();
   </script>
@@ -127,20 +121,19 @@
 <section id="sv-bill" class="stepper" data-steps="2">
   <style>
     #sv-bill .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 26px; }
-    #sv-bill .card { text-align: center; padding: 28px 24px; }
-    #sv-bill .card .e { font-size: 50pt; margin: 0; }
-    #sv-bill ul { list-style: none; margin: 14px 0 0; padding: 0; }
-    #sv-bill li { font-family: var(--mono); font-size: 16pt; margin-bottom: 8px; }
+    #sv-bill .card { padding: 28px; }
+    #sv-bill .card .e { font-size: 44pt; margin: 0 0 12px; }
+    #sv-bill li { font-size: 21pt; margin-bottom: 14px; }
   </style>
-  <p class="kicker">what parking costs</p>
-  <h2>Running bills you; parked costs pennies.</h2>
+  <p class="kicker">read the bill in two parts</p>
+  <h2>Stopping compute is not always a $0 bill</h2>
   <div class="cols">
-    <div class="card coral" data-at="1"><p class="e">🔥</p><h3>While running</h3><ul><li>CPU + RAM actually used, per second</li><li>+ creations, egress</li><li class="muted">every service meters this</li></ul></div>
-    <div class="card green" data-at="2"><p class="e">❄️</p><h3>While parked</h3><ul><li>E2B paused: <b class="t-green">free</b></li><li>Daytona / Fly: <b class="t-green">disk only</b></li><li>Vercel / CF / Modal: <b class="t-green">snapshot storage</b></li><li>Railway destroyed: <b class="t-green">$0</b></li></ul></div>
+    <div class="card coral" data-at="1"><p class="e t-coral"><i data-icon="lucide-cpu"></i></p><h3>While running</h3><ul><li>CPU: used or allocated, by provider</li><li>RAM: often provisioned capacity</li><li>Disk, network and creation fees may apply</li><li>Model tokens are a separate cost</li></ul></div>
+    <div class="card green" data-at="2"><p class="e t-green"><i data-icon="lucide-archive"></i></p><h3>After stopping</h3><ul><li>Pause can end compute charges</li><li>Snapshots, disks and backups may still bill</li><li>Retention limits affect how long state survives</li><li>Delete state only after saving the result</li></ul></div>
   </div>
   <aside class="notes">
-    Two clicks. While running, everyone meters CPU plus RAM per second, plus creations and egress — that is the same everywhere.
-    While parked, the bill collapses: E2B paused sandboxes are free, Daytona and Fly charge disk only, Vercel, Cloudflare and Modal charge snapshot or backup storage, and a destroyed Railway sandbox bills nothing at all.
-    That collapse is the whole business case: the waiting money from section two goes nearly to zero.
+    Providers meter resources differently. Do not assume every service bills only actual CPU and RAM use.
+    Pausing reduces compute cost, but retained state can still have a bill and an expiry date.
+    Check both before leaving hundreds of sessions idle.
   </aside>
 </section>

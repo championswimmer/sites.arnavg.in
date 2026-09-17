@@ -12,11 +12,12 @@
   <div>
     <p class="num">03 / Pause &amp; resume</p>
     <h1>Pause it.<br><span class="t-violet">Don't kill it.</span></h1>
-    <p class="sub">Idle RAM becomes cheap stored snapshots.</p>
+    <p class="sub">Save the state. Release the CPU and RAM.</p>
   </div>
   <div class="zz" aria-hidden="true"><span style="font-size:90pt">Z</span><span style="font-size:64pt;opacity:.6">Z</span><span style="font-size:44pt;opacity:.35">Z</span></div>
   <aside class="notes">
-    Stop three: the first fix. Instead of killing idle VMs and losing everything, or paying to keep them warm, we freeze them: capture their state into snapshots on cheap storage, release the CPU and RAM, and thaw them back in about a second when the human returns.
+    Save the VM state to storage, then release its CPU and RAM.
+    Restoring a small VM can take around a second. Timing depends on the platform, memory size and storage.
   </aside>
 </section>
 
@@ -29,14 +30,15 @@
     #ps-split .card code { font-size: 16pt; }
   </style>
   <p class="kicker">state has two layers</p>
-  <h2>Freeze <span class="t-violet">both halves</span></h2>
+  <h2>A full resume needs <span class="t-violet">both kinds of state</span></h2>
   <div class="split">
-    <div class="card violet" data-at="1"><h3>🧠 Execution state</h3><p class="muted">RAM + CPU + device state</p><p><code>memory file + state file</code></p><p class="muted">thawed on demand, page by page</p></div>
-    <div class="card teal" data-at="2"><h3>💾 Filesystem state</h3><p class="muted">writable disk / overlay</p><p><code>block snapshot → object store</code></p><p class="muted">only changed blocks travel</p></div>
+    <div class="card violet" data-at="1"><h3><i data-icon="lucide-memory-stick"></i> Execution state</h3><p class="muted">RAM + CPU + device state</p><p><code>memory file + state file</code></p><p class="muted">restore memory pages as needed</p></div>
+    <div class="card teal" data-at="2"><h3><i data-icon="lucide-hard-drive"></i> Filesystem state</h3><p class="muted">writable disk / overlay</p><p><code>block snapshot → object store</code></p><p class="muted">incremental snapshots copy changed blocks</p></div>
   </div>
   <aside class="notes">
-    Two clicks. Execution state is RAM plus CPU and device state — Firecracker writes it as a memory file plus a state file, and on restore pages fault back in on demand.
-    Filesystem state is the writable disk or overlay — snapshotted to block storage, then tiered to object storage. Because the base image is shared, only changed blocks travel. Pause means capturing both, then paying storage-only while idle.
+    Execution state includes memory, CPU registers and device state. Firecracker saves memory and VM state separately.
+    The platform must snapshot the disk too, at a consistent point in time.
+    Lazy paging can speed up restore. Incremental disk snapshots avoid copying unchanged blocks.
   </aside>
 </section>
 
@@ -52,33 +54,67 @@
     #ps-cycle .arr { display: grid; place-items: center; font-size: 34pt; color: var(--muted); opacity: .35; transition: all .4s; }
     #ps-cycle .arr.on { opacity: 1; color: var(--teal); }
     #ps-cycle button.btn { margin-top: 22px; }
+    #ps-cycle .controls { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 22px; }
+    #ps-cycle .controls .btn[disabled] { opacity: .45; cursor: default; border-color: var(--line); color: var(--muted); }
+    #ps-cycle .controls .btn[disabled]:hover { border-color: var(--line); color: var(--muted); }
   </style>
-  <p class="kicker">the lifecycle: pause it yourself</p>
-  <h2>Pause in milliseconds, wake in a second.</h2>
+  <p class="kicker">running → paused → resumed</p>
+  <h2>Resume where the process left off.</h2>
   <div class="flow">
-    <div class="st run" data-at="1"><p class="e">🟢</p><b>Running</b><span>CPU + RAM billed</span></div>
+    <div class="st run" data-at="1"><p class="e t-green"><i data-icon="lucide-play"></i></p><b>Running</b><span>CPU + RAM billed</span></div>
     <div class="arr" data-at="2">→</div>
-    <div class="st frz" data-at="2"><p class="e">❄️</p><b>Paused</b><span>snapshot → storage</span></div>
+    <div class="st frz" data-at="2"><p class="e t-violet"><i data-icon="lucide-snowflake"></i></p><b>Paused</b><span>snapshot → storage</span></div>
     <div class="arr" data-at="4">→</div>
-    <div class="st thaw" data-at="4"><p class="e">⚡</p><b>Resumed</b><span>mmap + fault-in</span></div>
+    <div class="st thaw" data-at="4"><p class="e t-teal"><i data-icon="lucide-zap"></i></p><b>Resumed</b><span>mmap + fault-in</span></div>
   </div>
-  <div class="center"><button class="btn" id="psPauseBtn" data-at="2">❄ pause this VM</button> <button class="btn" id="psResumeBtn" data-at="4">⚡ resume it</button></div>
+  <div class="controls"><button type="button" class="btn" id="psPauseBtn" aria-controls="ps-cycle" onclick="event.stopPropagation(); window.psCycleSetStep?.(3)"><i data-icon="lucide-pause"></i> <span>Pause this VM</span></button> <button type="button" class="btn" id="psResumeBtn" aria-controls="ps-cycle" onclick="event.stopPropagation(); window.psCycleSetStep?.(4)"><i data-icon="lucide-play"></i> <span>Resume it</span></button></div>
   <div class="captions">
-    <p data-only="0">Two thousand VMs idle? Don't pay for them.</p>
-    <p data-only="1">While the human thinks, the VM burns dollars.</p>
+    <p data-only="0">Pause idle sessions without losing their running processes.</p>
+    <p data-only="1">A running VM still costs money while you review its output.</p>
     <p data-only="2"><b>Pause:</b> memory + disk → snapshots. CPU/RAM released.</p>
-    <p data-only="3">Parked: storage-only. Cents, not dollars.</p>
-    <p data-only="4"><b>Resume:</b> pages fault back on demand. ~1 second.</p>
+    <p data-only="3">Paused: keep the snapshot, release the compute.</p>
+    <p data-only="4"><b>Resume:</b> restore memory on demand. Timing varies by workload.</p>
   </div>
   <aside class="notes">
-    The lifecycle in four clicks. Running bills CPU and RAM. Pause writes the memory file, state file and disk delta to storage and frees the host — try the pause button, the card freezes.
-    Parked state costs storage pennies. Resume maps the memory file back and faults pages in on demand — try resume; small agent VMs typically wake in about a second (restore time grows with memory and vCPUs, no official SLA). Caveat for the Q&A: vsock resets across restore, so network handles must be re-established.
+    Running uses CPU and RAM. Pausing saves state and releases those resources.
+    Resume restores that state rather than starting the app again. The buttons illustrate this; they do not control a real VM.
+    Existing network connections may need to reconnect after restore. Resume time is not a fixed SLA.
   </aside>
   <script>
   (function () {
-    const p = document.getElementById('psPauseBtn'), r = document.getElementById('psResumeBtn');
-    if (p) p.addEventListener('click', e => { e.stopPropagation(); p.classList.add('active'); p.textContent = '❄ frozen ✓'; setTimeout(() => Reveal.nextFragment(), 600); });
-    if (r) r.addEventListener('click', e => { e.stopPropagation(); r.classList.add('active'); r.textContent = '⚡ awake ✓'; setTimeout(() => Reveal.nextFragment(), 300); });
+    const show = (el, visible) => {
+      el.classList.toggle('on', visible);
+      el.inert = !visible;
+      el.setAttribute('aria-hidden', String(!visible));
+    };
+    const nodes = () => ({
+      sec: document.getElementById('ps-cycle'),
+      p: document.getElementById('psPauseBtn'),
+      r: document.getElementById('psResumeBtn')
+    });
+    const sync = s => {
+      const { sec, p, r } = nodes();
+      if (!sec || !p || !r) return;
+      sec.dataset.step = String(s);
+      for (let k = 1; k <= (+sec.dataset.steps || 0); k++) sec.classList.toggle('s' + k, k <= s);
+      sec.querySelectorAll('[data-at]').forEach(el => show(el, s >= +el.dataset.at));
+      sec.querySelectorAll('[data-only]').forEach(el => show(el, el.dataset.only.split(/[ ,]+/).map(Number).includes(s)));
+      p.disabled = s >= 3;
+      r.disabled = s < 3 || s >= 4;
+      p.classList.toggle('active', s === 3);
+      r.classList.toggle('active', s === 4);
+      p.querySelector('span').textContent = s === 3 ? 'Paused' : 'Pause this VM';
+      r.querySelector('span').textContent = s === 4 ? 'Resumed' : 'Resume it';
+    };
+    window.psCycleSetStep = s => {
+      const { p, r } = nodes();
+      if (!p || !r || (s === 3 && p.disabled) || (s === 4 && r.disabled)) return;
+      sync(s);
+      const frag = ({ 0: -1, 1: 0, 2: 1, 3: 2, 4: 3 })[s];
+      if (frag == null) return;
+      try { Reveal.slide(Reveal.getIndices().h, 0, frag); } catch (_) {}
+    };
+    Deck.onStep('ps-cycle', sync);
   })();
   </script>
 </section>
@@ -99,14 +135,15 @@
     <div class="stat" data-at="3"><b class="t-violet">~1s</b><span>resume, small VMs*</span></div>
   </div>
   <div class="captions">
-    <p data-only="0">Firecracker was built for exactly this density.</p>
+    <p data-only="0">Small per-VM overhead makes dense fleets possible.</p>
     <p data-only="1">A fresh microVM boots in <b>under 125 milliseconds</b>.</p>
     <p data-only="2">Each one costs <b>under 5 MiB</b> of host overhead.</p>
     <p data-only="3">Resume faults pages in on demand. <b>About a second</b> for small agent VMs — restore time grows with VM size.</p>
-  <p class="muted small" data-at="3">* Firecracker publishes boot ≤125 ms and ≤5 MiB overhead; restore speed is workload-dependent.</p>
   </div>
+  <p class="muted small" style="margin-top:24px" data-at="3">* Published boot and overhead figures. Restore speed depends on the workload.</p>
   <aside class="notes">
-    Why microVMs and not plain containers or full VMs. Firecracker's advertised numbers: under 125 milliseconds to boot, under 5 megabytes of VMM overhead per VM, snapshot restore around a second via mmap plus userfaultfd on-demand paging.
-    Alternatives exist — Kata template cloning for density, gVisor where KVM is unavailable, CRIU for process-level checkpoint — but for thousands of pausable agent VMs, Firecracker-style snapshots are the reference design. Keep hot snapshots on local NVMe, tier cold ones to object storage.
+    Firecracker advertises fast boot and low VMM overhead. Guest RAM and application startup are extra.
+    The one-second restore figure is an example for small VMs, not a Firecracker guarantee.
+    Local NVMe helps with hot snapshots; object storage can hold colder ones.
   </aside>
 </section>

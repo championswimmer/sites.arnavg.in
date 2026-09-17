@@ -12,14 +12,14 @@
   </style>
   <div>
     <p class="num">02 / The bill</p>
-    <h1>One VM per chat<br><span class="t-coral">goes broke.</span></h1>
+    <h1>Every open chat.<br><span class="t-coral">An idle VM.</span></h1>
     <p class="sub">You open more chats than you actually use.</p>
   </div>
-  <div class="bill" aria-hidden="true"><p>500 devs × 4 sessions</p><p>= ~2,000 VMs</p><p>× 4 GiB, always on</p><p class="tot">≈ $56k / month</p></div>
+  <div class="bill" aria-hidden="true"><p>500 devs × 4 sessions</p><p>= ~2,000 VMs</p><p>× 4 GiB, always on</p><p class="tot">~$56k / month</p><p>RAM alone · example rates</p></div>
   <aside class="notes">
-    Stop two: the economics. If every open chat holds its own always-on VM, cost scales with open sessions, not useful work.
-    The receipt on the right is the headline: two thousand 4-gig VMs, always on, roughly fifty-six thousand dollars a month in compute alone, before disks and egress.
-    The next three slides derive that number and show where it burns.
+    Suppose 500 developers each keep four sessions open. That is 2,000 VMs.
+    At our example rate, their RAM alone costs about $56,000 a month. CPU and disk come next.
+    These are illustrative rates, not a provider quote.
   </aside>
 </section>
 
@@ -31,32 +31,33 @@
     #bl-math .ri.cpu.on { border-color: var(--amber); } #bl-math .ri.ram.on { border-color: var(--coral); } #bl-math .ri.disk.on { border-color: var(--violet); }
     #bl-math .ri .e { font-size: 44pt; margin: 0; }
     #bl-math .ri b { display: block; font-family: var(--head); font-size: 26pt; margin: 6px 0 2px; }
+    #bl-math .cost-breakdown { text-align: left; margin: 20px 0 0 1em; padding-top: 16px; border-top: 1px solid var(--line); }
+    #bl-math .cost-breakdown li { font-size: 17pt; color: var(--muted); margin-bottom: 8px; }
     #bl-math .ri .per { font-family: var(--mono); font-size: 15pt; color: var(--muted); margin: 0; }
     #bl-math .ri .big { font-family: var(--head); font-size: 40pt; font-weight: 700; margin: 8px 0 0; }
     #bl-math .tot { text-align: center; margin-top: 16px; }
   </style>
-  <p class="kicker">the math, per piece</p>
-  <h2>One session burns <span class="t-coral">CPU + RAM + disk</span></h2>
+  <p class="kicker">example budget · 2,000 always-on sessions</p>
+  <h2>What one session <span class="t-coral">costs per month</span></h2>
   <div class="stack">
-    <div class="ri cpu" data-at="1"><p class="e">🔥</p><b>CPU</b><p class="per">2 vCPU &times; ~$25 / mo</p><p class="big t-amber">~$50</p><p class="per">per session / mo &middot; ~$200 per user (&times;4) &middot; ~$100k fleet</p></div>
-    <div class="ri ram" data-at="2"><p class="e">🧠</p><b>RAM</b><p class="per">4 GiB &times; ~$7 / mo</p><p class="big t-coral">~$28</p><p class="per">per session / mo &middot; ~$112 per user (&times;4) &middot; ~$56k fleet</p></div>
-    <div class="ri disk" data-at="3"><p class="e">💾</p><b>Disk</b><p class="per">40 GiB &times; ~$0.10 / mo</p><p class="big t-violet">~$4</p><p class="per">per session / mo &middot; ~$16 per user (&times;4) &middot; ~$8k fleet</p></div>
+    <div class="ri cpu" data-at="1"><p class="e t-amber"><i data-icon="lucide-cpu"></i></p><b>CPU</b><p class="per">2 vCPU &times; ~$25 / mo</p><p class="big t-amber">~$50</p><p class="per">per session / month</p><ul class="cost-breakdown"><li>4 sessions / user: ~$200</li><li>2,000 sessions: ~$100k</li></ul></div>
+    <div class="ri ram" data-at="2"><p class="e t-coral"><i data-icon="lucide-memory-stick"></i></p><b>RAM</b><p class="per">4 GiB &times; ~$7 / mo</p><p class="big t-coral">~$28</p><p class="per">per session / month</p><ul class="cost-breakdown"><li>4 sessions / user: ~$112</li><li>2,000 sessions: ~$56k</li></ul></div>
+    <div class="ri disk" data-at="3"><p class="e t-violet"><i data-icon="lucide-hard-drive"></i></p><b>Disk</b><p class="per">40 GiB &times; ~$0.10 / mo</p><p class="big t-violet">~$4</p><p class="per">per session / month</p><ul class="cost-breakdown"><li>4 sessions / user: ~$16</li><li>2,000 sessions: ~$8k</li></ul></div>
   </div>
   <div class="tot" data-at="3">
     <p class="lead" style="margin:0">~$82 per session &middot; ~$328 per user &middot; <span class="t-coral">~$164k / mo</span> for 500 devs &times; 4 sessions</p>
-    <p class="muted small" style="margin:6px 0 0">Illustrative floor pricing, always-on, before egress and logging. The $56k receipt was RAM alone.</p>
+    <p class="muted small" style="margin:6px 0 0">Example rates, not a quote. Excludes model tokens, egress and logging.</p>
   </div>
   <div class="captions">
     <p data-only="0">The receipt slide counted RAM only. Here is the rest.</p>
-    <p data-only="1">CPUs: two vCPUs per session, ~$50 a month each — the biggest line.</p>
-    <p data-only="2">RAM: four gigs per session, ~$28 — the $56k you already saw.</p>
-    <p data-only="3">Disks: forty gigs of checkout per session, ~$4 — small each, $8k at fleet scale. <b>Total ~$164k/mo.</b></p>
+    <p data-only="1">Two vCPUs: <b>~$50 per session</b> each month.</p>
+    <p data-only="2">Four GiB of RAM: <b>~$28 per session</b>. That is the $56k receipt.</p>
+    <p data-only="3">Disk adds ~$4 per session. Fleet total: <b>~$164k per month</b>.</p>
   </div>
   <aside class="notes">
-    This slide must not repeat the receipt — it dissects it. Click through CPU, then RAM, then disk.
-    Per session, always-on: about fifty dollars of vCPU, twenty-eight of RAM, four of disk — roughly eighty-two dollars per session per month.
-    Multiply by four sessions per user: about three hundred twenty-eight dollars per user. Multiply by five hundred users: on the order of one hundred sixty-four thousand a month.
-    The punchline: the fifty-six thousand on the previous slide was RAM alone. CPUs roughly double it again, and disks add a third line item nobody budgets.
+    Add the three lines: $50 CPU, $28 RAM and $4 disk. That is $82 per session each month.
+    Four sessions per developer cost $328. For 500 developers, the total is $164,000.
+    Actual bills depend on the provider and whether it charges for allocated or used resources.
   </aside>
 </section>
 
@@ -83,32 +84,32 @@
   <p class="kicker">where the money goes</p>
   <h2>You wait. Your VM <span class="t-coral">still bills</span>.</h2>
   <div class="bar">
-    <div class="lbl"><span>one session's wall-clock hour</span><span>60 min</span></div>
+    <div class="lbl"><span>example session · about 75% waiting</span><span>60 min</span></div>
     <div class="track">
       <div class="seg w1">▸ run</div><div class="seg w2">read</div><div class="seg w3">think</div><div class="seg w4">review</div>
     </div>
   </div>
   <div class="bar week" data-at="3">
-    <div class="lbl"><span>one session's week — you close the laptop, it stays on</span><span>168 h</span></div>
+    <div class="lbl"><span>example week · 10h active, 158h idle</span><span>168 h</span></div>
     <div class="track">
-      <div class="seg wk-a">~10h active</div><div class="seg wk-b">nights + weekend, billed</div>
+      <div class="seg wk-a" aria-label="10 active hours"></div><div class="seg wk-b">nights + weekend, billed</div>
     </div>
   </div>
   <div class="take" data-at="4">
-    <p class="lead" style="margin:0">Paused overnight and over the weekend? <span class="t-coral">Still billed</span>, unless something parks it.</p>
+    <p class="lead" style="margin:0">Closing your laptop <span class="t-coral">does not stop the cloud VM</span>.</p>
   </div>
   <div class="captions">
-    <p data-only="0">An agent session is idle most of its life.</p>
+    <p data-only="0">An open session need not be doing useful work.</p>
     <p data-only="1">Minutes of real compute per hour…</p>
     <p data-only="2">…then reading, thinking, reviewing diffs. All billed.</p>
-    <p data-only="3">Worse: sessions sit <b>paused-by-you, billed-by-them</b> overnight and all weekend.</p>
-    <p data-only="4">At 75% idle, ~$42k of the $56k RAM line is <b>waiting money</b> — before nights and weekends.</p>
+    <p data-only="3">Nights and weekends count too, unless you <b>stop or suspend the VM</b>.</p>
+    <p data-only="4">If RAM sits idle 75% of the month, <b>~$42k of that $56k buys waiting</b>.</p>
   </div>
   <aside class="notes">
-    Advance the hour bar first: a few minutes of real compute, then long stretches of the human reading, thinking, reviewing diffs — and the VM bills through all of it, from launch until stopped.
-    Then reveal the week bar: roughly ten active hours against a hundred-and-sixty-eight-hour week. Nights, weekends, holidays — sessions nobody closed keep billing because nothing parked them.
-    At seventy-five percent idle inside working hours, about forty-two of the fifty-six thousand RAM line is waiting money — and the overnight and weekend tail makes it worse.
-    The fix is not cheaper VMs; it is not paying for waiting at all.
+    These bars are examples, not usage measurements. The first shows waiting within a session.
+    The second shows a session left on for a week with only ten active hours.
+    Separately, if idle time is 75% of a whole month, it accounts for $42,000 of our RAM estimate.
+    Suspending idle sessions reduces that cost.
   </aside>
 </section>
 
@@ -120,14 +121,15 @@
     #bl-meter .card h3 { font-size: 28pt; margin: 6px 0; }
     #bl-meter code { font-size: 17pt; }
   </style>
-  <p class="kicker">the fix, in one sentence</p>
+  <p class="kicker">stop paying for idle compute</p>
   <h2>Pay for the <span class="t-green">seconds</span> your VM runs</h2>
   <div class="split">
-    <div class="card coral" data-at="1"><p class="e">🅿️</p><h3>Park it cheap</h3><p class="muted">paused state → cheap storage<br><code>~$0.02 / GiB-mo</code></p></div>
-    <div class="card green" data-at="2"><p class="e">⚡</p><h3>Pay while it computes</h3><p class="muted">CPU + RAM only while active<br><code>per-second metering</code></p></div>
+    <div class="card coral" data-at="1"><p class="e t-coral"><i data-icon="lucide-archive"></i></p><h3>Store the idle state</h3><p class="muted">snapshots in object storage<br><code>~$0.02 / GiB-month*</code></p></div>
+    <div class="card green" data-at="2"><p class="e t-green"><i data-icon="lucide-zap"></i></p><h3>Pay while it computes</h3><p class="muted">CPU + RAM only while active<br><code>per-second metering</code></p></div>
   </div>
+  <p class="muted small" data-at="2">* Example object-storage rate. Managed snapshot prices vary.</p>
   <aside class="notes">
-    Pausing does not make compute free — the snapshot still sits on storage. But parked state costs cents per gig-month while idle RAM costs dollars.
-    So the goal shape is serverless: pay storage prices to park, pay compute prices only while the agent actually runs. The next section shows the machinery that makes both halves possible.
+    A paused VM still needs somewhere to store its state. Object storage is usually much cheaper than live RAM.
+    The aim is to stop compute billing while idle, not to make every part of the bill disappear.
   </aside>
 </section>

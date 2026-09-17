@@ -71,6 +71,15 @@ html, body { background: var(--bg); }
 .reveal pre code .hljs-ln-numbers { color: var(--muted); }
 .code-label { font-family: var(--mono); font-size: 15pt !important; color: var(--muted) !important; margin: 0 0 6px !important; }
 
+/* ---------- icons and compact lists ---------- */
+.reveal .icon { display: inline-block; width: 1em; height: 1em; vertical-align: -.13em; flex-shrink: 0; }
+.reveal .icon[data-icon-name="brand-daytona"] { width: 4.4em; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.reveal .detail-list { margin-left: 1.1em; }
+.reveal .detail-list li { font-size: 20pt; margin-bottom: 10px; }
+.reveal button { font-family: inherit; }
+.reveal :is(button, a, [role="button"]):focus-visible { outline: 3px solid var(--teal); outline-offset: 5px; }
+
 /* ---------- common components ---------- */
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px 26px; }
 .card h3, .card h4 { margin-bottom: 8px; }
@@ -85,8 +94,7 @@ html, body { background: var(--bg); }
 /* event / hook chip */
 .hook { display: inline-block; font-family: var(--mono); font-size: 16pt; color: var(--teal); background: rgba(63,220,214,.1); border: 1px solid rgba(63,220,214,.45); border-radius: 999px; padding: 4px 14px; white-space: nowrap; transition: all .35s var(--ease); }
 .hook.hot { background: var(--teal); color: #041413; box-shadow: 0 0 0 6px rgba(63,220,214,.18), 0 0 28px rgba(63,220,214,.5); }
-.hook.mut::after { content: " ✎"; color: var(--amber); }
-.hook.hot.mut::after { color: #041413; }
+.hook.mut { border-style: dashed; }
 
 /* terminal window mock (pi TUI) */
 .term { background: #0a0c11; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; font-family: var(--mono); font-size: 17pt; }
@@ -149,8 +157,9 @@ window.Deck = (function () {
     const n = +sec.dataset.steps || 0, s = stepOf(sec);
     sec.dataset.step = s;
     for (let k = 1; k <= n; k++) sec.classList.toggle('s' + k, k <= s);
-    sec.querySelectorAll('[data-at]').forEach(el => el.classList.toggle('on', s >= +el.dataset.at));
-    sec.querySelectorAll('[data-only]').forEach(el => el.classList.toggle('on', el.dataset.only.split(/[ ,]+/).map(Number).includes(s)));
+    const show = (el, visible) => { el.classList.toggle('on', visible); el.inert = !visible; el.setAttribute('aria-hidden', String(!visible)); };
+    sec.querySelectorAll('[data-at]').forEach(el => show(el, s >= +el.dataset.at));
+    sec.querySelectorAll('[data-only]').forEach(el => show(el, el.dataset.only.split(/[ ,]+/).map(Number).includes(s)));
     sec.querySelectorAll('[data-hot]').forEach(el => el.classList.toggle('hot', el.dataset.hot.split(/[ ,]+/).map(Number).includes(s)));
     sec.querySelectorAll('.dots').forEach(d => {
       if (d.children.length !== n) d.innerHTML = '<span></span>'.repeat(n);
@@ -159,6 +168,13 @@ window.Deck = (function () {
     (stepFns[sec.id] || []).forEach(fn => { try { fn(s, sec); } catch (e) { console.error(e); } });
   }
   function prepare() {
+    document.querySelectorAll('[data-mcp], [data-sess], [data-tech], [data-n]').forEach(el => {
+      el.setAttribute('role', 'button');
+      el.tabIndex = 0;
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); el.click(); }
+      });
+    });
     document.querySelectorAll('section.stepper').forEach(sec => {
       const n = +sec.dataset.steps || 0;
       for (let k = 0; k < n; k++) {
