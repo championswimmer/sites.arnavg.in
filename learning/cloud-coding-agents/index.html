@@ -246,7 +246,7 @@ window.Deck = (function () {
   </aside>
 </section>
 
-<section id="in-agenda" class="stepper" data-steps="4">
+<section id="in-agenda" class="stepper" data-steps="6">
   <style>
     #in-agenda .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 36px; }
     #in-agenda .card { min-height: 250px; display: flex; flex-direction: column; gap: 10px; }
@@ -276,12 +276,12 @@ window.Deck = (function () {
       <h3>How it works</h3>
       <p class="muted">Storage, sharing, owners</p>
     </div>
-    <div class="card amber" data-at="4">
+    <div class="card amber" data-at="5">
       <p class="big t-amber">5</p>
       <h3>Where to run it</h3>
       <p class="muted">Side project first, six hosts</p>
     </div>
-    <div class="card green" data-at="4">
+    <div class="card green" data-at="6">
       <p class="big t-green">6</p>
       <h3>The whole system</h3>
       <p class="muted">Wired together, Q&amp;A</p>
@@ -335,17 +335,21 @@ window.Deck = (function () {
     #lp-loop .loopback.on { opacity: 1; }
     #lp-loop .loopback svg { display: block; width: 100%; height: 26px; }
     #lp-loop .loopback .lbl { text-align: center; font-family: var(--mono); font-size: 16pt; color: var(--violet); margin: 2px 0 0; }
+    #lp-loop .node .icons { display: flex; gap: 6px; justify-content: center; margin-top: 9px; }
+    #lp-loop .node .icons img { width: 22px; height: 22px; background: #fff; border-radius: 50%; padding: 3px; display: block; }
+    #lp-loop .node .icons img.wide { width: auto; height: 22px; padding: 3px 8px; border-radius: 11px; }
+    #lp-loop .node:not(.on) .icons { filter: grayscale(.4); opacity: .75; }
   </style>
   <p class="kicker">one agent session</p>
   <h2>Click through the loop</h2>
   <div class="vmbox">
     <span class="tag">everything runs inside one VM</span>
     <div class="flow">
-      <div class="node n1" data-at="1"><b>Plan</b><span>inspect</span></div><div class="arr" data-at="2">→</div>
-      <div class="node n2" data-at="2"><b>Act</b><span>edit·run·call</span></div><div class="arr" data-at="3">→</div>
+      <div class="node n1" data-at="1"><b>Plan</b><span>inspect</span><div class="icons"><img src="https://cdn.simpleicons.org/jira" alt="Jira" title="Jira"><img src="https://cdn.simpleicons.org/linear" alt="Linear" title="Linear"><img src="https://cdn.simpleicons.org/asana" alt="Asana" title="Asana"><img src="https://cdn.simpleicons.org/notion" alt="Notion" title="Notion"></div></div><div class="arr" data-at="2">→</div>
+      <div class="node n2" data-at="2"><b>Act</b><span>edit·run·call</span><div class="icons"><img src="https://cdn.simpleicons.org/github" alt="GitHub" title="GitHub clone"><img class="wide" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/amazonwebservices/amazonwebservices-original-wordmark.svg" alt="AWS" title="AWS deploy"><img src="https://cdn.simpleicons.org/googlecloud" alt="GCP" title="GCP deploy"></div></div><div class="arr" data-at="3">→</div>
       <div class="node n3" data-at="3"><b>Observe</b><span>logs·exits</span></div><div class="arr" data-at="4">→</div>
       <div class="node n4" data-at="4"><b>Repair</b><span>re-plan</span></div><div class="arr" data-at="5">→</div>
-      <div class="node n5" data-at="5"><b>Handoff</b><span>PR·patch</span></div>
+      <div class="node n5" data-at="5"><b>Handoff</b><span>PR·patch</span><div class="icons"><img src="https://cdn.simpleicons.org/github" alt="GitHub" title="GitHub PR"><img src="https://cdn.simpleicons.org/linear" alt="Linear" title="Linear — close ticket"><img src="https://cdn.simpleicons.org/jira" alt="Jira" title="Jira — close ticket"></div></div>
     </div>
     <div class="loopback" data-at="4"><svg viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="lpBackHead" markerWidth="9" markerHeight="7" refX="7" refY="3.5" orient="auto"><path d="M0,0 L8,3.5 L0,7 z" fill="#b9a2ff"></path></marker></defs><line x1="73" y1="11" x2="29" y2="11" stroke="#b9a2ff" stroke-width="1.4" stroke-dasharray="5 3" marker-end="url(#lpBackHead)"></line></svg><p class="lbl">repair loops back to act until checks pass</p></div>
   </div>
@@ -362,11 +366,11 @@ window.Deck = (function () {
   (function () {
     const D = {
       0: 'Each highlighted box needs a permission. Watch this space.',
-      1: '<b>Plan needs:</b> read the ticket (issue tracker scope) + read the repo. No write yet.',
-      2: '<b>Act needs:</b> repo write — the clone — plus shell exec and MCP tool calls.',
+      1: '<b>Plan needs:</b> ticket read — Jira / Linear / Asana / Notion — plus repo read. No write yet.',
+      2: '<b>Act needs:</b> GitHub clone (repo write), shell exec, MCP calls — plus AWS / GCP scope to deploy code.'
       3: '<b>Observe needs:</b> logs, exit codes, diffs, CI output piped back into context.',
       4: '<b>Repair needs:</b> staging or prod-like access to reproduce and debug — then the loopback arrow fires and Act runs again.',
-      5: '<b>Handoff needs:</b> raise the PR, link the ticket, trigger deploy. The only step that touches prod for real.'
+      5: '<b>Handoff needs:</b> push the PR on GitHub, close the ticket in Linear / Jira, trigger deploy. The only step that touches prod for real.'
     };
     if (window.Deck) Deck.onStep('lp-loop', s => { const b = document.getElementById('lpAccessBody'); if (b) b.innerHTML = D[s] || D[0]; });
   })();
@@ -1030,9 +1034,9 @@ window.Deck = (function () {
     #sv-divider .c { font-family: var(--mono); font-size: 17pt; background: var(--panel); border: 1px solid rgba(255,180,84,.45); border-radius: 12px; padding: 12px 20px; color: var(--amber); }
     #sv-divider .c:nth-child(2) { margin-left: 40px; } #sv-divider .c:nth-child(3) { margin-left: 80px; color: var(--teal); border-color: rgba(63,220,214,.45); }
   </style>
-  <div>
+  <div style="max-width: 900px;">
     <p class="num">06 / Where to run it</p>
-    <h1>Try it on a <span class="t-amber">side project.</span></h1>
+    <h1>Try it on a<br><span class="t-amber">side project.</span></h1>
     <p class="sub">Sandboxes and cloud agents — both on Railway.</p>
   </div>
   <div class="stack" aria-hidden="true"><div class="c">Sandbox.create()</div><div class="c">.checkpoint("ready")</div><div class="c">.fork() → 50 tasks</div></div>
