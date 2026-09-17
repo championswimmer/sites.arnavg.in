@@ -53,9 +53,13 @@
   </svg>
   <p class="glabel">tokens / second</p>
   <aside class="notes">
-    [~0:15] Extension 1 of 3, and the lightest: it only watches. How fast is my model, really, on my own workload inside my own harness?
-    Two numbers answer "slow when?". TTFT, time to first token, is dead air: network, queueing at the provider, and prefill of your whole context, so a big context means a big TTFT. TPS, tokens per second since the first token, is decode speed: how fast it types once it starts.
-    The pill is the exact string it writes into pi's status bar.
+    <p>[~0:15] Extension 1 of 3, the lightest: it only watches.</p>
+    <ul>
+      <li>Question: how fast is my model, on my workload, inside my harness?</li>
+      <li><b>TTFT</b> = dead air: network + provider queueing + prefill of the whole context. Big context → big TTFT.</li>
+      <li><b>TPS</b> = decode speed once it starts typing</li>
+      <li>The pill is the exact string it writes to pi's status bar</li>
+    </ul>
   </aside>
 </section>
 
@@ -166,14 +170,16 @@
     <p data-only="5"><b>message_end</b>: exact 310 tokens ÷ 3.36s = <b>92.3 t/s</b></p>
   </div>
   <aside class="notes">
-    [~0:50] The whole extension in slow motion. Numbers are illustrative but consistent: first delta at 840ms, a delta every 20ms, message_end at 4.2s with 310 output tokens.
-    Step 1: before_provider_request fires right before the HTTP call. We use it as a starting gun: performance.now(), reset, return nothing.
-    Step 2: start and text_start events can arrive, but carry no content, so they're ignored. This dead air is TTFT.
-    Step 3: first text delta at 840ms. TTFT is frozen; no TPS yet, since zero seconds have passed since the first token.
-    Step 4: deltas arrive ~50 times a second, but the footer only repaints every 250ms: 168 deltas, 13 status writes.
-    Step 5: message_end has the real usage: 310 tokens over 3.36s = 92.3 t/s, and it stays in the footer. The next LLM call in the loop re-anchors the clock.
-    Demo: "replay in real time" runs the full 4.2s; 0.25× slows it down.
-    Only if asked: live TPS depends on the provider reporting partial usage; otherwise it estimates chars ÷ 4 until message_end snaps to exact. On Anthropic the mid-stream number may read low until message_end (unverified, test live first). The final number is correct either way.
+    <p>[~0:50] Numbers illustrative but consistent.</p>
+    <ul>
+      <li><b>1</b>: starting gun: <code>performance.now()</code>, reset, return nothing</li>
+      <li><b>2</b>: <code>start</code> / <code>text_start</code> carry no content → ignored</li>
+      <li><b>3</b>: TTFT frozen; no TPS yet (zero time since first token)</li>
+      <li><b>4</b>: ~50 deltas/s but repaint throttled: 168 deltas → 13 status writes</li>
+      <li><b>5</b>: real usage arrives → exact number, stays in footer. Next LLM call re-anchors the clock.</li>
+      <li>Demo: "replay in real time" runs the full 4.2s; 0.25× slows it</li>
+      <li>Only if asked: live TPS needs provider partial usage, else chars ÷ 4 until <code>message_end</code>. Anthropic may read low mid-stream (unverified, test first). Final number always exact.</li>
+    </ul>
   </aside>
   <script>
   (function () {
@@ -363,13 +369,15 @@
   </div>
   <p class="obs">Every hook returns <code>undefined</code>: <b class="t-teal">pure observation</b>, the agent runs unchanged</p>
   <aside class="notes">
-    [~0:40] Every hook the extension registers, bodies elided: lines 116 to 194 of one source file.
-    Step 1: before_provider_request starts the clock. It ignores the payload and returns undefined, so the request goes out unchanged.
-    Step 2: message_update returns early unless the event is one of three content deltas: text, thinking or tool-call. So a thinking token counts as "first token". The first one locks TTFT; after that it updates the token count and calls ctx.ui.setStatus at most every 250ms.
-    Step 3: message_end (assistant role only) snaps to message.usage.output, the exact count, and renders once more.
-    Step 4: agent_end and session_shutdown leave the final numbers in the footer; /speed toggles the metrics.
-    Takeaway: every hook returns undefined. It's pure observation, and the agent behaves exactly as before. 233 lines, one file, zero dependencies, about 55 lines of actual measuring. Install: pi install npm:@championswimmer/pi-speedometer.
-    Transition: watching is the lightest thing an extension can do. Next, pi-checklist gives the agent new tools and its own state.
+    <p>[~0:40] Every hook it registers, bodies elided.</p>
+    <ul>
+      <li><b>1</b>: ignores payload, returns undefined → request goes out unchanged</li>
+      <li><b>2</b>: only 3 content deltas count (text, thinking, toolcall), so a thinking token counts as "first token". Status writes throttled to 250ms.</li>
+      <li><b>3</b>: assistant role only; snaps to <code>message.usage.output</code></li>
+      <li><b>Takeaway</b>: every hook returns undefined → pure observation, agent unchanged</li>
+      <li>Install: <code>pi install npm:@championswimmer/pi-speedometer</code></li>
+      <li>Next: checklist gives the agent new tools and its own state</li>
+    </ul>
   </aside>
 </section>
 

@@ -77,10 +77,12 @@
     <div style="top:416px;height:26px;border-color:var(--blue);background:rgba(116,185,255,.2)"></div>
   </div>
   <aside class="notes">
-    [~0:15] Last one, and the most involved. Speedometer only watched, checklist added a tool. This one rewrites what the
-    model sees on every request, keeps the saved session untouched, and gives the model a tool to get things back.
-    The picture on the right is the visual language from here on: the context window as a stack of messages, height roughly
-    proportional to tokens. Coral is tool output, green is a summary, violet is a tool call.
+    <p>[~0:15] Extension 3 of 3, the most involved.</p>
+    <ul>
+      <li>Rewrites what the model sees on every request</li>
+      <li>Saved session stays untouched; model gets a tool to fetch things back</li>
+      <li>Visual legend from here on: block height ≈ tokens. Coral = tool output, green = summary, violet = tool call.</li>
+    </ul>
   </aside>
   <script>
   /* CP: shared helpers for the context-prune section (stack layout, meter, number tweening) */
@@ -221,10 +223,13 @@
     <p data-only="4 5">Paid again on <b>every</b> later request</p>
   </div>
   <aside class="notes">
-    [~0:40] Go fast: they know the whole array is re-sent. Token counts here and on the next slides are illustrative (about 4 chars per token); the mechanics are exact.
-    [0–3] "Why is the login test failing?" read + npm test add 9,000 tokens, grep adds 2,000, and by "OK, fix it" request 4 is 13,875 tokens. The test log has now gone out three times.
-    [4] Cost: old tool output times every later request. Attention: the one useful fact is buried.
-    [5] It pushes you toward lossy auto-compaction. And the twist: rewriting old messages busts the prompt cache, so you can't just prune constantly. Keep that in mind.
+    <p>[~0:40] Go fast, they know context is re-sent. Tokens illustrative (~4 chars/token).</p>
+    <ul>
+      <li><b>3</b>: request 4 = 13,875 tokens; the test log has gone out 3 times</li>
+      <li><b>4</b>: cost (old output × every later request) + attention (the useful fact is buried)</li>
+      <li><b>5</b>: pushes you towards lossy auto-compaction</li>
+      <li>Plant the twist: rewriting old messages <b>busts the prompt cache</b>, so you can't prune constantly</li>
+    </ul>
   </aside>
   <script>
   (function () {
@@ -318,14 +323,17 @@
   </div>
   <p class="also">also: <code>tool_execution_end</code> (on-context-tag) · <code>agent_end</code> (status only) · <code>context_prune</code> tool (agentic-auto)</p>
   <aside class="notes">
-    [~0:50] The idea in one line: once a task is done, a side LLM call summarises the old tool output, the originals go into an index in the session that's never sent, and the model can page any original back by a short ref. Lossy summary, lossless recovery. Here it is on the loop; ✎ marks hooks whose return value changes what pi does. Hooks are clickable.
-    [1] session_start / session_tree: same trick as checklist. Index, stats and frontier are rebuilt from the current branch.
-    [2] before_agent_start: agentic-auto mode only. Adds system-prompt guidance on when to call context_prune.
-    [3] context: the important one. Before every LLM call, drop tool results that already have a summary. This request only.
-    [4] turn_end: capture the turn's calls and results as a pending batch. Nothing summarised yet.
-    [5] message_end: default mode. A final answer with no tool calls means the task is done, so flush.
-    [6] context_tree_query: the recovery tool.
-    [7] /pruner command. The footer line lists the rest; skip it unless asked.
+    <p>[~0:50]</p>
+    <ul>
+      <li><b>0</b>: task done → side LLM call summarises old tool output → originals to an index (never sent) → model pages back by ref. <b>Lossy summary, lossless recovery.</b></li>
+      <li>✎ = return value changes what pi does; chips are clickable</li>
+      <li><b>1</b>: index, stats and frontier rebuilt from the current branch</li>
+      <li><b>2</b>: agentic-auto mode only: when to call <code>context_prune</code></li>
+      <li><b>3</b>: the important one. Affects this request only.</li>
+      <li><b>4</b>: nothing summarised yet</li>
+      <li><b>5</b>: default mode: no tool calls = task done → flush</li>
+      <li><b>7</b>: skip unless asked</li>
+    </ul>
   </aside>
   <script>
   (function () {
@@ -539,19 +547,25 @@
   </div>
   <div class="dots" style="position:absolute;right:190px;bottom:44px"></div>
   <aside class="notes">
-    [~1:30] The core slide: keep a steady click rhythm, about 8 seconds a step. Token counts are illustrative; events, field names and ordering are exact. Default mode, agent-message.
-    [0] Request 1. context runs, the index is empty, it returns undefined: nothing changes.
-    [1] read and bash run in parallel: 12,000 and 24,000 chars land in context.
-    [2] turn_end: captureBatch builds this object (call IDs, args, full result text) and queues it. No summary yet.
-    [3] Why wait? Every rewrite of old messages busts the prompt cache, so the default batches the whole task. grep's turn is queued too.
-    [4] The model answers in plain text. message_end sees an assistant message with zero tool calls: task done, flush.
-    [5] One summarizer call per batch, in parallel. Active model by default, or a cheap one you configure. Each result is cut to its first 2,000 chars.
-    [6] Summaries come back with short refs: t1, t2 for turn 0, t3 for turn 1.
-    [7] Two session entries: the summary as a custom_message the model sees but the UI hides, and an index entry with the full originals that pi never sends. The context is still just as big.
-    [8] "OK, fix it." context gets a deep copy of the messages for request 4.
-    [9] One filter drops every toolResult whose ID is indexed. Tool-call blocks stay as anchors. 13,875 becomes about 3,160: 77% smaller.
-    Caveat if asked: in session-delivery modes the summary may only reach the live agent after a reload or /tree; raw results are dropped immediately either way. For a live demo use /pruner prune-on on-demand and /pruner now, which deliver at runtime.
-    [10] The session file was never rewritten. Every raw result is still on disk. Pruning is a view, not a delete.
+    <p>[~1:30] Core slide: steady clicks, ~8s/step. Tokens illustrative; events, fields and ordering exact. Default mode: agent-message.</p>
+    <ul>
+      <li><b>0</b>: index empty → <code>context</code> returns undefined</li>
+      <li><b>1</b>: read + bash in parallel: 12k + 24k chars</li>
+      <li><b>2</b>: <code>captureBatch</code>: call IDs, args, full result text</li>
+      <li><b>3</b>: why wait? Rewrites bust the prompt cache → batch the whole task</li>
+      <li><b>5</b>: active model by default, or a cheap one you configure. Each result cut to first 2,000 chars.</li>
+      <li><b>6</b>: refs t1, t2 (turn 0), t3 (turn 1)</li>
+      <li><b>7</b>: two session entries
+        <ul>
+          <li>summary as <code>custom_message</code>: model sees it, UI hides it</li>
+          <li>index entry with full originals: never sent</li>
+          <li>context still full size at this point</li>
+        </ul>
+      </li>
+      <li><b>9</b>: tool-call blocks stay as anchors. ~77% smaller.</li>
+      <li><b>10</b>: session file never rewritten. <b>Pruning is a view, not a delete.</b></li>
+      <li>If asked: session-delivery modes may only deliver the summary after reload or <code>/tree</code>. For a live demo use <code>/pruner prune-on on-demand</code> + <code>/pruner now</code>.</li>
+    </ul>
   </aside>
   <script>
   (function () {
@@ -653,11 +667,13 @@ Turn: 0
     <p data-only="3">Hot context, cold storage, one tool between</p>
   </div>
   <aside class="notes">
-    [~0:30] Illustrative token counts.
-    [0] The summary says one test failed, but the summarizer only saw the first 2,000 chars and the detail is near the end.
-    [1] So the model calls context_tree_query with t2, the ref it read in the summary. The tool is always registered.
-    [2] It gets the full stored log back as a new tool result, capped like built-in tools. Now it sees "Expected 401, received 200" at line 57.
-    [3] That's a new tool result, so the next flush summarises it again with a new ref. Hot context, cold storage.
+    <p>[~0:30] Tokens illustrative.</p>
+    <ul>
+      <li><b>0</b>: summariser only saw the first 2,000 chars; the detail is near the end</li>
+      <li><b>1</b>: model uses the ref it read in the summary; tool is always registered</li>
+      <li><b>2</b>: full log back (capped like built-in tools) → "Expected 401, received 200" at line 57</li>
+      <li><b>3</b>: it's a new tool result, so the next flush summarises it again with a new ref</li>
+    </ul>
   </aside>
   <script>
   (function () {
@@ -736,12 +752,18 @@ Turn: 0
   </div>
   <p class="punch" data-at="4">The model sees <span class="t-green">a summary</span>. The session keeps <span class="t-amber">everything</span>.</p>
   <aside class="notes">
-    [~0:40] Excerpts from pi-context-prune 1.4.0, lightly trimmed (the agentic-auto reminder in the context handler is cut).
-    [0] Right: the whole extension's shape. One function, a handful of pi.on calls, two tools, a command.
-    [1] The one that matters: context.
-    [2] The whole pruning algorithm is one filter: drop toolResults whose ID is in the index.
-    [3] Early exits return undefined: disabled, or nothing to drop. Untouched messages keep the prompt cache stable.
-    [4] Otherwise return new messages, for this request only. The model sees a summary; the session keeps everything; no fork of pi. That's the lesson.
-    One breath, only if time: five flush modes trade cache hits against context size (default once per task, every-turn is leanest but busts the cache most, plus on-demand /pruner now and model-driven ones). If a summary would be bigger than the raw output the batch is skipped, and if the summarizer fails the batches go back to pending.
+    <p>[~0:40] pi-context-prune 1.4.0, lightly trimmed.</p>
+    <ul>
+      <li><b>0</b>: right side = shape of the whole extension</li>
+      <li><b>3</b>: early exits return undefined → untouched messages keep the prompt cache stable</li>
+      <li><b>4</b>: the lesson: model sees a summary, session keeps everything, no fork of pi</li>
+      <li>Only if time:
+        <ul>
+          <li>5 flush modes trade cache hits vs context size (default once per task; every-turn leanest but worst for cache; on-demand; model-driven)</li>
+          <li>Summary bigger than raw output → batch skipped</li>
+          <li>Summariser fails → batches go back to pending</li>
+        </ul>
+      </li>
+    </ul>
   </aside>
 </section>

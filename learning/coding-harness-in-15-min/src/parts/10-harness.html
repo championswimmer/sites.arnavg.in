@@ -131,16 +131,18 @@
     <p data-only="10">…so it stops. <b>One prompt, four model calls.</b></p>
   </div>
   <aside class="notes">
-    [~1:45] Step 0: the model on its own is just a text function: text in, text out, no state, no hands. It can't read a file or run a command. Something has to run the tools and call it again. That's the harness. Task: "fix the failing login test". Files, test output and the size bar are illustrative; the loop shape is pi's real code path.
-    Step 1: you type one line.
-    Step 2: the harness builds the context: system prompt, AGENTS.md, tool definitions, history. The model knows only what's in this stack.
-    Step 3: pi-ai turns it into a request for whichever provider you picked. The whole stack goes out on every call.
-    Step 4: the reply streams back as text plus a tool call: bash, npm test. That's a request, not an action.
-    Step 5: the harness validates the arguments and runs the tool. Multiple calls run in parallel by default.
-    Step 6: the output is appended as a toolResult, and because there were tool calls, it loops.
-    Steps 7–8: read the file, then edit it. Watch the stack: the test log and the whole file get re-sent on every later call. context-prune, the last extension, deals with exactly that.
-    Steps 9–10: plain text, no tool calls, so the loop exits. One prompt, four model calls, three tool runs, all driven by the harness.
-    Demo tip: "auto-play loop" runs it on a timer; click again to pause.
+    <p>[~1:45]</p>
+    <ul>
+      <li><b>0</b>: model alone = text in, text out. No state, no hands. The harness runs tools and calls it again.</li>
+      <li>Files / sizes are illustrative; the loop shape is pi's real code path</li>
+      <li><b>2</b>: the model knows only what's in this stack</li>
+      <li><b>3</b>: the whole stack goes out on <i>every</i> call, to any provider (pi-ai)</li>
+      <li><b>4</b>: a tool call is a request, not an action</li>
+      <li><b>5</b>: harness validates args and runs it; parallel by default</li>
+      <li><b>7–8</b>: watch the stack: test log + whole file re-sent every call → setup for context-prune</li>
+      <li><b>10</b>: 1 prompt, 4 model calls, 3 tool runs, all driven by the harness</li>
+      <li>Demo: ▶ auto-play; click again to pause</li>
+    </ul>
   </aside>
   <script>
   (function () {
@@ -267,8 +269,12 @@
     <p data-only="6">Same weights, <b>different agent</b>. No fork needed.</p>
   </div>
   <aside class="notes">
-    [~0:45] Everyone compares models; few compare harnesses. Both columns call the same model.
-    Steps 1–5, keep it quick: what the model sees (context-prune swaps finished tool output for summaries), what it can do (new tools, blocked calls), when the loop stops (a tool can terminate the run), what you see (footer meters, widgets), and what's saved (extension state in the session file).
-    Step 6: the model didn't change; every difference on the right is harness code. And pi is minimal on purpose. Its README says: adapt pi to your workflows "without having to fork and modify pi internals". Each of these is an extension file.
+    <p>[~0:45]</p>
+    <ul>
+      <li>Everyone compares models; few compare harnesses</li>
+      <li><b>1–5</b>: move fast, captions carry it</li>
+      <li><b>6</b>: every difference on the right is harness code, each one an extension file</li>
+      <li>pi is minimal on purpose. README: adapt it "without having to fork and modify pi internals"</li>
+    </ul>
   </aside>
 </section>

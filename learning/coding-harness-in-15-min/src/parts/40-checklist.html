@@ -57,9 +57,13 @@
     <div class="status"><b>☑ 1/4</b></div>
   </div>
   <aside class="notes">
-    [~0:15] Extension 2 of 3. The speedometer only watched; this one gives the model new abilities (three tools), gives the human new UI (a widget and a footer), and keeps its own state.
-    Why: hand an agent a dozen-step job and, forty tool calls or one compaction later, the goal only lives in a blurry transcript. Here the plan becomes data the agent keeps re-reading, and the harness enforces the order.
-    The mock is the real widget layout: status pill, 3-char id, title, and what blocked tasks wait on. Footer: ☑ done/total. Install: pi install npm:pi-checklist.
+    <p>[~0:15] Extension 2 of 3.</p>
+    <ul>
+      <li>New abilities for the model (3 tools), new UI for you (widget + footer), its own state</li>
+      <li>Why: 40 tool calls or one compaction later, the goal only lives in a blurry transcript</li>
+      <li>Here the plan is data the agent keeps re-reading, and the harness enforces the order</li>
+      <li>Mock = real widget layout. Install: <code>pi install npm:pi-checklist</code></li>
+    </ul>
   </aside>
 </section>
 
@@ -258,13 +262,20 @@
   </div>
   <div class="dots" style="position:absolute;right:64px;top:48px"></div>
   <aside class="notes">
-    [~1:00] One real scenario; every tool text and error string here is real output from the extension's code.
-    Step 1: checklist uses before_agent_start to append to the system prompt. No list yet, so just a short hint: use checklist tools for multi-step work.
-    Step 2: the model calls checklist_create with four tasks and explicit 3-char ids so the dependsOn links resolve. The model reads the content text; the full snapshot goes in details, which is saved but not sent to the model. Widget and footer appear: stg ready, the rest blocked.
-    Step 3: mark stg ongoing before starting it. From the next prompt, the hint also lists the open tasks, so the plan survives compaction.
-    Step 4: the model jumps ahead: stg done and wir done in one batch. wir depends on mid, so the store throws; pi reports isError and the model reads that exact message. All-or-nothing: even the valid stg change is dropped and nothing is saved. The extension enforces order, not just records it.
-    Step 5: the error named the blocker, so the model finishes stg and starts mid. ☑ 1/4.
-    Step 6: fast-forward to ☑ 4/4. Nothing open, so only the hint is injected from now on.
+    <p>[~1:00] One scenario; every tool text and error string is real extension output.</p>
+    <ul>
+      <li><b>1</b>: <code>before_agent_start</code> appends a short hint to the system prompt</li>
+      <li><b>2</b>: explicit 3-char ids so <code>dependsOn</code> links resolve. Model reads <code>content</code>; full snapshot goes in <code>details</code> (saved, not sent).</li>
+      <li><b>3</b>: from next prompt, open tasks are injected too → plan survives compaction</li>
+      <li><b>4</b> (key moment): model jumps ahead. <code>wir</code> depends on <code>mid</code> → store throws, <code>isError</code>.
+        <ul>
+          <li>All-or-nothing: even the valid <code>stg</code> change is dropped</li>
+          <li>It <i>enforces</i> order, not just records it</li>
+        </ul>
+      </li>
+      <li><b>5</b>: error named the blocker → model recovers</li>
+      <li><b>6</b>: nothing open → only the hint is injected from now on</li>
+    </ul>
   </aside>
 </section>
 
@@ -364,14 +375,22 @@ function commit(snapshot: ChecklistSnapshot, ctx: ExtensionContext): void {
     <p data-only="4">State lives in the <b>session</b>, rebuilt via <b>getBranch()</b>: /tree, /fork, resume just work</p>
   </div>
   <aside class="notes">
-    [~0:45] Three excerpts; the tabs are clickable.
-    Step 0, registerTool: everything the model sees comes from this object: description, a promptSnippet, promptGuidelines bullets and a TypeBox schema. Three of these: create, read, update.
-    Step 1: execute runs a pure store function, commits, and returns content (what the model reads) and details (structured snapshot, saved on the tool result, not sent to the model). Validation errors throw before commit, so nothing is persisted.
-    Step 2: renderCall and renderResult are the human-facing half, so you see "checklist create 4 task(s)" instead of JSON.
-    Step 3: before_agent_start returns the system prompt plus the hint, plus the open tasks if anything is planned or ongoing.
-    Step 4: commit updates memory, calls appendEntry with a "pi-checklist" custom entry, and repaints. No database: the session file is the database. On session_start and session_tree it rebuilds from ctx.sessionManager.getBranch(), root to current leaf, last snapshot wins. So /tree back to an earlier message rewinds the list, and /resume, /fork and compaction all put back the right plan.
-    Size: index.ts, the pi wiring, is 324 lines; the rules are plain TypeScript with no pi imports.
-    Transition: that one added tools and state. The last one is the most involved: pi-context-prune rewrites the context itself before every model call.
+    <p>[~0:45] Tabs are clickable.</p>
+    <ul>
+      <li><b>0</b>: everything the model sees about the tool comes from this object. Three of these: create, read, update.</li>
+      <li><b>1</b>: validation throws before commit → nothing persisted</li>
+      <li><b>2</b>: you see "checklist create 4 task(s)" instead of JSON</li>
+      <li><b>3</b>: open tasks only added if anything is planned / ongoing</li>
+      <li><b>4</b>: no database, the session file <i>is</i> the database
+        <ul>
+          <li>Commit → <code>appendEntry</code> ("pi-checklist" custom entry)</li>
+          <li>Rebuild on <code>session_start</code> / <code>session_tree</code> from <code>getBranch()</code>; last snapshot wins</li>
+          <li>So <code>/tree</code> rewinds the list; <code>/resume</code>, <code>/fork</code>, compaction all just work</li>
+        </ul>
+      </li>
+      <li>Size: index.ts (pi wiring) 324 lines; rules are plain TS with no pi imports</li>
+      <li>Next: context-prune rewrites the context itself before every call</li>
+    </ul>
   </aside>
 
   <script>

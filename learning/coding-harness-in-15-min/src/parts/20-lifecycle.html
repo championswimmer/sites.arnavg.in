@@ -70,7 +70,11 @@
     </div>
   </div>
   <aside class="notes">
-    [~0:10] Every stage of that loop fires a named, typed event in pi. An extension is just code that subscribes to them: some events you can only listen to, others let you step in.
+    <p>[~0:10]</p>
+    <ul>
+      <li>Every stage of that loop fires a named, typed event</li>
+      <li>An extension = code subscribing to them: some listen-only, some let you step in</li>
+    </ul>
   </aside>
   <script>
   (function () {
@@ -306,15 +310,23 @@
     <p data-only="10"><b>14 of 36</b> events take a return value <b>✎</b>. Handlers chain in load order.</p>
   </div>
   <aside class="notes">
-    [~1:30] Same loop as before, now with pi's real event names. Chips glow as they fire; click any chip for its payload and what it can return.
-    Step 1, Input: input can transform or swallow the prompt; before_agent_start can inject a message or change this run's system prompt.
-    Step 2, Context: context gets a deep copy of the messages before every LLM call. Rewrite it and the model sees something else; the session file is untouched.
-    Step 3, Provider: before_provider_request can see or replace the exact payload.
-    Step 4, Stream: a message_update per delta; message_end can replace the final message before it's saved.
-    Step 5, Tool calls: tool_call runs after validation, before execute. This is where you block.
-    Step 6, Tool results: tool_result patches the output before the model reads it.
-    Steps 7–9: tools ran, so round again; turn 1 just answers, so turn_end, agent_end, agent_settled.
-    Step 10: two kinds of hook. Observe: return nothing. Intervene: return a value. 14 of pi's 36 events can change the outcome that way; eight are on this loop. Handlers run one at a time, awaited, in extension load order, and results chain: the next handler sees the previous one's change (for tool_call, the first block wins). A slow handler slows the loop, even on message_update.
+    <p>[~1:30] Same loop, real event names. Click any chip → payload + what it can return.</p>
+    <ul>
+      <li><b>1 Input</b>: <code>input</code> can transform or swallow the prompt; <code>before_agent_start</code> can inject a message or swap this run's system prompt</li>
+      <li><b>2 Context</b>: deep copy of messages before every LLM call. Rewrite it → model sees something else; session file untouched</li>
+      <li><b>3 Provider</b>: <code>before_provider_request</code> can see / replace the exact payload</li>
+      <li><b>4 Stream</b>: <code>message_end</code> can replace the final message before it's saved</li>
+      <li><b>5 Tool calls</b>: after validation, before execute → <b>this is where you block</b></li>
+      <li><b>6 Tool results</b>: patch output before the model reads it</li>
+      <li><b>7–9</b>: tools ran → loop; turn 1 answers in text → ends</li>
+      <li><b>10</b>: two kinds of hook: observe (return nothing) vs intervene (return a value)
+        <ul>
+          <li>14 of 36 events can intervene; 8 are on this loop</li>
+          <li>Handlers awaited one at a time, in load order; changes chain. <code>tool_call</code>: first block wins</li>
+          <li>A slow handler slows the loop, even on <code>message_update</code></li>
+        </ul>
+      </li>
+    </ul>
   </aside>
   <script>
   (function () {
@@ -397,10 +409,13 @@
     </div>
   </div>
   <aside class="notes">
-    [~0:35] So how do you hook in? An extension is a TypeScript file whose default export is a function. pi calls it once and hands you the API.
-    Step 1: drop it in ~/.pi/agent/extensions or .pi/extensions, type /reload, it's live. No build, no fork.
-    Steps 2–5: pi.on hooks any event from the loop we just saw; registerTool gives the model a new tool; registerCommand adds a slash command; ctx.ui paints the footer, widgets and dialogs. (The file is illustrative, stitched from documented snippets.)
-    Close: three real extensions, each one level deeper. speedometer only observes, checklist adds tools, and context-prune rewrites the context.
+    <p>[~0:35]</p>
+    <ul>
+      <li>A TS file whose default export is a function; pi calls it once and hands you the API</li>
+      <li><b>1</b>: drop in the folder, <code>/reload</code>, live. No build, no fork.</li>
+      <li><b>2–5</b>: one API per highlighted line. File is illustrative (stitched from documented snippets).</li>
+      <li>Bridge: 3 real extensions, each deeper: speedometer observes → checklist adds tools → context-prune rewrites context</li>
+    </ul>
   </aside>
   <script>
   (function () {

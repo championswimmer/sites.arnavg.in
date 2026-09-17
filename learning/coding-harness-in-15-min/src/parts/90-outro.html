@@ -82,11 +82,14 @@
     <p><code>pi install npm:your-extension</code></p>
   </div>
   <aside class="notes">
-    [~0:40] Recap the arc in one breath (top-right chips): speedometer observed, checklist added a tool, context-prune rewrote the context. The fourth kind of hook is intercept: stop something before it happens. That's the tool_call hook, and it's also how fast you go from zero to live.
-    [1] One TypeScript file in ~/.pi/agent/extensions. Loaded through jiti, so no compile step. (Trimmed: the real file imports isToolCallEventType.)
-    [2] /reload: session_shutdown, then session_start, same session. No file watcher, you trigger it.
-    [3] The model tries rm -rf, tool_call returns block, and the model gets the reason back and adapts. If a tool_call handler throws, the call is blocked too: it fails safe.
-    [4] Share it with pi install npm: or git:, like all three extensions today.
+    <p>[~0:40]</p>
+    <ul>
+      <li><b>0</b>: recap arc via top-right chips: observe → add tools → rewrite context. 4th kind: <b>intercept</b> (<code>tool_call</code>).</li>
+      <li><b>1</b>: loaded via jiti, no compile. (Real file also imports <code>isToolCallEventType</code>.)</li>
+      <li><b>2</b>: no file watcher, you trigger it</li>
+      <li><b>3</b>: model gets the reason back and adapts. Handler throws → call blocked too (fails safe).</li>
+      <li><b>4</b>: <code>npm:</code> or <code>git:</code>, like all three today</li>
+    </ul>
   </aside>
 </section>
 
@@ -119,10 +122,17 @@
     </div>
   </div>
   <aside class="notes">
-    [Q&amp;A] All three are on npm; these are the real package names, in the order we saw them.
-    Last line: pi's extension docs open with "pi can create extensions, ask it to build one", and its system prompt points the model at those docs. So open pi, describe the behaviour, and it writes the .ts file for you to /reload.
-    Leave this slide up during Q&amp;A.
-    Likely questions: Does it work with any model? Yes, pi is provider-agnostic, and hooks don't care which model is behind them. Is it safe? Extensions run with your full permissions, so only install ones you trust. How does this compare with Claude Code hooks? Those are shell commands at fixed points, while pi extensions are in-process TypeScript with typed events and return values.
+    <p>[Q&amp;A] Leave this slide up.</p>
+    <ul>
+      <li>Last line: pi's docs open with "pi can create extensions, ask it to build one", and its system prompt points at those docs → describe the behaviour, it writes the .ts, you <code>/reload</code></li>
+      <li>Likely questions:
+        <ul>
+          <li><b>Any model?</b> Yes, pi is provider-agnostic; hooks don't care</li>
+          <li><b>Safe?</b> Extensions run with your full permissions. Install only ones you trust.</li>
+          <li><b>vs Claude Code hooks?</b> Those are shell commands at fixed points; pi extensions are in-process TS with typed events and return values</li>
+        </ul>
+      </li>
+    </ul>
   </aside>
 </section>
 
