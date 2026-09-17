@@ -11,8 +11,8 @@
   </style>
   <div>
     <p class="num">03 / Pause &amp; resume</p>
-    <h1>Don't kill it.<br><span class="t-violet">Freeze it.</span></h1>
-    <p class="sub">Snapshots turn idle RAM into cheap storage.</p>
+    <h1>Pause it.<br><span class="t-violet">Don't kill it.</span></h1>
+    <p class="sub">Idle RAM becomes cheap stored snapshots.</p>
   </div>
   <div class="zz" aria-hidden="true"><span style="font-size:90pt">Z</span><span style="font-size:64pt;opacity:.6">Z</span><span style="font-size:44pt;opacity:.35">Z</span></div>
   <aside class="notes">
@@ -53,8 +53,8 @@
     #ps-cycle .arr.on { opacity: 1; color: var(--teal); }
     #ps-cycle button.btn { margin-top: 22px; }
   </style>
-  <p class="kicker">the lifecycle — click pause yourself</p>
-  <h2>Sleep in ms, wake in ~1s</h2>
+  <p class="kicker">the lifecycle: pause it yourself</p>
+  <h2>Pause in milliseconds, wake in a second.</h2>
   <div class="flow">
     <div class="st run" data-at="1"><p class="e">🟢</p><b>Running</b><span>CPU + RAM billed</span></div>
     <div class="arr" data-at="2">→</div>
@@ -91,7 +91,7 @@
     #ps-fc .stat b { display: block; font-family: var(--head); font-size: 52pt; line-height: 1; margin: 0; }
     #ps-fc .stat span { font-family: var(--mono); font-size: 15pt; color: var(--muted); }
   </style>
-  <p class="kicker">why microVMs — Firecracker numbers</p>
+  <p class="kicker">why microVMs: Firecracker numbers</p>
   <h2>Built for <span class="t-teal">thousands</span></h2>
   <div class="stats">
     <div class="stat" data-at="1"><b class="t-green">&lt;125ms</b><span>boot a new microVM</span></div>
@@ -102,7 +102,7 @@
     <p data-only="0">Firecracker was built for exactly this density.</p>
     <p data-only="1">A fresh microVM boots in <b>under 125 milliseconds</b>.</p>
     <p data-only="2">Each one costs <b>under 5 MiB</b> of host overhead.</p>
-    <p data-only="3">Resume faults pages in on demand — <b>about a second</b>, even for thousands parked.</p>
+    <p data-only="3">Resume faults pages in on demand. <b>About a second</b>, even with thousands parked.</p>
   </div>
   <aside class="notes">
     Why microVMs and not plain containers or full VMs. Firecracker's advertised numbers: under 125 milliseconds to boot, under 5 megabytes of VMM overhead per VM, snapshot restore around a second via mmap plus userfaultfd on-demand paging.

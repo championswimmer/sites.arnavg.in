@@ -13,7 +13,7 @@
   <div>
     <p class="num">02 / The bill</p>
     <h1>One VM per chat<br><span class="t-coral">goes broke.</span></h1>
-    <p class="sub">Sessions scale. Idle doesn't pay.</p>
+    <p class="sub">You open more chats than you actually use.</p>
   </div>
   <div class="bill" aria-hidden="true"><p>500 devs × 4 sessions</p><p>= ~2,000 VMs</p><p>× 4 GiB, always on</p><p class="tot">≈ $56k / month</p></div>
   <aside class="notes">
@@ -36,7 +36,7 @@
     #bl-math td { padding: 10px 14px; border-bottom: 1px solid var(--line); }
     #bl-math td:last-child { font-family: var(--mono); color: var(--coral); }
   </style>
-  <p class="kicker">speaker's math — illustrative</p>
+  <p class="kicker">the math, illustrated</p>
   <h2>500 devs → <span class="t-coral">thousands of VMs</span></h2>
   <div class="eq">
     <div class="pill" data-at="1"><b>500</b><span>developers</span></div><p class="op" data-at="1">×</p>
@@ -71,7 +71,7 @@
     #bl-burn .take { text-align: center; margin-top: 10px; margin-bottom: 110px; min-height: 70px; }
   </style>
   <p class="kicker">where the money goes</p>
-  <h2>Sessions <em>wait</em>. VMs <span class="t-coral">bill</span>.</h2>
+  <h2>You wait. Your VM <span class="t-coral">still bills</span>.</h2>
   <div class="bar">
     <div class="lbl"><span>one session's wall-clock hour</span><span>60 min</span></div>
     <div class="track">
@@ -79,13 +79,13 @@
     </div>
   </div>
   <div class="take" data-at="4">
-    <p class="lead" style="margin:0">You pay to <span class="t-coral">hold RAM open</span> while humans <span class="t-green">think</span>.</p>
+    <p class="lead" style="margin:0">You pay for <span class="t-coral">RAM</span> while you <span class="t-green">read and think</span>.</p>
   </div>
   <div class="captions">
     <p data-only="0">An agent session is idle most of its life.</p>
     <p data-only="1">Minutes of real compute…</p>
     <p data-only="2">…then reading, thinking…</p>
-    <p data-only="3">…reviewing diffs, switching tasks — all billed.</p>
+    <p data-only="3">…reviewing diffs, switching tasks. All billed.</p>
     <p data-only="4">At 75% idle, ~$42k of the $56k is <b>waiting money</b>.</p>
   </div>
   <aside class="notes">
@@ -103,10 +103,10 @@
     #bl-meter code { font-size: 17pt; }
   </style>
   <p class="kicker">the fix, in one sentence</p>
-  <h2>Bill <span class="t-green">compute-seconds</span>, not open tabs</h2>
+  <h2>Pay for the <span class="t-green">seconds</span> your VM runs</h2>
   <div class="split">
-    <div class="card coral" data-at="1"><p class="e">🅿️</p><h3>Pay to park</h3><p class="muted">paused state → cheap storage<br><code>~$0.02 / GiB-mo</code></p></div>
-    <div class="card green" data-at="2"><p class="e">⚡</p><h3>Pay to run</h3><p class="muted">CPU + RAM only while active<br><code>per-second metering</code></p></div>
+    <div class="card coral" data-at="1"><p class="e">🅿️</p><h3>Park it cheap</h3><p class="muted">paused state → cheap storage<br><code>~$0.02 / GiB-mo</code></p></div>
+    <div class="card green" data-at="2"><p class="e">⚡</p><h3>Pay while it computes</h3><p class="muted">CPU + RAM only while active<br><code>per-second metering</code></p></div>
   </div>
   <aside class="notes">
     Pausing does not make compute free — the snapshot still sits on storage. But parked state costs cents per gig-month while idle RAM costs dollars.

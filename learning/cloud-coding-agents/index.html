@@ -210,7 +210,7 @@ window.Deck = (function () {
   <div style="max-width: 880px;">
     <p class="kicker">a talk about where coding agents really run</p>
     <h1>Why your coding agent needs <span class="t-teal">a cloud</span></h1>
-    <p class="sub">The machine behind the model:<br>VMs you can pause, snapshots, shared repos.</p>
+    <p class="sub">The computer behind the chat.</p>
   </div>
   <div class="sky" aria-hidden="true">
     <div class="cloud"><i></i><i></i><i></i><b></b></div>
@@ -229,58 +229,70 @@ window.Deck = (function () {
 
 <section id="in-hands" class="stepper" data-steps="3">
   <style>
-    #in-hands .q { display: grid; grid-template-columns: 110px 1fr; gap: 30px; align-items: center; margin: 0 0 40px; }
+    #in-hands .q { display: grid; grid-template-columns: 110px 1fr auto; gap: 30px; align-items: center; margin: 0 0 40px; }
     #in-hands .q .n { font-family: var(--head); font-size: 64pt; font-weight: 700; color: var(--line); text-align: right; margin: 0; transition: color .4s; }
     #in-hands .q.on .n { color: var(--teal); }
-    #in-hands .q p.t { font-family: var(--head); font-size: 38pt; margin: 0; line-height: 1.15; }
+    #in-hands .q p.t { font-family: var(--head); font-size: 36pt; margin: 0; line-height: 1.15; }
+    #in-hands .q .hands { font-family: var(--mono); font-size: 15pt; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 6px 18px; white-space: nowrap; margin: 0; }
+    #in-hands .q.on .hands { color: var(--teal); border-color: rgba(63,220,214,.5); }
   </style>
-  <p class="kicker">quick show of hands</p>
-  <h2 style="margin-bottom: 46px;">Raise your hand if you have…</h2>
-  <div class="q" data-at="1"><p class="n">1</p><p class="t">used an AI coding agent this week</p></div>
-  <div class="q" data-at="2"><p class="n">2</p><p class="t">watched it <span class="t-amber">run</span> something: tests, builds, a script</p></div>
-  <div class="q" data-at="3"><p class="n">3</p><p class="t">thought about <span class="t-teal">where that run happened</span></p></div>
+  <p class="kicker">three questions, honest hands</p>
+  <h2 style="margin-bottom: 46px;">Keep your hand up if…</h2>
+  <div class="q" data-at="1"><p class="n">1</p><p class="t">you used an AI coding agent this week</p><p class="hands">most of us</p></div>
+  <div class="q" data-at="2"><p class="n">2</p><p class="t">you have coded <span class="t-amber">from your phone</span> while the agent ran in the cloud</p><p class="hands">fewer hands</p></div>
+  <div class="q" data-at="3"><p class="n">3</p><p class="t">at work, agents spin up with your <span class="t-teal">tickets, repo and CI</span> already wired in</p><p class="hands">almost nobody</p></div>
   <aside class="notes">
-    Click through one question at a time and wait for hands. Expect nearly all hands for 1, most for 2, few for 3.
-    That gap is the talk: everyone sees the chat, almost nobody sees the computer behind it. Today we open that box.
+    Click through one question at a time and count hands out loud. Nearly everyone keeps a hand up for 1. Question 2 drops most of the room: coding from a phone while the agent runs somewhere else. Question 3 should leave almost nobody: a workplace setup where agents arrive with tickets, repo, and CI already connected.
+    That funnel is the talk. We know agents work. We barely run them in the cloud. And almost nobody has them wired into work yet. Today is about closing those two gaps.
   </aside>
 </section>
 
 <section id="in-agenda" class="stepper" data-steps="4">
   <style>
-    #in-agenda .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 36px; }
-    #in-agenda .card { min-height: 400px; display: flex; flex-direction: column; gap: 12px; }
-    #in-agenda .card .big { font-family: var(--head); font-size: 64pt; font-weight: 700; line-height: 1; margin: 0; }
-    #in-agenda .card h3 { font-size: 27pt; }
+    #in-agenda .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 36px; }
+    #in-agenda .card { min-height: 250px; display: flex; flex-direction: column; gap: 10px; }
+    #in-agenda .card .big { font-family: var(--head); font-size: 52pt; font-weight: 700; line-height: 1; margin: 0; }
+    #in-agenda .card h3 { font-size: 25pt; }
   </style>
   <p class="kicker">the plan</p>
-  <h2>Four stops</h2>
+  <h2>Six stops</h2>
   <div class="row">
     <div class="card amber" data-at="1">
       <p class="big t-amber">1</p>
       <h3>What agents do</h3>
-      <p class="muted">Loop, code mode, MCP, verify</p>
+      <p class="muted">Loop, code mode, tools</p>
     </div>
     <div class="card coral" data-at="2">
       <p class="big t-coral">2</p>
       <h3>The bill</h3>
-      <p class="muted">Why one VM per chat breaks</p>
+      <p class="muted">One VM per chat breaks</p>
     </div>
     <div class="card violet" data-at="3">
       <p class="big t-violet">3</p>
       <h3>Pause &amp; share</h3>
-      <p class="muted">Snapshots, resume, CoW repos</p>
+      <p class="muted">Snapshots, shared repos</p>
     </div>
     <div class="card teal" data-at="4">
       <p class="big t-teal">4</p>
-      <h3>Primitives</h3>
-      <p class="muted">Sandbox APIs, end to end</p>
+      <h3>How it works</h3>
+      <p class="muted">Storage, sharing, owners</p>
+    </div>
+    <div class="card amber" data-at="4">
+      <p class="big t-amber">5</p>
+      <h3>Where to run it</h3>
+      <p class="muted">Railway tonight, fleets Monday</p>
+    </div>
+    <div class="card green" data-at="4">
+      <p class="big t-green">6</p>
+      <h3>The whole system</h3>
+      <p class="muted">Wired together, Q&amp;A</p>
     </div>
   </div>
   <aside class="notes">
-    Four stops. First, what an agent session actually does with its machine — the loop, running code, tools, and why it must verify by running things.
+    Six stops. First, what an agent session actually does with its machine — the loop, running code, tools, and why it must verify by running things.
     Second, the bill: what thousands of always-on VMs cost and where the money really burns.
     Third, the two fixes: pause VMs into snapshots and resume in a second, and share one warm repo with copy-on-write.
-    Fourth, the off-the-shelf sandbox primitives and the whole picture wired together.
+    Fourth, the three ideas underneath every platform. Fifth, where to run it: Railway tonight, enterprise fleets on Monday. Sixth, the whole system on one slide for Q&A.
   </aside>
 </section>
 
@@ -296,7 +308,7 @@ window.Deck = (function () {
     #lp-divider .sub { font-family: var(--head); font-size: 28pt; color: var(--muted); margin: 0; max-width: 860px; line-height: 1.25; }
   </style>
   <p class="num">01 / What agents do</p>
-  <h1>Not a chatbot.<br>A <span class="t-amber">loop</span> with a computer.</h1>
+  <h1>Your agent loops<br>on a <span class="t-amber">real computer</span>.</h1>
   <p class="sub">Plan → act → observe → repair, until the tests pass.</p>
   <aside class="notes">
     Stop one. Everyone pictures the chat. The real agent is a loop wrapped around the model, and that loop lives on a computer with your repo, a shell, and tools.
@@ -334,15 +346,15 @@ window.Deck = (function () {
       <div class="node n4" data-at="4"><b>Repair</b><span>re-plan</span></div><div class="arr" data-at="5">→</div>
       <div class="node n5" data-at="5"><b>Handoff</b><span>PR·patch</span></div>
     </div>
-    <p class="back" data-at="4">↩ repair loops back to act — until checks pass</p>
+    <p class="back" data-at="4">↩ repair loops back to act until checks pass</p>
   </div>
   <div class="captions">
-    <p data-only="0">A session is infrastructure, not a chat log.</p>
+    <p data-only="0">Your session runs on a VM, not just chat.</p>
     <p data-only="1"><b>Plan:</b> model reads code, picks an approach.</p>
     <p data-only="2"><b>Act:</b> edits files, runs commands, calls tools.</p>
     <p data-only="3"><b>Observe:</b> stdout, exit codes, diffs come back.</p>
     <p data-only="4"><b>Repair:</b> failures update the plan. Loop.</p>
-    <p data-only="5"><b>Handoff:</b> a PR — only when checks pass.</p>
+    <p data-only="5"><b>Handoff:</b> a PR only when checks pass.</p>
   </div>
   <aside class="notes">
     Walk the five clicks slowly. Plan: the model decides what to look at. Act: it edits files, runs commands, calls tools — all inside one VM that holds the repo.
@@ -362,13 +374,13 @@ window.Deck = (function () {
     #lp-code .big { font-family: var(--head); font-size: 110pt; font-weight: 700; line-height: 1; margin: 0; }
   </style>
   <p class="kicker">code mode</p>
-  <h2>The model writes <span class="t-amber">programs</span>, not just answers</h2>
+  <h2>Your model writes <span class="t-amber">code that runs</span></h2>
   <div class="wrap">
     <div class="term">
-      <div class="bar"><i></i><i></i><i></i><b>agent — run.sh</b></div>
+      <div class="bar"><i></i><i></i><i></i><b>agent: run.sh</b></div>
       <div class="body">
         <p data-at="1">$ grep -r "TODO(auth)" src | head</p>
-        <p data-at="2">$ python probe.py — try 3 fixes</p>
+        <p data-at="2">$ python probe.py · try 3 fixes</p>
         <p data-at="3">$ pytest tests/auth -x -q</p>
         <p data-at="4" class="t-green">$ git diff --stat → PR</p>
       </div>
@@ -381,11 +393,11 @@ window.Deck = (function () {
     </div>
   </div>
   <div class="captions">
-    <p data-only="0">Code is the agent's action language.</p>
+    <p data-only="0">Code is how your agent gets things done.</p>
     <p data-only="1">One script replaces <b>dozens of tool calls</b>.</p>
-    <p data-only="2">It leans on what models <b>already know</b>: bash, Python, pytest.</p>
-    <p data-only="3"><b>State persists</b> across iterations: files, servers, REPL.</p>
-    <p data-only="4">Result: a <b>verified diff</b>, not a suggestion.</p>
+    <p data-only="2">Your model already knows bash, Python, pytest.</p>
+    <p data-only="3">Your <b>files and servers</b> stay live between steps.</p>
+    <p data-only="4">You ship a <b>tested patch</b>, not a guess.</p>
   </div>
   <aside class="notes">
     Code mode means the model may write and execute code instead of only chatting. Click through the four commands.
@@ -413,12 +425,12 @@ window.Deck = (function () {
     #lp-mcp #mcpOut { font-size: 21pt; margin: 10px 0 0; }
     #lp-mcp #mcpOut:empty { display: none; }
   </style>
-  <p class="kicker">MCP servers — click them</p>
+  <p class="kicker">your agent's tool plug, live</p>
   <h2>Tools are <em>processes</em> near the VM</h2>
   <div class="stage">
     <div class="col">
       <div class="box" data-mcp="docs" data-at="1"><b>📚 docs</b><span>local · repo-aware</span></div>
-      <div class="box" data-mcp="github" data-at="1"><b>◈ github</b><span>remote · HTTP</span></div>
+      <div class="box" data-mcp="github" data-at="1"><b>◆ github</b><span>remote · HTTP</span></div>
     </div>
     <div class="vm" data-at="1">
       <h3>agent VM</h3>
@@ -426,11 +438,11 @@ window.Deck = (function () {
       <div class="row"><span class="hook" data-hot="2">exec</span><span class="hook" data-hot="2">edit</span><span class="hook" data-hot="3">mcp.call</span></div>
     </div>
     <div class="col">
-      <div class="box" data-mcp="db" data-at="1"><b>▤ db</b><span>local · sandboxed</span></div>
+      <div class="box" data-mcp="db" data-at="1"><b>▦ db</b><span>local · sandboxed</span></div>
       <div class="box" data-mcp="tickets" data-at="1"><b>✈ tickets</b><span>remote · HTTP</span></div>
     </div>
   </div>
-  <div id="mcpDetail" class="card teal"><p data-only="0">Click any tool box to see what it gives the agent.</p><p data-only="1">MCP = one standard plug shape for all tools.</p><p data-only="2">Local servers share the repo, fs and network — <b>so they need sandboxing too</b>.</p><p data-only="3">Remote servers arrive over HTTP with scoped credentials.</p><p id="mcpOut"></p></div>
+  <div id="mcpDetail" class="card teal"><p data-only="0">Click any tool box to see what it gives the agent.</p><p data-only="1">MCP = one standard plug shape for all tools.</p><p data-only="2">Local tools touch your repo, <b>so sandbox them</b>.</p><p data-only="3">Remote servers arrive over HTTP with scoped credentials.</p><p id="mcpOut"></p></div>
   <aside class="notes">
     MCP servers are tool adapters — docs, GitHub, databases, ticketing — exposed through one standard interface.
     Invite the audience to click each box; the detail card explains it. Local servers run in or next to the VM and share its context, which is exactly why they must be sandboxed too.
@@ -438,7 +450,7 @@ window.Deck = (function () {
   </aside>
   <script>
   (function () {
-    const D = { docs: '📚 <b>docs server</b> — greps the repo + internal wikis. Answers cite file:line, never hallucinated APIs.', github: '<b>github server</b> — remote over HTTP. Opens PRs, reads CI status, posts reviews with a scoped token.', db: '<b>db server</b> — local, sandboxed. Runs read queries against a scrubbed seed DB inside the VM.', tickets: '<b>tickets server</b> — remote over HTTP. Files issues, links them to the diff, updates status.' };
+    const D = { docs: '📚 <b>docs server</b> greps the repo + internal wikis. Answers cite file:line, never hallucinated APIs.', github: '<b>github server</b>, remote over HTTP. Opens PRs, reads CI status, posts reviews with a scoped token.', db: '<b>db server</b>, local and sandboxed. Runs read queries against a scrubbed seed DB inside the VM.', tickets: '<b>tickets server</b>, remote over HTTP. Files issues, links them to the diff, updates status.' };
     const sec = document.getElementById('lp-mcp');
     sec.querySelectorAll('[data-mcp]').forEach(b => b.addEventListener('click', e => {
       e.stopPropagation();
@@ -461,15 +473,15 @@ window.Deck = (function () {
     #lp-verify .good { border: 1px solid var(--green); border-radius: 14px; padding: 14px 20px; }
   </style>
   <p class="kicker">why the machine matters</p>
-  <h2>No run, no trust</h2>
+  <h2>Trust only what you ran</h2>
   <div class="pipe">
     <div class="card amber" data-at="1"><p class="e">🔍</p><h3>lint + types</h3><p class="muted">static errors, fast</p></div>
     <div class="card teal" data-at="2"><p class="e">🔨</p><h3>build</h3><p class="muted">integration breaks</p></div>
     <div class="card green" data-at="3"><p class="e">🧪</p><h3>tests + browser</h3><p class="muted">runtime truth</p></div>
   </div>
   <div class="vs">
-    <div class="bad" data-at="1"><p style="margin:0">❌ <span class="t-coral">plausible diff</span> <span class="muted">— looks right, rots</span></p></div>
-    <div class="good" data-at="3"><p style="margin:0">✓ <span class="t-green">verified diff</span> <span class="muted">— executed, green</span></p></div>
+    <div class="bad" data-at="1"><p style="margin:0">❌ <span class="t-coral">plausible patch</span> <span class="muted">, fails next week</span></p></div>
+    <div class="good" data-at="3"><p style="margin:0">✓ <span class="t-green">tested patch</span> <span class="muted">: executed, green</span></p></div>
   </div>
   <aside class="notes">
     Without in-loop verification, agents optimise for plausible-looking diffs. Click through the three gates: lint and typecheck catch static errors in seconds,
@@ -495,7 +507,7 @@ window.Deck = (function () {
   <div>
     <p class="num">02 / The bill</p>
     <h1>One VM per chat<br><span class="t-coral">goes broke.</span></h1>
-    <p class="sub">Sessions scale. Idle doesn't pay.</p>
+    <p class="sub">You open more chats than you actually use.</p>
   </div>
   <div class="bill" aria-hidden="true"><p>500 devs × 4 sessions</p><p>= ~2,000 VMs</p><p>× 4 GiB, always on</p><p class="tot">≈ $56k / month</p></div>
   <aside class="notes">
@@ -518,7 +530,7 @@ window.Deck = (function () {
     #bl-math td { padding: 10px 14px; border-bottom: 1px solid var(--line); }
     #bl-math td:last-child { font-family: var(--mono); color: var(--coral); }
   </style>
-  <p class="kicker">speaker's math — illustrative</p>
+  <p class="kicker">the math, illustrated</p>
   <h2>500 devs → <span class="t-coral">thousands of VMs</span></h2>
   <div class="eq">
     <div class="pill" data-at="1"><b>500</b><span>developers</span></div><p class="op" data-at="1">×</p>
@@ -553,7 +565,7 @@ window.Deck = (function () {
     #bl-burn .take { text-align: center; margin-top: 10px; margin-bottom: 110px; min-height: 70px; }
   </style>
   <p class="kicker">where the money goes</p>
-  <h2>Sessions <em>wait</em>. VMs <span class="t-coral">bill</span>.</h2>
+  <h2>You wait. Your VM <span class="t-coral">still bills</span>.</h2>
   <div class="bar">
     <div class="lbl"><span>one session's wall-clock hour</span><span>60 min</span></div>
     <div class="track">
@@ -561,13 +573,13 @@ window.Deck = (function () {
     </div>
   </div>
   <div class="take" data-at="4">
-    <p class="lead" style="margin:0">You pay to <span class="t-coral">hold RAM open</span> while humans <span class="t-green">think</span>.</p>
+    <p class="lead" style="margin:0">You pay for <span class="t-coral">RAM</span> while you <span class="t-green">read and think</span>.</p>
   </div>
   <div class="captions">
     <p data-only="0">An agent session is idle most of its life.</p>
     <p data-only="1">Minutes of real compute…</p>
     <p data-only="2">…then reading, thinking…</p>
-    <p data-only="3">…reviewing diffs, switching tasks — all billed.</p>
+    <p data-only="3">…reviewing diffs, switching tasks. All billed.</p>
     <p data-only="4">At 75% idle, ~$42k of the $56k is <b>waiting money</b>.</p>
   </div>
   <aside class="notes">
@@ -585,10 +597,10 @@ window.Deck = (function () {
     #bl-meter code { font-size: 17pt; }
   </style>
   <p class="kicker">the fix, in one sentence</p>
-  <h2>Bill <span class="t-green">compute-seconds</span>, not open tabs</h2>
+  <h2>Pay for the <span class="t-green">seconds</span> your VM runs</h2>
   <div class="split">
-    <div class="card coral" data-at="1"><p class="e">🅿️</p><h3>Pay to park</h3><p class="muted">paused state → cheap storage<br><code>~$0.02 / GiB-mo</code></p></div>
-    <div class="card green" data-at="2"><p class="e">⚡</p><h3>Pay to run</h3><p class="muted">CPU + RAM only while active<br><code>per-second metering</code></p></div>
+    <div class="card coral" data-at="1"><p class="e">🅿️</p><h3>Park it cheap</h3><p class="muted">paused state → cheap storage<br><code>~$0.02 / GiB-mo</code></p></div>
+    <div class="card green" data-at="2"><p class="e">⚡</p><h3>Pay while it computes</h3><p class="muted">CPU + RAM only while active<br><code>per-second metering</code></p></div>
   </div>
   <aside class="notes">
     Pausing does not make compute free — the snapshot still sits on storage. But parked state costs cents per gig-month while idle RAM costs dollars.
@@ -611,8 +623,8 @@ window.Deck = (function () {
   </style>
   <div>
     <p class="num">03 / Pause &amp; resume</p>
-    <h1>Don't kill it.<br><span class="t-violet">Freeze it.</span></h1>
-    <p class="sub">Snapshots turn idle RAM into cheap storage.</p>
+    <h1>Pause it.<br><span class="t-violet">Don't kill it.</span></h1>
+    <p class="sub">Idle RAM becomes cheap stored snapshots.</p>
   </div>
   <div class="zz" aria-hidden="true"><span style="font-size:90pt">Z</span><span style="font-size:64pt;opacity:.6">Z</span><span style="font-size:44pt;opacity:.35">Z</span></div>
   <aside class="notes">
@@ -653,8 +665,8 @@ window.Deck = (function () {
     #ps-cycle .arr.on { opacity: 1; color: var(--teal); }
     #ps-cycle button.btn { margin-top: 22px; }
   </style>
-  <p class="kicker">the lifecycle — click pause yourself</p>
-  <h2>Sleep in ms, wake in ~1s</h2>
+  <p class="kicker">the lifecycle: pause it yourself</p>
+  <h2>Pause in milliseconds, wake in a second.</h2>
   <div class="flow">
     <div class="st run" data-at="1"><p class="e">🟢</p><b>Running</b><span>CPU + RAM billed</span></div>
     <div class="arr" data-at="2">→</div>
@@ -691,7 +703,7 @@ window.Deck = (function () {
     #ps-fc .stat b { display: block; font-family: var(--head); font-size: 52pt; line-height: 1; margin: 0; }
     #ps-fc .stat span { font-family: var(--mono); font-size: 15pt; color: var(--muted); }
   </style>
-  <p class="kicker">why microVMs — Firecracker numbers</p>
+  <p class="kicker">why microVMs: Firecracker numbers</p>
   <h2>Built for <span class="t-teal">thousands</span></h2>
   <div class="stats">
     <div class="stat" data-at="1"><b class="t-green">&lt;125ms</b><span>boot a new microVM</span></div>
@@ -702,7 +714,7 @@ window.Deck = (function () {
     <p data-only="0">Firecracker was built for exactly this density.</p>
     <p data-only="1">A fresh microVM boots in <b>under 125 milliseconds</b>.</p>
     <p data-only="2">Each one costs <b>under 5 MiB</b> of host overhead.</p>
-    <p data-only="3">Resume faults pages in on demand — <b>about a second</b>, even for thousands parked.</p>
+    <p data-only="3">Resume faults pages in on demand. <b>About a second</b>, even with thousands parked.</p>
   </div>
   <aside class="notes">
     Why microVMs and not plain containers or full VMs. Firecracker's advertised numbers: under 125 milliseconds to boot, under 5 megabytes of VMM overhead per VM, snapshot restore around a second via mmap plus userfaultfd on-demand paging.
@@ -727,8 +739,8 @@ window.Deck = (function () {
   </style>
   <div>
     <p class="num">04 / Share</p>
-    <h1>Copy the repo<br><span class="t-amber">never.</span></h1>
-    <p class="sub">One warm monorepo. Every session sees it, nobody recopies it.</p>
+    <h1>Never clone<br><span class="t-amber">the whole repo.</span></h1>
+    <p class="sub">One warm copy on the server. Every session borrows it.</p>
   </div>
   <div class="stack" aria-hidden="true">
     <div class="disk warm">warm monorepo · 40 GiB</div>
@@ -752,7 +764,7 @@ window.Deck = (function () {
   <p class="kicker">the naive way</p>
   <h2>2,000 clones of a <span class="t-coral">40 GiB</span> monorepo?</h2>
   <div class="vs">
-    <div class="card coral" data-at="1"><h3>Full copy each</h3><div class="repo">git clone × 2,000</div><p class="big t-coral">80 TB</p><p class="muted">moved, stored… to change 3 files</p></div>
+    <div class="card coral" data-at="1"><h3>Full copy each</h3><div class="repo">git clone × 2,000</div><p class="big t-coral">80 TB</p><p class="muted">moved to change three files</p></div>
     <div class="card green" data-at="2"><h3>CoW view each</h3><div class="repo">clone = metadata only</div><p class="big t-green">~0 GB</p><p class="muted">until a session writes</p></div>
   </div>
   <aside class="notes">
@@ -780,14 +792,14 @@ window.Deck = (function () {
     #cw-cow #cowOut { font-size: 20pt; margin: 10px 0 0; }
     #cw-cow #cowOut:empty { display: none; }
   </style>
-  <p class="kicker">click a session — watch what it owns</p>
+  <p class="kicker">click a session, watch what it owns</p>
   <h2>One base, <em>instant</em> views</h2>
   <div class="stage">
     <div class="warm" data-at="1"><h3>🔥 warm copy</h3><p>dev server · hot in cache</p><div><span class="fb">▦</span><span class="fb">▦</span><span class="fb">▦</span><span class="fb">▦</span><span class="fb">▦</span><span class="fb">▦</span></div></div>
     <div class="sess" data-sess="a" data-at="2"><h3>Session A</h3><div><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span><span class="blk own" data-at="3">✎ auth.ts</span></div><p class="muted" style="font-size:16pt">click me</p></div>
     <div class="sess" data-sess="b" data-at="2"><h3>Session B</h3><div><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span></div><p class="muted" style="font-size:16pt">read-only so far</p></div>
   </div>
-  <div id="cowDetail" class="card amber"><p data-only="0">Click session A, then B. Count who pays for what.</p><p data-only="1">The warm copy sits on fast SSD, shared by all.</p><p data-only="2">Each view is <b>metadata</b> — created instantly, ~0 bytes.</p><p data-only="3">A writes <b>auth.ts</b> → only that file is copied up. The rest stays shared.</p><p data-only="4">Session B changed nothing → still <b>pays nothing</b>. Page cache shared too.</p><p id="cowOut"></p></div>
+  <div id="cowDetail" class="card amber"><p data-only="0">Click A, then B. See who pays for what.</p><p data-only="1">The warm copy sits on fast SSD, shared by all.</p><p data-only="2">Each view is <b>metadata</b>, created instantly, ~0 bytes.</p><p data-only="3">A writes <b>auth.ts</b> → only that file is copied up. The rest stays shared.</p><p data-only="4">Session B changed nothing → still <b>pays nothing</b>. Page cache shared too.</p><p id="cowOut"></p></div>
   <aside class="notes">
     The heart of the talk — let the audience click. The warm copy is one checkout on the dev server's fast SSD, hot in page cache.
     Each session view is metadata pointing at the same blocks: instant, near-zero bytes. When session A edits auth.ts, only that file copies up into its private layer — the rest stays shared.
@@ -797,7 +809,7 @@ window.Deck = (function () {
   <script>
   (function () {
     const D = {
-      a: '🟢 <b>Session A</b> owns <b>1 file</b> (auth.ts, 12 KiB). Everything else is shared blocks — reads cost nothing.',
+      a: '🟢 <b>Session A</b> owns <b>1 file</b> (auth.ts, 12 KiB). Everything else is shared blocks. Reads cost nothing.',
       b: '🔵 <b>Session B</b> owns <b>0 bytes</b>. Pure metadata view. When it writes, only touched files copy up.'
     };
     const sec = document.getElementById('cw-cow');
@@ -824,7 +836,7 @@ window.Deck = (function () {
     #cw-edit .pick { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
   </style>
   <p class="kicker">what "copy on write" literally means</p>
-  <h2>Read shared. Write <span class="t-amber">copies up</span>.</h2>
+  <h2>Reads stay shared. Writes <span class="t-amber">copy once</span>.</h2>
   <div class="flow">
     <div class="st" data-at="1"><p class="e">📖</p><b>Read</b><span>served from base</span></div>
     <div class="arr" data-at="2">→</div>
@@ -841,7 +853,7 @@ window.Deck = (function () {
     <p data-only="0">Reads never copy anything.</p>
     <p data-only="1">Reads come from the shared lower tree.</p>
     <p data-only="2">First write to a file <b>copies just that file</b> up. Deletes become whiteouts.</p>
-    <p data-only="3">Pick a filesystem — trade-offs differ, pattern holds.</p>
+    <p data-only="3">Pick a filesystem. Trade-offs differ, the pattern holds.</p>
   </div>
   <aside class="notes">
     Spell out the literal mechanism. Reads are served from the shared base — zero cost. The first write to a file copies just that file into the private upper layer; deletions become whiteout markers.
@@ -871,107 +883,224 @@ window.Deck = (function () {
 
 <!-- ===== part: 50-primitives.html ===== -->
 <!-- ============================================================
-     50 / Primitives — sandbox APIs compared
-     ids: pm-divider, pm-fit, pm-bill
+     50 / How it works — the technology layer (object storage, CoW, owners)
+     ids: pm-divider, pm-tech
      ============================================================ -->
 
 <section id="pm-divider" class="divider">
   <style>
     #pm-divider .sub { font-family: var(--head); font-size: 28pt; color: var(--muted); margin: 0; max-width: 880px; line-height: 1.25; }
-    #pm-divider .apis { position: absolute; right: 90px; top: 50%; transform: translateY(-50%); width: 460px; display: flex; flex-direction: column; gap: 14px; }
-    #pm-divider .api { font-family: var(--mono); font-size: 17pt; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 20px; color: var(--teal); }
-    #pm-divider .api:nth-child(2) { margin-left: 40px; } #pm-divider .api:nth-child(3) { margin-left: 80px; }
+    #pm-divider .trio { position: absolute; right: 90px; top: 50%; transform: translateY(-50%); width: 420px; display: flex; flex-direction: column; gap: 14px; }
+    #pm-divider .t { font-family: var(--mono); font-size: 17pt; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 20px; color: var(--violet); }
+    #pm-divider .t:nth-child(2) { margin-left: 40px; color: var(--amber); } #pm-divider .t:nth-child(3) { margin-left: 80px; color: var(--teal); }
   </style>
   <div>
-    <p class="num">05 / Primitives</p>
-    <h1>You don't have<br>to build this.</h1>
-    <p class="sub">Sandbox APIs rent you pausable VMs by the second.</p>
+    <p class="num">05 / How it works</p>
+    <h1>Three ideas<br>do the work.</h1>
+    <p class="sub">Cheap object storage, shared files, one owner per sandbox.</p>
   </div>
-  <div class="apis" aria-hidden="true"><div class="api">Sandbox.create()</div><div class="api">sandbox.pause()</div><div class="api">sandbox.connect() ⚡</div></div>
+  <div class="trio" aria-hidden="true"><div class="t">snapshots → object store</div><div class="t">one repo, many views</div><div class="t">one owner per sandbox</div></div>
   <aside class="notes">
-    Stop five: you don't have to build Firecracker orchestration yourself. A whole market of sandbox primitives now rents exactly this shape — create a VM from a template, pause it, resume it — metered by the second.
-    Next: which ones actually preserve RAM, and what parking costs on each.
+    Stop five: the technology layer. Forget brand names for a minute. Every pausable platform is built from the same three ideas:
+    snapshots parked in cheap object storage, one repo shared through copy-on-write, and a single owner object coordinating each sandbox.
+    Next slide makes each one clickable, using Cloudflare's stack as the concrete example.
   </aside>
 </section>
 
-<section id="pm-fit" class="stepper" data-steps="3">
+<section id="pm-tech" class="stepper" data-steps="3">
   <style>
-    #pm-fit .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 22px; }
-    #pm-fit .p { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; cursor: pointer; transition: all .35s var(--ease); opacity: .45; }
-    #pm-fit .p.on { opacity: 1; }
-    #pm-fit .p b { font-family: var(--head); font-size: 22pt; display: block; margin: 0; }
-    #pm-fit .p span { font-family: var(--mono); font-size: 14pt; color: var(--muted); }
-    #pm-fit .p .fit { display: inline-block; font-family: var(--mono); font-size: 13pt; border-radius: 8px; padding: 2px 10px; margin-top: 8px; border: 1px solid var(--line); color: var(--muted); }
-    #pm-fit.s1 .p.ram { border-color: var(--green); box-shadow: 0 0 22px rgba(127,227,164,.25); }
-    #pm-fit.s1 .p.ram .fit { color: #06130c; background: var(--green); border-color: var(--green); }
-    #pm-fit.s2 .p.snap { border-color: var(--violet); }
-    #pm-fit.s2 .p.snap .fit { color: var(--violet); border-color: var(--violet); }
-    #pm-fit .p.sel { border-color: var(--teal) !important; box-shadow: 0 0 0 4px rgba(63,220,214,.15), 0 0 24px rgba(63,220,214,.3) !important; }
-    #pm-fit #pmDetail { margin-top: 14px; min-height: 74px; }
-    #pm-fit #pmDetail p { font-size: 19pt; margin: 0; }
-    #pm-fit #pmOut { font-size: 19pt; margin: 10px 0 0; }
-    #pm-fit #pmOut:empty { display: none; }
+    #pm-tech .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 22px; }
+    #pm-tech .t { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; cursor: pointer; transition: all .35s var(--ease); opacity: .45; min-height: 210px; }
+    #pm-tech .t.on { opacity: 1; }
+    #pm-tech .t b { font-family: var(--head); font-size: 23pt; display: block; margin: 0 0 4px; }
+    #pm-tech .t span { font-family: var(--mono); font-size: 14pt; color: var(--muted); }
+    #pm-tech .t code { font-size: 14pt; display: inline-block; margin-top: 8px; }
+    #pm-tech .t.sel { border-color: var(--teal) !important; box-shadow: 0 0 0 4px rgba(63,220,214,.15), 0 0 24px rgba(63,220,214,.3) !important; }
+    #pm-tech.s1 .t.c1 { border-color: var(--violet); } #pm-tech.s2 .t.c2 { border-color: var(--amber); } #pm-tech.s3 .t.c3 { border-color: var(--teal); }
+    #pm-tech #techOut { margin-top: 14px; min-height: 110px; }
+    #pm-tech #techOut p { font-size: 19pt; margin: 0; }
+    #pm-tech #techOutBody:empty { display: none; }
+    #pm-tech #techOutBody { margin-top: 8px !important; }
   </style>
-  <p class="kicker">click any platform</p>
-  <h2>Who preserves <span class="t-green">RAM</span>? Who <span class="t-violet">restarts</span>?</h2>
+  <p class="kicker">three ideas, click each one</p>
+  <h2>Where state sleeps, how files share, who is in charge</h2>
   <div class="grid">
-    <div class="p ram" data-p="e2b" data-at="1"><b>E2B ★</b><span>Firecracker · pause()</span><br><span class="fit">RAM + fs · ~1s resume</span></div>
-    <div class="p ram" data-p="daytona" data-at="1"><b>Daytona ★</b><span>VM sandbox · pause</span><br><span class="fit">RAM + fs · disk-only parked</span></div>
-    <div class="p snap" data-p="fly" data-at="2"><b>Fly Machines</b><span>suspend via snapshots</span><br><span class="fit">resume in 100s of ms</span></div>
-    <div class="p snap" data-p="vercel" data-at="2"><b>Vercel Sandbox</b><span>stop() → snapshot</span><br><span class="fit">filesystem only</span></div>
-    <div class="p snap" data-p="cf" data-at="2"><b>Cloudflare</b><span>backup → R2</span><br><span class="fit">filesystem only</span></div>
-    <div class="p snap" data-p="modal" data-at="2"><b>Modal</b><span>snapshots → clones</span><br><span class="fit">restorable, 7-day TTL</span></div>
+    <div class="t c1" data-t="store" data-at="1"><b class="t-violet">Object storage</b><span>snapshots sleep here</span><br><code>R2 · squashfs · meta.json</code></div>
+    <div class="t c2" data-t="cow" data-at="2"><b class="t-amber">Shared files</b><span>one repo, many views</span><br><code>lowerdir + upperdir</code></div>
+    <div class="t c3" data-t="owner" data-at="3"><b class="t-teal">One owner</b><span>a coordinator per sandbox</span><br><code>Durable Object + alarms</code></div>
   </div>
-  <div id="pmDetail" class="card teal"><p>Click a card for timeouts, caps and pricing. * = true pause/resume.</p><p id="pmOut"></p></div>
+  <div id="techOut" class="card violet"><p>Click a card to see each idea on Cloudflare.</p><p id="techOutBody"></p></div>
   <div class="captions">
-    <p data-only="0">Six APIs, two shapes.</p>
-    <p data-only="1"><b>RAM-preserving:</b> E2B and Daytona pause the live VM — memory included.</p>
-    <p data-only="2"><b>Snapshot-restart:</b> the rest restore the filesystem into a fresh session.</p>
-    <p data-only="3">Railway: checkpoint/fork per environment — app-adjacent workers, not thousands of agent VMs.</p>
+    <p data-only="0">Three ideas, every platform.</p>
+    <p data-only="1">Snapshots are just files in <b>object storage</b>.</p>
+    <p data-only="2">Repos are shared with <b>copy-on-write</b>, same as section 4.</p>
+    <p data-only="3">Each sandbox gets <b>one owner</b> that outlives its container.</p>
   </div>
   <aside class="notes">
-    Let the audience click cards; details appear below. Step 1 lights up the two RAM-preserving picks: E2B's pause saves filesystem plus memory by default with about-a-second resume, paused free; Daytona VM sandboxes preserve memory on pause, filesystem on stop, parked VMs bill disk only.
-    Step 2 covers snapshot-restart: Fly suspends via Firecracker snapshots in hundreds of milliseconds but discourages huge or mass suspends; Vercel stop auto-snapshots the filesystem with tiered timeouts; Cloudflare backs up to R2 with a 3-day default TTL; Modal snapshots become restorable clones with a 7-day TTL.
-    Step 3: Railway checkpoints and forks whole sandboxes per environment — fine for ephemeral workers, not the thousands-of-pausable-VMs shape.
+    Walk the three clicks using Cloudflare as the concrete example. One: object storage. A backup is a directory compressed to squashfs, uploaded to R2 next to a small metadata file.
+    Restoring downloads both and mounts the archive read-only with a writable layer on top. It runs at object-storage speed, not disk speed — that is the honest trade.
+    Two: shared files. That read-only mount plus writable upper layer is overlayfs — the same lowerdir/upperdir shape from section four. The industry keeps rediscovering copy-on-write.
+    Three: one owner. A Durable Object is a single-threaded coordinator with private transactional storage — SQLite, key-value, alarms that wake it later. The container is disposable; the owner remembers. That split is what lets a sandbox sleep for hours and still know what it was doing.
   </aside>
   <script>
   (function () {
     const D = {
-      e2b: '<b>E2B</b> — pausable Firecracker microVMs. Timeout action <b>kill or pause + autoResume</b>; 1h Hobby / 24h Pro continuous run. Per-second while running, <b>paused free</b>. Concurrency to tens of thousands on Enterprise.',
-      daytona: '<b>Daytona</b> — containers by default, <b>VM sandboxes</b> for agents. VM auto-pause 60 min default. PAYG reserved vCPU/RAM/disk; <b>paused = disk only</b>, archived containers free.',
-      fly: '<b>Fly Machines</b> — Machines API, suspend via Firecracker snapshots, resume in <b>hundreds of ms</b>. Avoid &gt;2 GiB RAM or mass suspends. Running = CPU/RAM preset; suspended = storage only.',
-      vercel: '<b>Vercel Sandbox</b> — <b>stop() auto-snapshots the filesystem</b>; resume = new session from snapshot. 5 min default timeout, 45 min Hobby / 24 h Pro+. Billed active CPU + provisioned memory + creations + snapshot storage.',
-      cf: '<b>Cloudflare Sandbox</b> — container per Durable Object, <b>createBackup/restoreBackup to R2</b> (3-day TTL). 10 min idle sleep default. Billed every 10 ms; memory/disk provisioned.',
-      modal: '<b>Modal</b> — gVisor sandboxes, <b>memory/filesystem snapshots → clones</b> (7-day TTL); snapshotting ends the sandbox. Per-second at max(requested, actual). Huge concurrency, restart-shaped.'
+      store: '<b>Object storage.</b> Cloudflare backups land in R2 as <b>data.sqsh + meta.json</b> (3-day default TTL). Restore downloads both, then FUSE-mounts the archive read-only. Cheap and durable; slower than local disk.',
+      cow: '<b>Shared files.</b> The restored backup becomes the read-only <b>lower layer</b>; new writes go to an <b>upper layer</b>. Re-restore and the upper layer is discarded. Overlayfs, ZFS clones, same idea everywhere.',
+      owner: '<b>One owner:</b> a <b>Durable Object</b>, one ID, one single-threaded instance, private SQLite + KV storage, <b>alarms</b> that wake it later. The container can die; the owner keeps the plan, the backup handles, the credentials.'
     };
-    const sec = document.getElementById('pm-fit');
-    sec.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', e => {
+    const sec = document.getElementById('pm-tech');
+    sec.querySelectorAll('[data-t]').forEach(b => b.addEventListener('click', e => {
       e.stopPropagation();
-      sec.querySelectorAll('[data-p]').forEach(x => x.classList.remove('sel'));
+      sec.querySelectorAll('[data-t]').forEach(x => x.classList.remove('sel'));
       b.classList.add('sel');
-      document.getElementById('pmOut').innerHTML = D[b.dataset.p];
+      document.getElementById('techOutBody').innerHTML = D[b.dataset.t];
     }));
   })();
   </script>
 </section>
 
-<section id="pm-bill" class="stepper" data-steps="2">
+
+<!-- ===== part: 60-services.html ===== -->
+<!-- ============================================================
+     60 / Where to run it — Railway spotlight + enterprise grid
+     ids: sv-divider, sv-rail, sv-ent, sv-bill
+     ============================================================ -->
+
+<section id="sv-divider" class="divider">
   <style>
-    #pm-bill .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 26px; }
-    #pm-bill .card { text-align: center; padding: 28px 24px; }
-    #pm-bill .card .e { font-size: 50pt; margin: 0; }
-    #pm-bill ul { list-style: none; margin: 14px 0 0; padding: 0; }
-    #pm-bill li { font-family: var(--mono); font-size: 16pt; margin-bottom: 8px; }
+    #sv-divider .sub { font-family: var(--head); font-size: 28pt; color: var(--muted); margin: 0; max-width: 880px; line-height: 1.25; }
+    #sv-divider .stack { position: absolute; right: 90px; top: 50%; transform: translateY(-50%); width: 440px; display: flex; flex-direction: column; gap: 14px; }
+    #sv-divider .c { font-family: var(--mono); font-size: 17pt; background: var(--panel); border: 1px solid rgba(255,180,84,.45); border-radius: 12px; padding: 12px 20px; color: var(--amber); }
+    #sv-divider .c:nth-child(2) { margin-left: 40px; } #sv-divider .c:nth-child(3) { margin-left: 80px; color: var(--teal); border-color: rgba(63,220,214,.45); }
+  </style>
+  <div>
+    <p class="num">06 / Where to run it</p>
+    <h1>Start on Railway.<br>Scale anywhere.</h1>
+    <p class="sub">A sandbox per task tonight; enterprise fleets on Monday.</p>
+  </div>
+  <div class="stack" aria-hidden="true"><div class="c">Sandbox.create()</div><div class="c">.checkpoint("ready")</div><div class="c">.fork() → 50 tasks</div></div>
+  <aside class="notes">
+    Stop six: where to run all of this. Two answers. Tonight, on Railway: a sandbox per task, checkpointed once, fanned out per agent, billed per second.
+    Monday, at enterprise scale: the RAM-preserving and snapshot-restart fleets from the service grid. Same ideas from section five, different logos on the invoice.
+  </aside>
+</section>
+
+<section id="sv-rail" class="stepper" data-steps="4">
+  <style>
+    #sv-rail .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 24px; }
+    #sv-rail .st { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px 24px; opacity: .38; transition: all .4s var(--ease); }
+    #sv-rail .st.on { opacity: 1; transform: translateY(-6px); border-color: rgba(255,180,84,.6); }
+    #sv-rail .st .n { font-family: var(--head); font-size: 40pt; font-weight: 700; color: var(--amber); line-height: 1; margin: 0; }
+    #sv-rail .st b { display: block; font-family: var(--head); font-size: 24pt; margin: 6px 0 4px; }
+    #sv-rail .st span { font-size: 19pt; color: var(--muted); }
+    #sv-rail .st code { font-size: 15pt; display: inline-block; margin-top: 8px; }
+    #sv-rail .honest { text-align: center; margin-top: 16px; }
+  </style>
+  <p class="kicker">tonight: Railway sandboxes</p>
+  <h2>One sandbox per task</h2>
+  <div class="grid">
+    <div class="st" data-at="1"><p class="n">1</p><b>Create</b><span>An isolated Linux VM inside your environment.</span><br><code>Sandbox.create()</code></div>
+    <div class="st" data-at="2"><p class="n">2</p><b>Reach back</b><span>Private networking hits your Postgres and Redis.</span><br><code>PRIVATE → db, cache, APIs</code></div>
+    <div class="st" data-at="3"><p class="n">3</p><b>Checkpoint</b><span>Save the setup once as a bootable disk snapshot.</span><br><code>checkpoint("ready")</code></div>
+    <div class="st" data-at="4"><p class="n">4</p><b>Fan out</b><span>One sandbox per agent, test, or worker. Destroy when done.</span><br><code>per-second billing · Hobby 50, Pro 100</code></div>
+  </div>
+  <p class="honest muted small" data-at="4">Honest trade: checkpoints save disk, not live RAM. Destroyed sandboxes bill nothing.</p>
+  <div class="captions">
+    <p data-only="0">The side-project loop, end to end.</p>
+    <p data-only="1">Create: a Linux VM inside your environment.</p>
+    <p data-only="2">It reaches your database over the private network.</p>
+    <p data-only="3">Checkpoint once you like the setup. Templates cache it.</p>
+    <p data-only="4">Then fan out. Destroy when done; <b>the meter stops</b>.</p>
+  </div>
+  <aside class="notes">
+    Walk the four clicks. Create gives you an isolated Linux VM scoped to your Railway environment — Docker, coding agents and CLIs come preinstalled, and you can even SSH in.
+    Reach back is the point most people miss: flip on private networking and the sandbox talks to your real Postgres, Redis and internal APIs. Your agent tests against reality, not mocks.
+    Checkpoint saves that working setup as a named bootable disk snapshot; templates cache the recipe for about a week. The documented example fans out one sandbox per agent from a repo-ready checkpoint.
+    Fan out is the loop: one sandbox per task, agent, test or worker — fifty at once on Hobby, a hundred on Pro per environment — metered per second on CPU and memory actually used, and destroying one stops billing cold.
+    Say the honest trade out loud: checkpoints preserve disk, not live RAM. For side projects that is exactly the right trade.
+  </aside>
+</section>
+
+<section id="sv-ent" class="stepper" data-steps="3">
+  <style>
+    #sv-ent .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 22px; }
+    #sv-ent .p { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; cursor: pointer; transition: all .35s var(--ease); opacity: .45; }
+    #sv-ent .p.on { opacity: 1; }
+    #sv-ent .p b { font-family: var(--head); font-size: 22pt; display: block; margin: 0; }
+    #sv-ent .p span { font-family: var(--mono); font-size: 14pt; color: var(--muted); }
+    #sv-ent .p .fit { display: inline-block; font-family: var(--mono); font-size: 13pt; border-radius: 8px; padding: 2px 10px; margin-top: 8px; border: 1px solid var(--line); color: var(--muted); }
+    #sv-ent.s1 .p.ram { border-color: var(--green); box-shadow: 0 0 22px rgba(127,227,164,.25); }
+    #sv-ent.s1 .p.ram .fit { color: #06130c; background: var(--green); border-color: var(--green); }
+    #sv-ent.s2 .p.snap { border-color: var(--violet); }
+    #sv-ent.s2 .p.snap .fit { color: var(--violet); border-color: var(--violet); }
+    #sv-ent .p.sel { border-color: var(--teal) !important; box-shadow: 0 0 0 4px rgba(63,220,214,.15), 0 0 24px rgba(63,220,214,.3) !important; }
+    #sv-ent #svDetail { margin-top: 14px; min-height: 74px; }
+    #sv-ent #svDetail p { font-size: 19pt; margin: 0; }
+    #sv-ent #svOut { font-size: 19pt; margin: 10px 0 0; }
+    #sv-ent #svOut:empty { display: none; }
+  </style>
+  <p class="kicker">Monday: the enterprise grid. Click any platform</p>
+  <h2>Which keep RAM, which start fresh?</h2>
+  <div class="grid">
+    <div class="p ram" data-p="e2b" data-at="1"><b>E2B ★</b><span>Firecracker · pause()</span><br><span class="fit">RAM + fs · ~1s resume</span></div>
+    <div class="p ram" data-p="daytona" data-at="1"><b>Daytona ★</b><span>VM sandbox · pause</span><br><span class="fit">RAM + fs · disk-only parked</span></div>
+    <div class="p ram" data-p="fly" data-at="1"><b>Fly Machines</b><span>suspend via snapshots</span><br><span class="fit">RAM kept · 100s of ms</span></div>
+    <div class="p snap" data-p="vercel" data-at="2"><b>Vercel Sandbox</b><span>stop() → snapshot</span><br><span class="fit">filesystem only</span></div>
+    <div class="p snap" data-p="cf" data-at="2"><b>Cloudflare</b><span>backup → R2</span><br><span class="fit">filesystem only</span></div>
+    <div class="p snap" data-p="modal" data-at="2"><b>Modal</b><span>snapshots → clones</span><br><span class="fit">restorable, 30-day TTL</span></div>
+  </div>
+  <div id="svDetail" class="card teal"><p>Click a card for timeouts, caps and pricing. ★ means true pause and resume.</p><p id="svOut"></p></div>
+  <div class="captions">
+    <p data-only="0">Six services, two shapes.</p>
+    <p data-only="1"><b>RAM-preserving:</b> E2B, Daytona VMs and Fly keep memory.</p>
+    <p data-only="2"><b>Snapshot-restart:</b> the rest restore files into a fresh session.</p>
+    <p data-only="3">Railway, previous slide: checkpoint and fork per environment.</p>
+  </div>
+  <aside class="notes">
+    Let the audience click cards; details appear below. Step 1 lights up the RAM-preserving row: E2B pauses the live VM with memory included and resumes in about a second, paused free;
+    Daytona VM sandboxes preserve memory on pause and bill disk-only while parked; Fly suspends the whole VM including RAM and wakes in hundreds of milliseconds.
+    Step 2 covers snapshot-restart: Vercel stop auto-snapshots the filesystem with tiered timeouts; Cloudflare backs directories up to R2 with a 3-day default TTL and restores them as an overlay;
+    Modal snapshots become restorable clones. Step 3 points back: Railway did checkpoint and fork per environment on the previous slide — start there tonight.
+  </aside>
+  <script>
+  (function () {
+    const D = {
+      e2b: '<b>E2B:</b> pausable Firecracker microVMs. Timeout action <b>kill or pause + autoResume</b>; 1h Hobby / 24h Pro continuous run. Per-second while running, <b>paused free</b>. Concurrency to tens of thousands on Enterprise.',
+      daytona: '<b>Daytona:</b> containers by default, <b>VM sandboxes</b> for agents. VM auto-pause 60 min default. PAYG reserved vCPU/RAM/disk; <b>paused = disk only</b>, archived containers free.',
+      fly: '<b>Fly Machines:</b> Machines API, suspend via Firecracker snapshots, resume in <b>hundreds of ms</b>. Snapshots can be discarded on deploy or maintenance. Running = CPU/RAM preset; suspended = storage only.',
+      vercel: '<b>Vercel Sandbox:</b> <b>stop() auto-snapshots the filesystem</b>; resume = new session from snapshot. 5 min default timeout, 45 min Hobby / 24 h Pro+. Billed active CPU + provisioned memory + creations + snapshot storage.',
+      cf: '<b>Cloudflare Sandbox:</b> container per Durable Object, <b>createBackup/restoreBackup to R2</b> (3-day TTL). 10 min idle sleep default. Billed every 10 ms; memory/disk provisioned. GA April 2026.',
+      modal: '<b>Modal:</b> sandboxes with <b>filesystem snapshots → clones</b> (30-day TTL); snapshotting ends the sandbox. Per-second at max(requested, actual). Huge concurrency, restart-shaped.'
+    };
+    const sec = document.getElementById('sv-ent');
+    sec.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      sec.querySelectorAll('[data-p]').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+      document.getElementById('svOut').innerHTML = D[b.dataset.p];
+    }));
+  })();
+  </script>
+</section>
+
+<section id="sv-bill" class="stepper" data-steps="2">
+  <style>
+    #sv-bill .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 26px; }
+    #sv-bill .card { text-align: center; padding: 28px 24px; }
+    #sv-bill .card .e { font-size: 50pt; margin: 0; }
+    #sv-bill ul { list-style: none; margin: 14px 0 0; padding: 0; }
+    #sv-bill li { font-family: var(--mono); font-size: 16pt; margin-bottom: 8px; }
   </style>
   <p class="kicker">what parking costs</p>
-  <h2>Running burns. Parked <span class="t-green">sips</span>.</h2>
+  <h2>Running bills you; parked costs pennies.</h2>
   <div class="cols">
-    <div class="card coral" data-at="1"><p class="e">🔥</p><h3>While running</h3><ul><li>CPU + RAM, per second</li><li>+ creations, egress</li><li class="muted">every platform meters this</li></ul></div>
-    <div class="card green" data-at="2"><p class="e">❄️</p><h3>While parked</h3><ul><li>E2B paused: <b class="t-green">free</b></li><li>Daytona / Fly: <b class="t-green">disk only</b></li><li>Vercel / CF / Modal: <b class="t-green">snapshot storage</b></li></ul></div>
+    <div class="card coral" data-at="1"><p class="e">🔥</p><h3>While running</h3><ul><li>CPU + RAM actually used, per second</li><li>+ creations, egress</li><li class="muted">every service meters this</li></ul></div>
+    <div class="card green" data-at="2"><p class="e">❄️</p><h3>While parked</h3><ul><li>E2B paused: <b class="t-green">free</b></li><li>Daytona / Fly: <b class="t-green">disk only</b></li><li>Vercel / CF / Modal: <b class="t-green">snapshot storage</b></li><li>Railway destroyed: <b class="t-green">$0</b></li></ul></div>
   </div>
   <aside class="notes">
     Two clicks. While running, everyone meters CPU plus RAM per second, plus creations and egress — that is the same everywhere.
-    While parked, the bill collapses: E2B paused sandboxes are free, Daytona and Fly charge disk only, Vercel, Cloudflare and Modal charge snapshot or backup storage.
+    While parked, the bill collapses: E2B paused sandboxes are free, Daytona and Fly charge disk only, Vercel, Cloudflare and Modal charge snapshot or backup storage, and a destroyed Railway sandbox bills nothing at all.
     That collapse is the whole business case: the waiting money from section two goes nearly to zero.
   </aside>
 </section>
@@ -1003,13 +1132,13 @@ window.Deck = (function () {
     #fn-full #fnOut { font-size: 19pt; margin: 10px 0 0; }
     #fn-full #fnOut:empty { display: none; }
   </style>
-  <p class="kicker">the whole machine — click any part</p>
-  <h2>Five clicks, one system</h2>
+  <p class="kicker">the whole machine. Click any part</p>
+  <h2>One system, wired together</h2>
   <div class="map">
     <div class="col">
       <div class="nd s1" data-n="model" data-at="1"><b>🧠 model</b><span>plans, writes code</span></div>
-      <div class="nd s2" data-n="loop" data-at="2"><b>🔁 loop</b><span>act → observe → repair</span></div>
-      <div class="nd s2" data-n="mcp" data-at="2"><b>🔌 MCP</b><span>docs · gh · db</span></div>
+      <div class="nd s2" data-n="loop" data-at="2"><b>↻ loop</b><span>act → observe → repair</span></div>
+      <div class="nd s2" data-n="mcp" data-at="2"><b>◉ MCP</b><span>docs · gh · db</span></div>
     </div>
     <div class="core" data-at="1">
       <h3>agent VM</h3><p>one pausable microVM per session</p>
@@ -1018,12 +1147,12 @@ window.Deck = (function () {
     <div class="col">
       <div class="nd s3" data-n="snap" data-at="3"><b>❄️ snapshots</b><span>RAM + disk → store</span></div>
       <div class="nd s4" data-n="cow" data-at="4"><b>▦ warm repo</b><span>CoW views, ~0 bytes</span></div>
-      <div class="nd s5" data-n="bill" data-at="5"><b>⚡ meter</b><span>pay to run, park free</span></div>
+      <div class="nd s5" data-n="bill" data-at="5"><b>⚡ run it</b><span>Railway + fleets</span></div>
     </div>
   </div>
-  <div id="fnDetail" class="card teal"><p>Click any box — each is one section of this talk, wired together.</p><p id="fnOut"></p></div>
+  <div id="fnDetail" class="card teal"><p>Click any box. Each is one section of this talk, wired together.</p><p id="fnOut"></p></div>
   <div class="captions">
-    <p data-only="0">Everything from tonight, on one slide.</p>
+    <p data-only="0">Tonight's whole story, on one slide.</p>
     <p data-only="1">The model plans and writes code…</p>
     <p data-only="2">…the loop executes it, tools plug in…</p>
     <p data-only="3">…idle state freezes into snapshots…</p>
@@ -1031,19 +1160,19 @@ window.Deck = (function () {
     <p data-only="5">…and the meter only runs <b>while computing</b>.</p>
   </div>
   <aside class="notes">
-    The payoff slide — advance all five steps, then invite clicks. Each box is one section of the talk: the model, the loop with MCP tools, snapshots, the warm CoW repo, the meter.
+    The payoff slide — advance all five steps, then invite clicks. Each box is one section of the talk: the model, the loop with MCP tools, snapshots, the warm CoW repo, and where to run each.
     Say it as one sentence: the model plans, the loop runs code against a shared repo view, idle VMs freeze into cheap snapshots, and you pay compute only while the agent works.
     Every box is clickable for Q&A detours back into any section.
   </aside>
   <script>
   (function () {
     const D = {
-      model: '🧠 <b>Model</b> (§1) — plans, writes programs in code mode. Knows bash, Python, pytest already. Token-efficient, composable.',
-      loop: '↻ <b>Loop</b> (§1) — plan → act → observe → repair until checks pass. Lint, build, tests inside the loop: no run, no trust.',
-      mcp: '◈ <b>MCP</b> (§1) — one plug shape for docs, GitHub, DBs, tickets. Local servers share the VM, so they get sandboxed too.',
-      snap: '❄️ <b>Snapshots</b> (§3) — RAM + disk frozen to storage, CPU/RAM released. Resume mmaps pages back on demand, ~1 second. Firecracker: &lt;125 ms boot, &lt;5 MiB overhead.',
-      cow: '▦ <b>Warm repo</b> (§4) — one checkout on the dev server, per-session OverlayFS/ZFS views. Reads shared, writes copy up. Page cache shared.',
-      bill: '⚡ <b>Meter</b> (§2+§5) — 2,000 always-on 4 GiB VMs ≈ $56k/mo, ~75% of it waiting money. Parked state costs disk-only or free. Pay compute-seconds, not open tabs.'
+      model: '🧠 <b>Model</b> (§1) plans and writes programs in code mode. Knows bash, Python, pytest already. Token-efficient, composable.',
+      loop: '↻ <b>Loop</b> (§1): plan → act → observe → repair until checks pass. Lint, build, tests inside the loop: no run, no trust.',
+      mcp: '◉ <b>MCP</b> (§1) is one plug shape for docs, GitHub, DBs, tickets. Local servers share the VM, so they get sandboxed too.',
+      snap: '❄️ <b>Snapshots</b> (§3): RAM + disk frozen to storage, CPU/RAM released. Resume mmaps pages back on demand, ~1 second. Firecracker: &lt;125 ms boot, &lt;5 MiB overhead.',
+      cow: '▦ <b>Warm repo</b> (§4): one checkout on the dev server, per-session OverlayFS/ZFS views. Reads shared, writes copy up. Page cache shared.',
+      bill: '⚡ <b>Where to run</b> (§5+§6). Railway: one sandbox per task, checkpoint once, destroy to stop billing. Fleets: E2B and Daytona keep RAM; the rest restart from snapshots. Parked state costs pennies.'
     };
     const sec = document.getElementById('fn-full');
     sec.querySelectorAll('[data-n]').forEach(b => b.addEventListener('click', e => {
@@ -1066,9 +1195,9 @@ window.Deck = (function () {
   <p class="kicker">take it home</p>
   <h2>Three sentences</h2>
   <div class="row">
-    <div class="card amber" data-at="1"><p class="big t-amber">run it</p><h3>Agents need computers</h3><p class="muted">Loop, code mode, verify — all execute.</p></div>
-    <div class="card violet" data-at="2"><p class="big t-violet">freeze it</p><h3>Idle is storable</h3><p class="muted">Snapshots + CoW kill the bill.</p></div>
-    <div class="card green" data-at="3"><p class="big t-green">rent it</p><h3>Primitives exist</h3><p class="muted">Pause, resume, pay per second.</p></div>
+    <div class="card amber" data-at="1"><p class="big t-amber">run it</p><h3>Your agent needs a computer</h3><p class="muted">Loop, code, tests. All of it executes.</p></div>
+    <div class="card violet" data-at="2"><p class="big t-violet">freeze it</p><h3>Idle time can sit in storage</h3><p class="muted">Snapshots and shared repos shrink the bill.</p></div>
+    <div class="card green" data-at="3"><p class="big t-green">rent it</p><h3>You can rent all of this</h3><p class="muted">Railway tonight, fleets on Monday.</p></div>
   </div>
   <aside class="notes">
     Three sentences to carry out. Agents need computers: everything that makes them good — the loop, code mode, verification — is execution.
@@ -1085,10 +1214,10 @@ window.Deck = (function () {
     #fn-close .src { margin-top: 26px; font-family: var(--mono); font-size: 14pt; color: var(--muted); max-width: 1000px; line-height: 1.6; }
   </style>
   <div>
-    <p class="kicker">thank you — questions</p>
+    <p class="kicker">thank you, questions</p>
     <h1>Give every agent<br>a cloud to live in.</h1>
-    <div class="links"><a href="https://github.com/firecracker-microvm/firecracker">▸ firecracker</a><a href="https://www.e2b.dev/docs">▸ e2b docs</a><a href="https://www.daytona.io/docs/en/sandboxes/">▸ daytona docs</a></div>
-    <p class="src">sources: research/01–05 in this folder · pricing figures illustrative, check provider pages · slide deck: reveal.js, press S for notes</p>
+    <div class="links"><a href="https://github.com/firecracker-microvm/firecracker">▸ firecracker</a><a href="https://docs.railway.com/sandboxes">▸ railway sandboxes</a><a href="https://developers.cloudflare.com/sandbox/">▸ cloudflare sandbox</a><a href="https://www.e2b.dev/docs">▸ e2b docs</a></div>
+    <p class="src">sources: research/01–08 in this folder · pricing figures illustrative, check provider pages · slide deck: reveal.js, press S for notes</p>
   </div>
   <aside class="notes">
     Close warmly and open the floor. The one-liner: give every agent a cloud to live in — a pausable VM, a shared view of the repo, and a meter that only runs while it computes.

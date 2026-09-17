@@ -13,8 +13,8 @@
   </style>
   <div>
     <p class="num">04 / Share</p>
-    <h1>Copy the repo<br><span class="t-amber">never.</span></h1>
-    <p class="sub">One warm monorepo. Every session sees it, nobody recopies it.</p>
+    <h1>Never clone<br><span class="t-amber">the whole repo.</span></h1>
+    <p class="sub">One warm copy on the server. Every session borrows it.</p>
   </div>
   <div class="stack" aria-hidden="true">
     <div class="disk warm">warm monorepo · 40 GiB</div>
@@ -38,7 +38,7 @@
   <p class="kicker">the naive way</p>
   <h2>2,000 clones of a <span class="t-coral">40 GiB</span> monorepo?</h2>
   <div class="vs">
-    <div class="card coral" data-at="1"><h3>Full copy each</h3><div class="repo">git clone × 2,000</div><p class="big t-coral">80 TB</p><p class="muted">moved, stored… to change 3 files</p></div>
+    <div class="card coral" data-at="1"><h3>Full copy each</h3><div class="repo">git clone × 2,000</div><p class="big t-coral">80 TB</p><p class="muted">moved to change three files</p></div>
     <div class="card green" data-at="2"><h3>CoW view each</h3><div class="repo">clone = metadata only</div><p class="big t-green">~0 GB</p><p class="muted">until a session writes</p></div>
   </div>
   <aside class="notes">
@@ -66,14 +66,14 @@
     #cw-cow #cowOut { font-size: 20pt; margin: 10px 0 0; }
     #cw-cow #cowOut:empty { display: none; }
   </style>
-  <p class="kicker">click a session — watch what it owns</p>
+  <p class="kicker">click a session, watch what it owns</p>
   <h2>One base, <em>instant</em> views</h2>
   <div class="stage">
     <div class="warm" data-at="1"><h3>🔥 warm copy</h3><p>dev server · hot in cache</p><div><span class="fb">▦</span><span class="fb">▦</span><span class="fb">▦</span><span class="fb">▦</span><span class="fb">▦</span><span class="fb">▦</span></div></div>
     <div class="sess" data-sess="a" data-at="2"><h3>Session A</h3><div><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span><span class="blk own" data-at="3">✎ auth.ts</span></div><p class="muted" style="font-size:16pt">click me</p></div>
     <div class="sess" data-sess="b" data-at="2"><h3>Session B</h3><div><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span></div><p class="muted" style="font-size:16pt">read-only so far</p></div>
   </div>
-  <div id="cowDetail" class="card amber"><p data-only="0">Click session A, then B. Count who pays for what.</p><p data-only="1">The warm copy sits on fast SSD, shared by all.</p><p data-only="2">Each view is <b>metadata</b> — created instantly, ~0 bytes.</p><p data-only="3">A writes <b>auth.ts</b> → only that file is copied up. The rest stays shared.</p><p data-only="4">Session B changed nothing → still <b>pays nothing</b>. Page cache shared too.</p><p id="cowOut"></p></div>
+  <div id="cowDetail" class="card amber"><p data-only="0">Click A, then B. See who pays for what.</p><p data-only="1">The warm copy sits on fast SSD, shared by all.</p><p data-only="2">Each view is <b>metadata</b>, created instantly, ~0 bytes.</p><p data-only="3">A writes <b>auth.ts</b> → only that file is copied up. The rest stays shared.</p><p data-only="4">Session B changed nothing → still <b>pays nothing</b>. Page cache shared too.</p><p id="cowOut"></p></div>
   <aside class="notes">
     The heart of the talk — let the audience click. The warm copy is one checkout on the dev server's fast SSD, hot in page cache.
     Each session view is metadata pointing at the same blocks: instant, near-zero bytes. When session A edits auth.ts, only that file copies up into its private layer — the rest stays shared.
@@ -83,7 +83,7 @@
   <script>
   (function () {
     const D = {
-      a: '🟢 <b>Session A</b> owns <b>1 file</b> (auth.ts, 12 KiB). Everything else is shared blocks — reads cost nothing.',
+      a: '🟢 <b>Session A</b> owns <b>1 file</b> (auth.ts, 12 KiB). Everything else is shared blocks. Reads cost nothing.',
       b: '🔵 <b>Session B</b> owns <b>0 bytes</b>. Pure metadata view. When it writes, only touched files copy up.'
     };
     const sec = document.getElementById('cw-cow');
@@ -110,7 +110,7 @@
     #cw-edit .pick { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
   </style>
   <p class="kicker">what "copy on write" literally means</p>
-  <h2>Read shared. Write <span class="t-amber">copies up</span>.</h2>
+  <h2>Reads stay shared. Writes <span class="t-amber">copy once</span>.</h2>
   <div class="flow">
     <div class="st" data-at="1"><p class="e">📖</p><b>Read</b><span>served from base</span></div>
     <div class="arr" data-at="2">→</div>
@@ -127,7 +127,7 @@
     <p data-only="0">Reads never copy anything.</p>
     <p data-only="1">Reads come from the shared lower tree.</p>
     <p data-only="2">First write to a file <b>copies just that file</b> up. Deletes become whiteouts.</p>
-    <p data-only="3">Pick a filesystem — trade-offs differ, pattern holds.</p>
+    <p data-only="3">Pick a filesystem. Trade-offs differ, the pattern holds.</p>
   </div>
   <aside class="notes">
     Spell out the literal mechanism. Reads are served from the shared base — zero cost. The first write to a file copies just that file into the private upper layer; deletions become whiteout markers.

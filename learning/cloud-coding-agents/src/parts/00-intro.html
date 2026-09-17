@@ -22,7 +22,7 @@
   <div style="max-width: 880px;">
     <p class="kicker">a talk about where coding agents really run</p>
     <h1>Why your coding agent needs <span class="t-teal">a cloud</span></h1>
-    <p class="sub">The machine behind the model:<br>VMs you can pause, snapshots, shared repos.</p>
+    <p class="sub">The computer behind the chat.</p>
   </div>
   <div class="sky" aria-hidden="true">
     <div class="cloud"><i></i><i></i><i></i><b></b></div>
@@ -41,57 +41,69 @@
 
 <section id="in-hands" class="stepper" data-steps="3">
   <style>
-    #in-hands .q { display: grid; grid-template-columns: 110px 1fr; gap: 30px; align-items: center; margin: 0 0 40px; }
+    #in-hands .q { display: grid; grid-template-columns: 110px 1fr auto; gap: 30px; align-items: center; margin: 0 0 40px; }
     #in-hands .q .n { font-family: var(--head); font-size: 64pt; font-weight: 700; color: var(--line); text-align: right; margin: 0; transition: color .4s; }
     #in-hands .q.on .n { color: var(--teal); }
-    #in-hands .q p.t { font-family: var(--head); font-size: 38pt; margin: 0; line-height: 1.15; }
+    #in-hands .q p.t { font-family: var(--head); font-size: 36pt; margin: 0; line-height: 1.15; }
+    #in-hands .q .hands { font-family: var(--mono); font-size: 15pt; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 6px 18px; white-space: nowrap; margin: 0; }
+    #in-hands .q.on .hands { color: var(--teal); border-color: rgba(63,220,214,.5); }
   </style>
-  <p class="kicker">quick show of hands</p>
-  <h2 style="margin-bottom: 46px;">Raise your hand if you have…</h2>
-  <div class="q" data-at="1"><p class="n">1</p><p class="t">used an AI coding agent this week</p></div>
-  <div class="q" data-at="2"><p class="n">2</p><p class="t">watched it <span class="t-amber">run</span> something: tests, builds, a script</p></div>
-  <div class="q" data-at="3"><p class="n">3</p><p class="t">thought about <span class="t-teal">where that run happened</span></p></div>
+  <p class="kicker">three questions, honest hands</p>
+  <h2 style="margin-bottom: 46px;">Keep your hand up if…</h2>
+  <div class="q" data-at="1"><p class="n">1</p><p class="t">you used an AI coding agent this week</p><p class="hands">most of us</p></div>
+  <div class="q" data-at="2"><p class="n">2</p><p class="t">you have coded <span class="t-amber">from your phone</span> while the agent ran in the cloud</p><p class="hands">fewer hands</p></div>
+  <div class="q" data-at="3"><p class="n">3</p><p class="t">at work, agents spin up with your <span class="t-teal">tickets, repo and CI</span> already wired in</p><p class="hands">almost nobody</p></div>
   <aside class="notes">
-    Click through one question at a time and wait for hands. Expect nearly all hands for 1, most for 2, few for 3.
-    That gap is the talk: everyone sees the chat, almost nobody sees the computer behind it. Today we open that box.
+    Click through one question at a time and count hands out loud. Nearly everyone keeps a hand up for 1. Question 2 drops most of the room: coding from a phone while the agent runs somewhere else. Question 3 should leave almost nobody: a workplace setup where agents arrive with tickets, repo, and CI already connected.
+    That funnel is the talk. We know agents work. We barely run them in the cloud. And almost nobody has them wired into work yet. Today is about closing those two gaps.
   </aside>
 </section>
 
 <section id="in-agenda" class="stepper" data-steps="4">
   <style>
-    #in-agenda .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 36px; }
-    #in-agenda .card { min-height: 400px; display: flex; flex-direction: column; gap: 12px; }
-    #in-agenda .card .big { font-family: var(--head); font-size: 64pt; font-weight: 700; line-height: 1; margin: 0; }
-    #in-agenda .card h3 { font-size: 27pt; }
+    #in-agenda .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 36px; }
+    #in-agenda .card { min-height: 250px; display: flex; flex-direction: column; gap: 10px; }
+    #in-agenda .card .big { font-family: var(--head); font-size: 52pt; font-weight: 700; line-height: 1; margin: 0; }
+    #in-agenda .card h3 { font-size: 25pt; }
   </style>
   <p class="kicker">the plan</p>
-  <h2>Four stops</h2>
+  <h2>Six stops</h2>
   <div class="row">
     <div class="card amber" data-at="1">
       <p class="big t-amber">1</p>
       <h3>What agents do</h3>
-      <p class="muted">Loop, code mode, MCP, verify</p>
+      <p class="muted">Loop, code mode, tools</p>
     </div>
     <div class="card coral" data-at="2">
       <p class="big t-coral">2</p>
       <h3>The bill</h3>
-      <p class="muted">Why one VM per chat breaks</p>
+      <p class="muted">One VM per chat breaks</p>
     </div>
     <div class="card violet" data-at="3">
       <p class="big t-violet">3</p>
       <h3>Pause &amp; share</h3>
-      <p class="muted">Snapshots, resume, CoW repos</p>
+      <p class="muted">Snapshots, shared repos</p>
     </div>
     <div class="card teal" data-at="4">
       <p class="big t-teal">4</p>
-      <h3>Primitives</h3>
-      <p class="muted">Sandbox APIs, end to end</p>
+      <h3>How it works</h3>
+      <p class="muted">Storage, sharing, owners</p>
+    </div>
+    <div class="card amber" data-at="4">
+      <p class="big t-amber">5</p>
+      <h3>Where to run it</h3>
+      <p class="muted">Railway tonight, fleets Monday</p>
+    </div>
+    <div class="card green" data-at="4">
+      <p class="big t-green">6</p>
+      <h3>The whole system</h3>
+      <p class="muted">Wired together, Q&amp;A</p>
     </div>
   </div>
   <aside class="notes">
-    Four stops. First, what an agent session actually does with its machine — the loop, running code, tools, and why it must verify by running things.
+    Six stops. First, what an agent session actually does with its machine — the loop, running code, tools, and why it must verify by running things.
     Second, the bill: what thousands of always-on VMs cost and where the money really burns.
     Third, the two fixes: pause VMs into snapshots and resume in a second, and share one warm repo with copy-on-write.
-    Fourth, the off-the-shelf sandbox primitives and the whole picture wired together.
+    Fourth, the three ideas underneath every platform. Fifth, where to run it: Railway tonight, enterprise fleets on Monday. Sixth, the whole system on one slide for Q&A.
   </aside>
 </section>
