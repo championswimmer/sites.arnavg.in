@@ -1,0 +1,987 @@
+<!-- ============================================================
+     05 / pi-checklist  (section prefix: ck-)
+     ============================================================ -->
+
+<section id="ck-divider" class="divider">
+  <style>
+    /* shared checklist-widget look (divider, walkthrough, tree) */
+    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-rows { position: relative; }
+    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 16pt; white-space: nowrap; transition: top .55s var(--ease), opacity .4s var(--ease); }
+    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row .pill { flex: none; font-size: 15pt; font-weight: 700; line-height: 1.35; padding: 0 8px; border-radius: 5px; color: #0d0f15; min-width: 64px; text-align: center; transition: background .35s; }
+    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row .g { flex: none; width: 20px; text-align: center; }
+    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row .id { flex: none; font-weight: 700; color: var(--text); }
+    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row .t { overflow: hidden; text-overflow: ellipsis; color: var(--text); min-width: 0; }
+    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row .dep { flex: none; color: var(--coral); }
+    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.prog .pill { background: var(--amber); }
+    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.redy .pill { background: var(--teal); }
+    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.blck .pill { background: var(--coral); }
+    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.done .pill { background: var(--green); }
+    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.prog .g { color: var(--amber); }
+    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.redy .g { color: var(--teal); }
+    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.blck .g { color: var(--coral); }
+    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.done .g { color: var(--green); }
+    :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.done .t, :is(#ck-divider, #ck-walk, #ck-tree) .ckw-row.blck .t { color: var(--muted); }
+
+    #ck-divider .pitch { max-width: 760px; }
+    #ck-divider h1 { font-size: 84pt; margin-bottom: 26px; }
+    #ck-divider .lead { color: var(--text); margin-bottom: 18px !important; }
+    #ck-divider .mock { position: absolute; right: 64px; top: 50%; transform: translateY(-50%) rotate(-1.5deg); width: 640px; box-shadow: 0 30px 80px rgba(0,0,0,.45), 0 0 0 1px rgba(185,162,255,.18); }
+    #ck-divider .mock .body { padding: 18px 20px; }
+    #ck-divider .mock .hd { font-family: var(--mono); font-size: 16pt; margin: 0 0 12px; color: var(--muted); }
+    #ck-divider .mock .hd b { color: var(--text); }
+    #ck-divider .mock .ckw-row { position: relative; margin-bottom: 8px; }
+    #ck-divider .mock .ckw-row.prog .g { animation: ck-pulse 1.6s ease-in-out infinite; }
+    #ck-divider .mock .status { justify-content: flex-end; }
+    #ck-divider .mock .status b { color: var(--green); font-weight: 500; }
+    @keyframes ck-pulse { 50% { opacity: .25; } }
+  </style>
+  <div class="pitch">
+    <p class="num">05 / pi-checklist</p>
+    <h1>pi-checklist</h1>
+    <p class="lead">Three tools, one hook, and the session file as the database.</p>
+    <p class="muted">The agent gets a to-do list it can't lose track of.</p>
+  </div>
+  <div class="term mock" aria-hidden="true">
+    <div class="bar"><i></i><i></i><i></i><b>pi</b></div>
+    <div class="body">
+      <p class="hd"><b>checklist</b> API rate limiting · 1/4 done</p>
+      <div class="ckw-row prog"><span class="pill">PROG</span><span class="g">●</span><span class="id">mid</span><span class="t">Add rate-limit middleware</span></div>
+      <div class="ckw-row blck"><span class="pill">BLCK</span><span class="g">⊘</span><span class="id">wir</span><span class="t">Wire middleware into routes</span><span class="dep">← mid</span></div>
+      <div class="ckw-row blck"><span class="pill">BLCK</span><span class="g">⊘</span><span class="id">tst</span><span class="t">Test 429 + Retry-After</span><span class="dep">← wir</span></div>
+      <div class="ckw-row done"><span class="pill">DONE</span><span class="g">✓</span><span class="id">stg</span><span class="t">Pick rate-limit strategy + store</span></div>
+    </div>
+    <div class="status"><b>☑ 1/4</b></div>
+  </div>
+  <aside class="notes">
+    Third and final walkthrough. Quick recap of the arc: speedometer only watched the event stream, and context-prune rewrote the context before each model call.
+    pi-checklist goes one step further. It gives the model new abilities (three tools), gives the human new UI (a widget, a footer, a command), and keeps its state inside the session file.
+    The one-line pitch: three tools, one hook, and the session file as the database. The agent gets a to-do list it can't lose track of.
+    The mock on the right is the real widget layout: coloured pills, a glyph, a 3-character id, the title and, for blocked tasks, what they're waiting on. The footer shows ☑ done/total.
+    It's on npm as pi-checklist (v0.3.1). If you want to demo live later: pi install npm:pi-checklist.
+  </aside>
+</section>
+
+<section id="ck-why" class="stepper" data-steps="3">
+  <style>
+    #ck-why h2 { margin-bottom: 22px; }
+    #ck-why .lane { display: grid; grid-template-columns: 210px 1fr; align-items: center; gap: 10px; height: 214px; padding: 10px 24px; margin-bottom: 18px; }
+    #ck-why .lane h3 { margin: 0; font-size: 28pt; }
+    #ck-why .lane p { margin: 0; }
+    #ck-why svg { width: 1180px; height: 190px; display: block; overflow: visible; }
+    #ck-why svg text { font-family: var(--mono); font-size: 20px; fill: var(--muted); }
+    #ck-why .trail { fill: none; stroke-width: 5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.8s var(--ease); }
+    #ck-why .drift .trail { stroke: var(--coral); }
+    #ck-why .plan .trail { stroke: var(--green); transition-duration: 1.4s; }
+    #ck-why.s1 .drift .trail, #ck-why.s2 .plan .trail { stroke-dashoffset: 0; }
+    #ck-why .late { opacity: 0; transition: opacity .5s var(--ease); }
+    #ck-why.s1 .drift .late { opacity: 1; }
+    #ck-why.s2 .plan .late { opacity: 1; }
+    #ck-why .late.d1 { transition-delay: .5s; } #ck-why .late.d2 { transition-delay: .9s; } #ck-why .late.d3 { transition-delay: 1.3s; } #ck-why .late.d4 { transition-delay: 1.6s; }
+    #ck-why .cp rect { fill: #1d2f2e; stroke: var(--green); stroke-width: 2; }
+    #ck-why .cp text { fill: var(--text); font-size: 22px; font-weight: 700; }
+    #ck-why .reasons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    #ck-why .reasons .card { padding: 14px 22px; }
+    #ck-why .reasons p { margin: 0; font-family: var(--head); font-size: 24pt; }
+    #ck-why .reasons p span { font-family: var(--mono); font-size: 17pt; color: var(--muted); display: block; margin-top: 2px; }
+  </style>
+  <p class="kicker">05 / pi-checklist · why</p>
+  <h2>Long tasks drift. Plans don't.</h2>
+
+  <div class="card coral lane drift">
+    <div><h3 class="t-coral">No plan</h3><p class="small muted">just the transcript</p></div>
+    <svg viewBox="0 0 1180 190" aria-hidden="true">
+      <circle cx="30" cy="95" r="12" fill="var(--blue)"/>
+      <text x="30" y="140" text-anchor="middle">prompt</text>
+      <text x="1140" y="140" text-anchor="middle" style="fill:var(--green)">goal</text>
+      <circle cx="1140" cy="95" r="16" fill="none" stroke="var(--green)" stroke-width="3" stroke-dasharray="6 6"/>
+      <path class="trail" pathLength="1" d="M 30 95 C 160 95, 220 50, 330 62 S 470 165, 580 150 S 720 20, 810 52 S 930 180, 1010 165"/>
+      <g class="late d1"><circle cx="580" cy="150" r="8" fill="var(--coral)"/><text x="580" y="186" text-anchor="middle">compaction</text></g>
+      <g class="late d2"><circle cx="810" cy="52" r="8" fill="var(--coral)"/><text x="810" y="24" text-anchor="middle">tool call #40</text></g>
+      <g class="late d3"><text x="1040" y="176" style="fill:var(--coral);font-size:40px;font-family:var(--head);font-weight:700">?</text></g>
+    </svg>
+  </div>
+
+  <div class="card green lane plan">
+    <div><h3 class="t-green">Checklist</h3><p class="small muted">plan as data</p></div>
+    <svg viewBox="0 0 1180 190" aria-hidden="true">
+      <circle cx="30" cy="95" r="12" fill="var(--blue)"/>
+      <text x="30" y="140" text-anchor="middle">prompt</text>
+      <path class="trail" pathLength="1" d="M 30 95 L 1140 95"/>
+      <g class="cp late d1"><rect x="200" y="67" width="100" height="56" rx="12"/><text x="250" y="103" text-anchor="middle">stg</text></g>
+      <g class="cp late d2"><rect x="440" y="67" width="100" height="56" rx="12"/><text x="490" y="103" text-anchor="middle">mid</text></g>
+      <g class="cp late d3"><rect x="680" y="67" width="100" height="56" rx="12"/><text x="730" y="103" text-anchor="middle">wir</text></g>
+      <g class="cp late d4"><rect x="920" y="67" width="100" height="56" rx="12"/><text x="970" y="103" text-anchor="middle">tst</text></g>
+      <g class="late d4"><circle cx="1140" cy="95" r="22" fill="var(--green)"/><text x="1140" y="104" text-anchor="middle" style="fill:#0d0f15;font-size:26px;font-weight:700">✓</text><text x="1140" y="148" text-anchor="middle" style="fill:var(--green)">goal</text></g>
+    </svg>
+  </div>
+
+  <div class="reasons" data-at="3">
+    <div class="card blue"><p>Plan first<span>checklist_create</span></p></div>
+    <div class="card teal"><p>Re-read every prompt<span>before_agent_start</span></p></div>
+    <div class="card coral"><p>Order enforced<span>blocked until deps done</span></p></div>
+  </div>
+
+  <div class="captions">
+    <p data-only="0">Hand an agent a job with a dozen steps…</p>
+    <p data-only="1">Without a plan, <b>compaction</b> and long tool chains blur the goal</p>
+    <p data-only="2">With a checklist, the plan is <b>data</b> the agent keeps re-reading</p>
+    <p data-only="3">Plan, stay on track, and let the harness <b>enforce order</b></p>
+  </div>
+  <aside class="notes">
+    Step 0: Set the scene. Give an agent something like "add rate limiting to the API". That's several steps: pick a strategy, write middleware, wire it in, test it.
+    Step 1: Without a plan, the goal only lives in the transcript. Forty tool calls deep, or after compaction has summarised the early turns, the agent can lose the thread. The path drawn here is illustrative, not measured.
+    Step 2: With pi-checklist, the model writes the plan down as tasks with 3-char ids: stg, mid, wir, tst. That's the scenario we'll walk through.
+    Step 3: Three reasons it helps. First, checklist_create makes the model break the work down before touching code; the tool guideline says to use it "at the start of multi-step work". Second, before_agent_start re-injects the open tasks into the system prompt on every user prompt, so after compaction the model still sees "stg ongoing; mid blocked ← stg". Third, dependencies are enforced: the model can't start or finish a task whose prerequisites aren't done. It gets an error it can read and fix.
+    Also worth saying: the human gets a live view of progress without scrolling the transcript. It's a small working list, not a project-management app.
+  </aside>
+</section>
+
+<section id="ck-map" class="stepper" data-steps="4">
+  <style>
+    #ck-map h2 { margin-bottom: 10px; }
+    #ck-map .stage { position: relative; width: 1472px; height: 640px; }
+    #ck-map .box { position: absolute; border-radius: 18px; background: var(--panel); border: 2px solid var(--line); padding: 16px 20px; box-sizing: border-box; }
+    #ck-map .box h4 { margin: 0 0 6px; font-size: 24pt; }
+    #ck-map .model { left: 0; top: 40px; width: 360px; height: 420px; border-color: color-mix(in srgb, var(--blue) 60%, transparent); }
+    #ck-map .pi { left: 506px; top: 40px; width: 460px; height: 420px; border-color: color-mix(in srgb, var(--amber) 60%, transparent); }
+    #ck-map .tui { left: 1112px; top: 40px; width: 360px; height: 420px; padding: 0; background: transparent; border: none; }
+    #ck-map .sess { left: 346px; top: 510px; width: 780px; height: 128px; border-color: color-mix(in srgb, var(--green) 60%, transparent); padding: 12px 20px; }
+    #ck-map .glabel { position: absolute; font-family: var(--mono); font-size: 15pt; letter-spacing: .14em; text-transform: uppercase; margin: 0; }
+    #ck-map .lbl { font-family: var(--mono); font-size: 15pt; color: var(--muted); margin: 0 0 4px; }
+    #ck-map .mono { font-family: var(--mono); font-size: 16pt; line-height: 1.4; margin: 0; white-space: nowrap; }
+    #ck-map .tp { border-radius: 10px; padding: 4px 10px; margin: 0 -10px 8px; transition: opacity .4s var(--ease), background .4s var(--ease), box-shadow .4s var(--ease); }
+    #ck-map.s1 .tp:not(.hot) { opacity: .28; }
+    #ck-map .tp.hot { background: rgba(255,255,255,.06); box-shadow: 0 0 0 2px var(--hl, var(--teal)), 0 0 30px color-mix(in srgb, var(--hl, var(--teal)) 40%, transparent); }
+    #ck-map .model .tp { --hl: var(--blue); }
+    #ck-map .ext { border: 2px solid color-mix(in srgb, var(--violet) 60%, transparent); border-radius: 14px; padding: 10px 16px 4px; background: rgba(185,162,255,.06); }
+    #ck-map .ext .lbl { color: var(--violet); }
+    #ck-map .ext .tp { --hl: var(--violet); margin-bottom: 6px; }
+    #ck-map .ext .mono { color: var(--violet); }
+    #ck-map .tui .term { height: 100%; display: flex; flex-direction: column; }
+    #ck-map .tui .body { flex: 1; padding: 10px 18px 0; }
+    #ck-map .tui .body .tp { margin-bottom: 4px; }
+    #ck-map .tui .body p { font-size: 15pt; margin: 0; line-height: 1.45; white-space: nowrap; }
+    #ck-map .tui .tp { --hl: var(--teal); margin: 0 -8px 8px; padding: 4px 8px; }
+    #ck-map .tui .pl { font-weight: 700; padding: 0 6px; border-radius: 4px; color: #0d0f15; }
+    #ck-map .tui .status { justify-content: space-between; }
+    #ck-map .sess .tp { --hl: var(--green); margin-bottom: 2px; }
+    #ck-map .sess .mono { font-size: 15pt; white-space: nowrap; }
+    #ck-map svg.edges { position: absolute; inset: 0; width: 1472px; height: 640px; overflow: visible; pointer-events: none; }
+    #ck-map .edge line { stroke: var(--line); stroke-width: 3; transition: stroke .4s; }
+    #ck-map .edge polygon { fill: var(--line); transition: fill .4s; }
+    #ck-map .edge text { font-family: var(--mono); font-size: 20px; fill: var(--muted); transition: fill .4s; }
+    #ck-map .edge.hot line { stroke: var(--ec); stroke-width: 4; stroke-dasharray: 10 8; animation: ck-flow .8s linear infinite; }
+    #ck-map .edge.hot polygon { fill: var(--ec); }
+    #ck-map .edge.hot text { fill: var(--ec); font-weight: 700; }
+    @keyframes ck-flow { to { stroke-dashoffset: -18; } }
+  </style>
+  <p class="kicker">05 / pi-checklist · anatomy</p>
+  <h2>Four touch points</h2>
+  <div class="stage">
+    <p class="glabel t-blue" style="left:0;top:0">for the model</p>
+    <p class="glabel t-amber" style="left:506px;top:0">pi harness</p>
+    <p class="glabel t-teal" style="left:1112px;top:0">for the human</p>
+    <p class="glabel t-green" style="left:100px;top:558px">for state →</p>
+
+    <svg class="edges" viewBox="0 0 1472 640" aria-hidden="true">
+      <g class="edge" data-hot="1" style="--ec: var(--blue)">
+        <line x1="378" y1="190" x2="488" y2="190"/>
+        <polygon points="368,190 382,182 382,198"/><polygon points="498,190 484,182 484,198"/>
+        <text x="433" y="172" text-anchor="middle">tools</text>
+      </g>
+      <g class="edge" data-hot="2" style="--ec: var(--blue)">
+        <line x1="384" y1="320" x2="492" y2="320"/>
+        <polygon points="370,320 386,311 386,329"/>
+        <text x="433" y="302" text-anchor="middle">prompt</text>
+      </g>
+      <g class="edge" data-hot="3" style="--ec: var(--teal)">
+        <line x1="980" y1="250" x2="1090" y2="250"/>
+        <polygon points="1104,250 1088,241 1088,259"/>
+        <text x="1039" y="232" text-anchor="middle">UI</text>
+      </g>
+      <g class="edge" data-hot="4" style="--ec: var(--green)">
+        <line x1="736" y1="468" x2="736" y2="494"/>
+        <polygon points="736,506 727,492 745,492"/>
+        <text x="752" y="494">appendEntry</text>
+      </g>
+    </svg>
+
+    <div class="box model">
+      <h4 class="t-blue">Model</h4>
+      <div class="tp" data-hot="1">
+        <p class="lbl">available tools</p>
+        <p class="mono">checklist_create<br>checklist_read<br>checklist_update</p>
+      </div>
+      <div class="tp" data-hot="2">
+        <p class="lbl">system prompt +=</p>
+        <p class="mono" style="font-size:15pt">Checklist available: …<br>Current checklist: …<br>stg ongoing; mid blocked…</p>
+      </div>
+    </div>
+
+    <div class="box pi">
+      <h4 class="t-amber">pi</h4>
+      <div class="ext">
+        <p class="lbl">pi-checklist extension</p>
+        <div class="tp" data-hot="1"><p class="mono">registerTool ×3</p></div>
+        <div class="tp" data-hot="2"><p class="mono">on("before_agent_start")</p></div>
+        <div class="tp" data-hot="3"><p class="mono">registerCommand("checklist")<br>ui.setWidget · ui.setStatus<br>renderCall · renderResult</p></div>
+        <div class="tp" data-hot="4"><p class="mono">appendEntry("pi-checklist")</p></div>
+      </div>
+    </div>
+
+    <div class="box tui">
+      <div class="term">
+        <div class="bar"><i></i><i></i><i></i><b>terminal</b></div>
+        <div class="body">
+          <div class="tp" data-hot="3">
+            <p class="muted">renderCall/Result:</p>
+            <p><b>checklist</b> <span class="t-amber">stg</span></p>
+            <p class="muted">0/4 done  1 ongoing  0 ready…</p>
+          </div>
+          <div class="tp" data-hot="3">
+            <p class="muted">setWidget:</p>
+            <p><b>checklist</b> <span class="muted">API rate limiting</span></p>
+            <p><span class="pl" style="background:var(--amber)">PROG</span> ● stg Pick rate-li…</p>
+            <p><span class="pl" style="background:var(--coral)">BLCK</span> ⊘ mid Add rate… <span class="t-coral">← stg</span></p>
+          </div>
+          <div class="tp" data-hot="3">
+            <p class="muted">registerCommand:</p>
+            <p><span class="t-teal">&gt;</span> /checklist</p>
+          </div>
+        </div>
+        <div class="status tp" data-hot="3" style="margin:0;border-radius:0 0 14px 14px"><span class="muted">setStatus:</span><span class="t-green">☑ 0/4</span></div>
+      </div>
+    </div>
+
+    <div class="box sess">
+      <p class="lbl">session.jsonl</p>
+      <p class="mono muted">{"type":"message","message":{"role":"toolResult",…}}</p>
+      <div class="tp" data-hot="4"><p class="mono t-green">{"type":"custom","customType":"pi-checklist","data":{…}}</p></div>
+    </div>
+  </div>
+
+  <div class="captions">
+    <p data-only="0">One extension, <b>four</b> touch points</p>
+    <p data-only="1">① <b>Tools</b>: new abilities for the model</p>
+    <p data-only="2">② <b>Prompt</b>: the open plan rides along every prompt</p>
+    <p data-only="3">③ <b>UI</b>: renderers, widget, footer and a command for the human</p>
+    <p data-only="4">④ <b>State</b>: every change is appended to the session file</p>
+  </div>
+  <aside class="notes">
+    Step 0: Before any code, here's where this extension plugs in. The model on the left, pi in the middle with the extension inside it, your terminal on the right, and the session file underneath.
+    Step 1, tools: pi.registerTool three times: checklist_create, checklist_read, checklist_update. Each has a description, a one-line promptSnippet for the "Available tools" list, promptGuidelines bullets appended to the system prompt's Guidelines, and a TypeBox parameter schema. The model now has abilities it didn't have before.
+    Step 2, prompt: a before_agent_start handler fires once per user prompt, before the agent loop, and returns a new systemPrompt. It appends a one-line usage hint and, if any task is still planned or ongoing, a live snapshot of the open tasks, capped at 8.
+    Step 3, UI: the human side. renderCall and renderResult replace the default tool-call rendering with a compact "checklist stg" line and a "0/4 done, 1 ongoing" summary. ctx.ui.setWidget draws the list below the editor, ctx.ui.setStatus puts "☑ 0/4" in the footer, and registerCommand adds /checklist with show, hide, clear and settings.
+    Step 4, state: every change calls pi.appendEntry("pi-checklist", snapshot). In the JSONL that's a custom entry. Custom entries are never sent to the LLM. The snapshot also goes into the tool result's details. Remember this one; it's why the list survives branching.
+    Contrast: speedometer only observes, context-prune mutates context, checklist adds abilities, UI and state.
+  </aside>
+</section>
+
+<section id="ck-walk" class="stepper" data-steps="6">
+  <style>
+    #ck-walk h2 { font-size: 34pt; margin-bottom: 14px; }
+    #ck-walk .stage { display: grid; grid-template-columns: 700px 748px; gap: 24px; height: 636px; }
+    #ck-walk .left { position: relative; }
+    #ck-walk .you { font-family: var(--mono); font-size: 17pt; background: var(--panel-2); border: 1px solid var(--line); border-radius: 14px; padding: 10px 18px; margin: 0; }
+    #ck-walk .you b { color: var(--blue); font-weight: 600; }
+    #ck-walk .evt { position: absolute; left: 0; right: 0; top: 70px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 20px; }
+    #ck-walk .evt.err { border-color: color-mix(in srgb, var(--coral) 65%, transparent); }
+    #ck-walk .evt.ok { border-color: color-mix(in srgb, var(--green) 55%, transparent); }
+    #ck-walk .call { font-family: var(--mono); font-size: 17pt; margin: 0 0 10px; }
+    #ck-walk .call::before { content: "▸ "; color: var(--violet); }
+    #ck-walk .call b { color: var(--text); }
+    #ck-walk .call .a { color: var(--amber); }
+    #ck-walk .lbl { font-family: var(--mono); font-size: 15pt; color: var(--muted); margin: 10px 0 4px; }
+    #ck-walk pre.j { box-sizing: border-box; font-family: var(--mono); font-size: 16pt; line-height: 1.4; background: #0a0c11; border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; margin: 0; color: var(--text); white-space: pre; }
+    #ck-walk pre.j .k { color: var(--blue); } #ck-walk pre.j .s { color: var(--green); } #ck-walk pre.j .d { color: var(--muted); }
+    #ck-walk pre.j.res { color: var(--text); border-color: color-mix(in srgb, var(--blue) 45%, transparent); }
+    #ck-walk pre.j.bad { white-space: pre-wrap; color: var(--coral); border-color: var(--coral); background: rgba(255,111,125,.08); font-size: 17pt; }
+    #ck-walk .prose { font-family: var(--mono); font-size: 16pt; line-height: 1.45; background: rgba(63,220,214,.07); border: 1px solid rgba(63,220,214,.45); border-radius: 10px; padding: 10px 14px; margin: 0; color: var(--text); }
+    #ck-walk .prose.inj { background: rgba(116,185,255,.07); border-color: rgba(116,185,255,.45); }
+    #ck-walk .facts { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+    #ck-walk .facts p { margin: 0; font-size: 20pt; }
+    /* right column */
+    #ck-walk .glab { font-family: var(--mono); font-size: 15pt; color: var(--muted); margin: 0 0 4px; }
+    #ck-walk .graph { position: relative; height: 130px; }
+    #ck-walk .graph .none { position: absolute; left: 0; top: 36px; font-family: var(--mono); font-size: 17pt; color: var(--muted); margin: 0; }
+    #ck-walk .graph svg { width: 748px; height: 124px; display: block; overflow: visible; }
+    #ck-walk .nd rect { fill: var(--panel); stroke: var(--line); stroke-width: 2.5; transition: fill .4s, stroke .4s; }
+    #ck-walk .nd text { font-family: var(--mono); font-size: 24px; font-weight: 700; fill: var(--text); transition: fill .4s; }
+    #ck-walk .nd text.st { font-size: 20px; font-weight: 400; fill: var(--muted); }
+    #ck-walk .nd { transform-box: fill-box; transform-origin: center; }
+    #ck-walk .nd.redy rect { stroke: var(--teal); fill: rgba(63,220,214,.1); }
+    #ck-walk .nd.redy text.st { fill: var(--teal); }
+    #ck-walk .nd.blck rect { stroke: color-mix(in srgb, var(--coral) 45%, var(--line)); }
+    #ck-walk .nd.blck text:not(.st) { fill: var(--muted); }
+    #ck-walk .nd.prog rect { stroke: var(--amber); fill: rgba(255,180,84,.16); }
+    #ck-walk .nd.prog text.st { fill: var(--amber); }
+    #ck-walk .nd.done rect { stroke: var(--green); fill: rgba(127,227,164,.16); }
+    #ck-walk .nd.done text.st { fill: var(--green); }
+    #ck-walk .nd.err rect { stroke: var(--coral); fill: rgba(255,111,125,.18); }
+    #ck-walk .nd.err text.st { fill: var(--coral); }
+    #ck-walk .nd.shake { animation: ck-shake .5s ease-in-out 2; }
+    #ck-walk .ed line { stroke: var(--line); stroke-width: 3; transition: stroke .4s; }
+    #ck-walk .ed polygon { fill: var(--line); transition: fill .4s; }
+    #ck-walk .ed.done line { stroke: var(--green); } #ck-walk .ed.done polygon { fill: var(--green); }
+    #ck-walk .ed.err line { stroke: var(--coral); animation: ck-flash .45s ease-in-out 4 alternate; }
+    #ck-walk .ed.err polygon { fill: var(--coral); }
+    @keyframes ck-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-9px); } 75% { transform: translateX(9px); } }
+    @keyframes ck-flash { from { stroke-width: 3; } to { stroke-width: 10; } }
+    #ck-walk .widget { margin-top: 10px; position: relative; transition: box-shadow .4s; }
+    #ck-walk .widget.flash { box-shadow: 0 0 0 3px var(--coral), 0 0 40px rgba(255,111,125,.35); }
+    #ck-walk .widget .body { padding: 12px 20px 14px; height: 250px; box-sizing: border-box; position: relative; }
+    #ck-walk .widget .hd { font-family: var(--mono); font-size: 16pt; margin: 0 0 2px; }
+    #ck-walk .widget .cnt { font-family: var(--mono); font-size: 15pt; color: var(--muted); margin: 0 0 10px; white-space: pre; }
+    #ck-walk .widget .empty { position: absolute; left: 20px; top: 20px; font-family: var(--mono); font-size: 17pt; color: var(--muted); margin: 0; }
+    #ck-walk .widget .status { justify-content: space-between; align-items: center; min-height: 30px; }
+    #ck-walk .widget .status .ft { color: var(--green); font-size: 17pt; transition: transform .3s; }
+    #ck-walk .widget .unchanged { position: absolute; right: 16px; top: 8px; font-family: var(--mono); font-size: 15pt; color: #0d0f15; background: var(--coral); border-radius: 6px; padding: 1px 10px; margin: 0; }
+    #ck-walk .sess { margin-top: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; min-height: 44px; }
+    #ck-walk .sess .glab { margin: 0 6px 0 0; }
+    #ck-walk .mk { font-family: var(--mono); font-size: 15pt; border-radius: 8px; padding: 3px 10px; white-space: nowrap; border: 1px solid; animation: ck-pop .45s var(--ease); }
+    #ck-walk .mk.s { color: var(--green); border-color: rgba(127,227,164,.5); background: rgba(127,227,164,.08); }
+    #ck-walk .mk.x { color: var(--coral); border-color: rgba(255,111,125,.5); background: rgba(255,111,125,.08); }
+    #ck-walk .mk.new { box-shadow: 0 0 18px currentColor; }
+    @keyframes ck-pop { from { transform: scale(.6); opacity: 0; } }
+  </style>
+  <p class="kicker">05 / pi-checklist · walkthrough</p>
+  <h2>“Add rate limiting to the API”</h2>
+  <div class="stage">
+    <div class="left">
+      <p class="you"><b>you ›</b> add rate limiting to the API</p>
+
+      <div class="evt" data-only="0">
+        <p class="call"><b>pi</b> <span class="muted">about to start the agent loop</span></p>
+        <p class="muted" style="margin:0">No checklist yet. Watch the right-hand side.</p>
+      </div>
+
+      <div class="evt" data-only="1">
+        <p class="call" style="margin-bottom:12px"><span class="hook hot">before_agent_start</span></p>
+        <p class="lbl">returns { systemPrompt: … + hint }</p>
+        <p class="prose inj">Checklist available: for long-running or multi-step work (refactors, audits, multi-part features), track it with checklist_create/read/update and mark progress as you go. Skip it for quick one-shot questions.</p>
+        <div class="facts"><p class="muted">No list yet → hint only.</p></div>
+      </div>
+
+      <div class="evt" data-only="2">
+        <p class="call"><b>checklist create</b> <span class="muted">4 task(s)</span></p>
+<pre class="j">{ <span class="k">"title"</span>: <span class="s">"API rate limiting"</span>,
+  <span class="k">"tasks"</span>: [
+    { <span class="k">"id"</span>: <span class="s">"stg"</span>, <span class="k">"title"</span>: <span class="s">"Pick rate-limit…"</span> },
+    { <span class="k">"id"</span>: <span class="s">"mid"</span>, <span class="d">…</span>, <span class="k">"dependsOn"</span>: <span class="s">"stg"</span> },
+    { <span class="k">"id"</span>: <span class="s">"wir"</span>, <span class="d">…</span>, <span class="k">"dependsOn"</span>: [<span class="s">"mid"</span>] },
+    { <span class="k">"id"</span>: <span class="s">"tst"</span>, <span class="d">…</span>, <span class="k">"dependsOn"</span>: [<span class="s">"wir"</span>] } ] }</pre>
+        <p class="lbl">model reads (content)</p>
+<pre class="j res">checklist: 4 task(s) installed (0/4 done)
+  stg "Pick rate-limit strategy + store"
+  mid "Add rate-limit middleware"
+  wir "Wire middleware into routes"
+  tst "Test 429 + Retry-After"</pre>
+      </div>
+
+      <div class="evt" data-only="3">
+        <p class="call"><b>checklist</b> <span class="a">stg</span></p>
+<pre class="j">{<span class="k">"updates"</span>:[{<span class="k">"id"</span>:<span class="s">"stg"</span>,<span class="k">"status"</span>:<span class="s">"ongoing"</span>}]}</pre>
+        <p class="lbl">model reads</p>
+<pre class="j res">checklist (0/4 done):
+  stg planned → ongoing</pre>
+        <p class="lbl">next prompt, before_agent_start also appends</p>
+        <p class="prose inj">Current checklist (0/4 done): stg ongoing "Pick rate-limit strategy + store"; mid blocked ← stg; wir blocked ← mid; tst blocked ← wir. …</p>
+      </div>
+
+      <div class="evt err" data-only="4">
+        <p class="call"><b>checklist</b> <span class="a">stg, wir</span></p>
+<pre class="j">{<span class="k">"updates"</span>:[
+  {<span class="k">"id"</span>:<span class="s">"stg"</span>,<span class="k">"status"</span>:<span class="s">"done"</span>},
+  {<span class="k">"id"</span>:<span class="s">"wir"</span>,<span class="k">"status"</span>:<span class="s">"done"</span>} ]}</pre>
+        <p class="lbl t-coral">isError: true · model reads</p>
+<pre class="j bad">task wir is blocked by [mid]: cannot move planned → done until every dependency is done</pre>
+        <div class="facts">
+          <p><span class="t-coral">✕</span> valid <code>stg → done</code> dropped too</p>
+          <p><span class="t-coral">✕</span> nothing saved <span class="muted">(all-or-nothing)</span></p>
+        </div>
+      </div>
+
+      <div class="evt ok" data-only="5">
+        <p class="call"><b>checklist</b> <span class="a">stg, mid</span></p>
+<pre class="j">{<span class="k">"updates"</span>:[
+  {<span class="k">"id"</span>:<span class="s">"stg"</span>,<span class="k">"status"</span>:<span class="s">"done"</span>},
+  {<span class="k">"id"</span>:<span class="s">"mid"</span>,<span class="k">"status"</span>:<span class="s">"ongoing"</span>} ]}</pre>
+        <p class="lbl">model reads</p>
+<pre class="j res">checklist (1/4 done):
+  stg ongoing → done
+  mid planned → ongoing</pre>
+        <div class="facts"><p><span class="t-green">✓</span> the error text named the fix</p></div>
+      </div>
+
+      <div class="evt ok" data-only="6">
+        <p class="call"><b>checklist</b> <span class="a">mid, wir</span> <span class="muted">→ (2/4 done)</span></p>
+        <p class="call"><b>checklist</b> <span class="a">wir, tst</span> <span class="muted">→ (3/4 done)</span></p>
+        <p class="call"><b>checklist</b> <span class="a">tst</span> <span class="muted">→ (4/4 done)</span></p>
+        <p class="lbl">model reads</p>
+<pre class="j res">checklist (4/4 done):
+  tst ongoing → done</pre>
+        <p class="lbl">next prompt: nothing planned or ongoing</p>
+        <div class="facts"><p><span class="hook">before_agent_start</span> <span class="muted">→ hint only</span></p></div>
+      </div>
+    </div>
+
+    <div class="right">
+      <p class="glab">dependsOn graph</p>
+      <div class="graph">
+        <p class="none" data-only="0 1">no plan yet</p>
+        <svg viewBox="0 0 748 124" data-at="2" aria-hidden="true">
+          <g class="ed" data-e="stg"><line x1="128" y1="44" x2="200" y2="44"/><polygon points="212,44 198,36 198,52"/></g>
+          <g class="ed" data-e="mid"><line x1="333" y1="44" x2="405" y2="44"/><polygon points="417,44 403,36 403,52"/></g>
+          <g class="ed" data-e="wir"><line x1="537" y1="44" x2="610" y2="44"/><polygon points="622,44 608,36 608,52"/></g>
+          <g class="nd" data-id="stg"><rect x="8" y="14" width="118" height="60" rx="14"/><text class="gl" x="67" y="53" text-anchor="middle">stg</text><text class="st" x="67" y="108" text-anchor="middle">ready</text></g>
+          <g class="nd" data-id="mid"><rect x="213" y="14" width="118" height="60" rx="14"/><text class="gl" x="272" y="53" text-anchor="middle">mid</text><text class="st" x="272" y="108" text-anchor="middle">blocked</text></g>
+          <g class="nd" data-id="wir"><rect x="417" y="14" width="118" height="60" rx="14"/><text class="gl" x="476" y="53" text-anchor="middle">wir</text><text class="st" x="476" y="108" text-anchor="middle">blocked</text></g>
+          <g class="nd" data-id="tst"><rect x="622" y="14" width="118" height="60" rx="14"/><text class="gl" x="681" y="53" text-anchor="middle">tst</text><text class="st" x="681" y="108" text-anchor="middle">blocked</text></g>
+        </svg>
+      </div>
+
+      <div class="term widget">
+        <div class="bar"><i></i><i></i><i></i><b>widget · belowEditor</b></div>
+        <div class="body">
+          <p class="empty" data-only="0 1">(no widget)</p>
+          <div data-at="2">
+            <p class="hd"><b>checklist</b> <span class="muted">API rate limiting</span></p>
+            <p class="cnt"></p>
+            <div class="ckw-rows"></div>
+          </div>
+          <p class="unchanged" data-only="4">unchanged</p>
+        </div>
+        <div class="status"><span class="muted">footer</span><span class="ft"></span></div>
+      </div>
+
+      <div class="sess">
+        <p class="glab">session:</p>
+        <span class="marks" style="display:flex;gap:8px"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="captions">
+    <p data-only="0">You: <b>add rate limiting to the API</b></p>
+    <p data-only="1"><b>before_agent_start</b> appends a hint to the system prompt</p>
+    <p data-only="2">One tool call and the plan becomes <b>data</b></p>
+    <p data-only="3">Mark <b>ongoing</b> before touching any code</p>
+    <p data-only="4">Blocked move: <b class="t-coral">whole batch rejected</b>, nothing saved</p>
+    <p data-only="5">The error names the blocker, so the model <b>recovers</b></p>
+    <p data-only="6"><b>☑ 4/4</b> · on the next prompt, only the hint is injected</p>
+  </div>
+  <div class="dots" style="position:absolute;right:64px;top:48px"></div>
+  <aside class="notes">
+    This is the whole extension in one scenario. Every tool text and error string on this slide is real output from running the extension's store and tool code.
+    Step 0: The user types "add rate limiting to the API" and presses Enter. No checklist exists yet.
+    Step 1: before_agent_start fires once per user prompt, before the agent loop. There's no list, so it only appends the moderate usage hint. The promptGuidelines bullets from the three tools are already in the Guidelines section. It's plain text and costs very little.
+    Step 2: The model calls checklist_create. It passes explicit 3-char ids because the dependencies point at tasks created in the same call, which is exactly what the tool guideline recommends. Without explicit ids it would get hashed ids like q6z. The content text goes to the model. The details field holds the full snapshot: it's saved on the tool result and drives the renderer, but it isn't sent to the model. commit() appends a pi-checklist entry, the widget repaints, and the footer shows ☑ 0/4. stg is ready; the rest are blocked.
+    Step 3: The guideline says mark a task ongoing before starting it, so the human always knows what the agent is doing now. The call renders as "checklist stg". On the next user prompt, the injected snippet lists the open tasks, so even after compaction the model still sees the plan.
+    Step 4: Here the model jumps ahead and tries to mark stg done and wir done in one batch. wir depends on mid, and mid isn't done, so the store throws. pi turns the thrown error into isError: true, and the model reads the exact message on screen. Because updates are all-or-nothing, even the valid stg → done is discarded. commit() never runs, so no entry is appended and the widget doesn't change. The extension enforces order; it doesn't just record it.
+    Step 5: The error named the blocker, [mid]. The model finishes stg and starts mid in one call. Order within a batch matters: stg done first, then mid ongoing succeeds. The reverse order would fail. Footer: ☑ 1/4.
+    Step 6: Fast-forward through three more updates to ☑ 4/4. On the next user prompt nothing is planned or ongoing, so before_agent_start appends only the hint and no task snippet.
+    Live demo option: pi install npm:pi-checklist, then ask pi to add rate limiting to a small Express app. Point at the widget and the ☑ footer as tasks move, and open /checklist to show the overlay.
+  </aside>
+</section>
+
+<section id="ck-tree" class="stepper" data-steps="3">
+  <style>
+    #ck-tree h2 { font-size: 34pt; margin-bottom: 14px; }
+    #ck-tree .stage { display: grid; grid-template-columns: 660px 788px; gap: 24px; }
+    #ck-tree .glab { font-family: var(--mono); font-size: 15pt; color: var(--muted); margin: 0 0 4px; }
+    #ck-tree svg.tree { width: 660px; height: 330px; display: block; overflow: visible; }
+    #ck-tree .tn { cursor: pointer; transition: opacity .4s; }
+    #ck-tree .tn circle, #ck-tree .tn rect { fill: var(--panel-2); stroke: var(--muted); stroke-width: 2.5; transition: fill .3s, stroke .3s; }
+    #ck-tree .tn.snap rect { fill: rgba(63,220,214,.18); stroke: var(--teal); }
+    #ck-tree .tn.err circle { stroke: var(--coral); }
+    #ck-tree .tn.user circle { stroke: var(--blue); }
+    #ck-tree .tn text { font-family: var(--mono); font-size: 20px; fill: var(--muted); text-anchor: middle; }
+    #ck-tree .tn text.ic { font-size: 20px; font-weight: 700; fill: var(--text); pointer-events: none; }
+    #ck-tree .tn .ring { fill: none !important; stroke: var(--line) !important; stroke-dasharray: 5 5; }
+    #ck-tree .tn:hover .ring { stroke: var(--amber) !important; }
+    #ck-tree .tn.leaf text.lf { fill: var(--amber); font-weight: 700; }
+    #ck-tree .te { fill: none; stroke: var(--line); stroke-width: 3; transition: stroke .3s, opacity .4s; }
+    #ck-tree .te.dotted { stroke-dasharray: 3 9; stroke-linecap: round; }
+    #ck-tree.walking .tn.off, #ck-tree.walking .te.off { opacity: .28; }
+    #ck-tree .te.vis { stroke: var(--amber); }
+    #ck-tree .tn.vis circle, #ck-tree .tn.vis rect { stroke: var(--amber); }
+    #ck-tree .tn.hit rect { fill: var(--teal); animation: ck-hit .5s var(--ease); }
+    #ck-tree .tn.last rect { fill: var(--teal); stroke: #fff; stroke-width: 3; }
+    #ck-tree .tn.sel .ring { stroke: var(--amber) !important; stroke-dasharray: none; stroke-width: 3; }
+    #ck-tree .tn { transform-box: fill-box; transform-origin: center; }
+    @keyframes ck-hit { 40% { transform: scale(1.35); } }
+    #ck-tree .scan { transition: transform .32s var(--ease), opacity .3s; opacity: 0; pointer-events: none; }
+    #ck-tree .scan.on { opacity: 1; }
+    #ck-tree .panel { margin-top: 10px; background: #0a0c11; border: 1px solid var(--line); border-radius: 14px; padding: 12px 18px; height: 228px; box-sizing: border-box; position: relative; }
+    #ck-tree .panel .hd { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 16pt; margin: 0 0 10px; white-space: nowrap; }
+    #ck-tree .panel .hd .ft { color: var(--green); }
+    #ck-tree .panel .src { font-family: var(--mono); font-size: 15pt; color: var(--teal); }
+    #ck-tree .panel .empty { position: absolute; left: 18px; top: 60px; font-family: var(--mono); font-size: 17pt; color: var(--muted); margin: 0; transition: opacity .3s; }
+    #ck-tree .panel .ckw-rows { transition: opacity .3s; }
+    #ck-tree .panel.null .ckw-rows { opacity: 0; }
+    #ck-tree .panel:not(.null) .empty { opacity: 0; }
+    #ck-tree .code { position: relative; }
+    #ck-tree .code pre { font-size: 16pt; }
+    #ck-tree pre code, #ck-code pre code { font-variant-ligatures: none; }
+    #ck-tree .hl { position: absolute; left: 0; right: 0; background: rgba(255,180,84,.14); border-left: 5px solid var(--amber); border-radius: 4px; transition: top .3s var(--ease), opacity .3s; pointer-events: none; opacity: 0; }
+    #ck-tree .hl.on { opacity: 1; }
+    #ck-tree .flow { display: flex; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: nowrap; }
+    #ck-tree .flow span.arr { color: var(--muted); font-size: 18pt; }
+    #ck-tree .flow .hook { font-size: 15pt; padding: 3px 12px; }
+    #ck-tree .flow .hook.v { color: var(--violet); border-color: rgba(185,162,255,.5); background: rgba(185,162,255,.1); }
+  </style>
+  <p class="kicker">05 / pi-checklist · state</p>
+  <h2>The checklist lives in the session tree</h2>
+  <div class="stage">
+    <div>
+      <p class="glab">session entries · <span class="t-teal">◆ = snapshot</span> · click any node</p>
+      <svg class="tree" viewBox="0 0 660 330" aria-label="session tree"></svg>
+      <div class="panel null">
+        <p class="hd"><span><b>checklist</b> <span class="src"></span></span><span class="ft"></span></p>
+        <p class="empty">checklist: null</p>
+        <div class="ckw-rows"></div>
+      </div>
+    </div>
+    <div>
+      <p class="code-label">src/store.ts · loadFromBranch (condensed)</p>
+      <div class="code">
+<pre><code class="language-ts" data-trim data-noescape>
+export function loadFromBranch(branch: BranchLike[]) {
+  let found = { v: 1, checklist: null };
+  for (const entry of branch) {  // root → leaf
+    if (entry.type === "custom" &amp;&amp;
+        entry.customType === "pi-checklist") {
+      found = entry.data;
+    } else if (entry.type === "message" &amp;&amp;
+        entry.message?.role === "toolResult" &amp;&amp;
+        CHECKLIST_TOOLS.has(entry.message.toolName)) {
+      found = entry.message.details;
+    }
+  }
+  return found;                  // last snapshot wins
+}
+</code></pre>
+        <div class="hl"></div>
+      </div>
+      <div class="flow">
+        <span class="hook">/tree</span><span class="arr">→</span>
+        <span class="hook">session_tree</span><span class="arr">→</span>
+        <span class="hook v">getBranch()</span><span class="arr">→</span>
+        <span class="hook v">loadFromBranch</span>
+      </div>
+    </div>
+  </div>
+  <div class="captions">
+    <p data-only="0">Every change is an entry. Which list is <b>current</b>?</p>
+    <p data-only="1">Walk <b>root → leaf</b>: the last snapshot wins · ☑ 4/4</p>
+    <p data-only="2"><b>/tree</b> back to "stg ongoing": the list rewinds too</p>
+    <p data-only="3">Branch before any plan: <b>checklist null</b>, widget cleared</p>
+  </div>
+  <aside class="notes">
+    This is the part that makes the extension feel native. There's no database and no sidecar file. The session JSONL is the database.
+    Step 0: Each node is an entry in the session file. Teal diamonds are snapshot entries: the pi-checklist custom entry from appendEntry, and the checklist tool result whose details hold the same snapshot. In the real file each mutation writes both; I've drawn one diamond per mutation. The error node from our blocked update has no diamond, because nothing was committed. Sessions in pi are trees: /tree lets you jump back to an earlier message and continue from there, so there are several leaves.
+    Step 1: On session_start (startup, /resume, /new, /fork) and on session_tree, the extension calls reconstruct. That uses ctx.sessionManager.getBranch(), which returns only the entries from the root to the current leaf, walking parentId back from the leaf and reversing. loadFromBranch scans oldest to newest and keeps the last snapshot it sees. On the main branch that's ☑ 4/4. It deliberately avoids getEntries(), which would mix in other branches.
+    Step 2: Say the user thinks a fixed window would have been simpler and uses /tree to go back to just after stg went ongoing. pi moves the leaf; nothing is deleted, and the greyed-out entries are still in the file. session_tree fires, the walk finds the "stg ongoing" snapshot as the last one on this path, the widget repaints to 0/4, and the next before_agent_start injects that older plan. The model on the new branch sees the plan as it was at that point.
+    Step 3: Branch from before checklist_create and there's no snapshot on the path, so the checklist is null and the widget and footer are cleared.
+    Click any node to re-run the walk from there. Compaction only appends a summary entry, so snapshots stay on the path.
+    Live demo option: after the rate-limit demo, open /tree, pick an earlier user message, and watch the widget and footer rewind.
+  </aside>
+</section>
+
+<section id="ck-code" class="stepper" data-steps="4">
+  <style>
+    #ck-code h2 { font-size: 34pt; margin-bottom: 14px; }
+    #ck-code .tabs { display: flex; gap: 14px; margin-bottom: 16px; }
+    #ck-code .tabs button { font-size: 16pt; }
+    #ck-code .tabs button.active.m { background: var(--blue); border-color: var(--blue); }
+    #ck-code .tabs button.active.p { background: var(--amber); border-color: var(--amber); }
+    #ck-code .tabs button.active.s { background: var(--green); border-color: var(--green); }
+    #ck-code .panes { position: relative; height: 560px; }
+    #ck-code .pane { position: absolute; left: 0; right: 0; top: 0; }
+    #ck-code .pane pre { font-size: 17pt; }
+    #ck-code .code { position: relative; }
+    #ck-code .hl { position: absolute; left: 0; right: 0; border-left: 6px solid var(--c, var(--amber)); background: color-mix(in srgb, var(--c, var(--amber)) 16%, transparent); border-radius: 4px; pointer-events: none; transition: top .35s var(--ease), height .35s var(--ease), opacity .3s; }
+    #ck-code .jsonl { margin-top: 12px; font-family: var(--mono); font-size: 16pt; color: var(--green); background: rgba(127,227,164,.07); border: 1px solid rgba(127,227,164,.45); border-radius: 12px; padding: 10px 18px; white-space: nowrap; }
+  </style>
+  <p class="kicker">05 / pi-checklist · code</p>
+  <h2>Three APIs do the heavy lifting</h2>
+  <div class="tabs">
+    <button class="btn m" data-go="0">① registerTool</button>
+    <button class="btn p" data-go="3">② before_agent_start</button>
+    <button class="btn s" data-go="4">③ appendEntry</button>
+  </div>
+  <div class="panes">
+    <div class="pane" data-only="0 1 2">
+      <p class="code-label">src/index.ts:179-200 (condensed: executeCreate args, label)</p>
+      <div class="code">
+<pre><code class="language-ts" data-trim data-noescape>
+pi.registerTool({
+  name: "checklist_create",
+  description: "Create or extend the session task checklist (replace by default, or append). …",
+  promptSnippet: CREATE_SNIPPET,
+  promptGuidelines: CREATE_GUIDELINES,
+  parameters: ChecklistCreateParams,
+  async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+    const mutation = executeCreate(state.checklist, state.widgetVisible, params, /* prefs */);
+    commit(mutation.snapshot, ctx);
+    return { content: [{ type: "text", text: mutation.text }], details: mutation.snapshot };
+  },
+  renderCall: (args, theme) => renderCreateCall(args, theme),
+  renderResult: (result, { expanded }, theme) => renderChecklistResult(result, expanded, theme),
+});
+</code></pre>
+        <div class="hl" data-lines="3-6" data-show="0" style="--c: var(--blue)"></div>
+        <div class="hl" data-lines="9-10" data-show="1" style="--c: var(--violet)"></div>
+        <div class="hl" data-lines="12-13" data-show="2" style="--c: var(--teal)"></div>
+      </div>
+    </div>
+    <div class="pane" data-only="3">
+      <p class="code-label">src/index.ts:307-323 (comments removed, hint strings shortened)</p>
+      <div class="code">
+<pre><code class="language-ts" data-trim data-noescape>
+pi.on("before_agent_start", async (event, ctx) => {
+  const hint = usageGuidanceAtLoad === "aggressive"
+    ? "Checklist expected: use checklist_create/read/update for almost every task…"
+    : "Checklist available: … track it with checklist_create/read/update and mark progress…";
+  const checklist = state.checklist;
+  const open = !!checklist &amp;&amp; checklist.tasks.length > 0 &amp;&amp;
+    checklist.tasks.some((t) => t.status === "planned" || t.status === "ongoing");
+  const extra = open ? ` ${buildInjectSnippet(checklist!)}` : "";
+  return { systemPrompt: `${event.systemPrompt}\n\n${hint}${extra}` };
+});
+</code></pre>
+        <div class="hl" data-lines="6-9" data-show="3" style="--c: var(--amber)"></div>
+      </div>
+    </div>
+    <div class="pane" data-only="4">
+      <p class="code-label">src/index.ts:121-134</p>
+      <div class="code">
+<pre><code class="language-ts" data-trim data-noescape>
+function persistSnapshot(snapshot: ChecklistSnapshot): void {
+  try {
+    pi.appendEntry(CUSTOM_TYPE, snapshot);   // "pi-checklist"
+  } catch {
+    // Ephemeral/print sessions have no session file — in-memory still works.
+  }
+}
+
+function commit(snapshot: ChecklistSnapshot, ctx: ExtensionContext): void {
+  state = snapshot;
+  persistSnapshot(snapshot);
+  refreshUi(ctx);
+}
+</code></pre>
+        <div class="hl" data-lines="3" data-show="4" style="--c: var(--green)"></div>
+      </div>
+      <p class="jsonl">{"type":"custom","customType":"pi-checklist","data":{"v":1,"checklist":{…}},"id":…,"parentId":…}</p>
+    </div>
+  </div>
+  <div class="captions">
+    <p data-only="0">For the <b>model</b>: description, prompt lines, schema</p>
+    <p data-only="1"><b>content</b> goes to the model · <b>details</b> is saved, for renderer and rebuild</p>
+    <p data-only="2">For the <b>human</b>: custom renderers for call and result</p>
+    <p data-only="3">Every prompt: hint + <b>open tasks</b> appended to the system prompt</p>
+    <p data-only="4">Every change: cache, <b>appendEntry</b>, repaint</p>
+  </div>
+  <aside class="notes">
+    Three excerpts, one at a time. The tabs are clickable if you want to jump.
+    Step 0, registerTool: everything the model sees comes from this object. The description, a one-line promptSnippet in the "Available tools" list, promptGuidelines bullets appended to the Guidelines section (pi's docs say each bullet must name the tool, never "this tool"), and a TypeBox schema for the parameters. There are three of these registrations: create, read and update.
+    Step 1, execute: run a pure store function, commit the new snapshot, and return two things. content is the text the LLM reads. details is structured data that isn't sent to the LLM but is saved on the tool-result entry. Validation errors are thrown from the store before commit runs, so pi reports them to the model as isError and nothing is persisted.
+    Step 2, renderers: renderCall and renderResult are the human-facing half of the same registration. Instead of a raw JSON dump you see "checklist create 4 task(s)" and "0/4 done 0 ongoing 1 ready 3 blocked", read from result.details.
+    Step 3, before_agent_start: it fires once per user prompt. It returns a new systemPrompt: the original, plus the hint, plus the open-task snippet if anything is planned or ongoing. System-prompt changes chain across extensions. The usage mode is captured at load, so changing it needs /reload.
+    Step 4, appendEntry: commit does three things: update the in-memory cache, append a "pi-checklist" custom entry, and repaint. The try/catch matters because print or ephemeral sessions have no file. The custom entry covers human actions like /checklist clear that never produce a tool result.
+    Size check: index.ts, the pi wiring, is 324 lines. store.ts and types.ts, about 640 lines, are plain TypeScript with no pi imports, testable with plain node.
+  </aside>
+</section>
+
+<section id="ck-takeaway" class="stepper" data-steps="4">
+  <style>
+    #ck-takeaway h2 { margin-bottom: 26px; }
+    #ck-takeaway .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    #ck-takeaway .card { min-height: 300px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; }
+    #ck-takeaway .card .n { font-family: var(--head); font-size: 44pt; font-weight: 700; margin: 0; line-height: 1; }
+    #ck-takeaway .card h3 { font-size: 30pt; margin: 0 0 4px; }
+    #ck-takeaway .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+    #ck-takeaway .chips .hook { font-size: 15pt; }
+    #ck-takeaway .chips .hook.v { color: var(--violet); border-color: rgba(185,162,255,.5); background: rgba(185,162,255,.1); }
+    #ck-takeaway .spec { margin-top: 30px; }
+    #ck-takeaway .track { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; position: relative; }
+    #ck-takeaway .track::before { content: ""; position: absolute; left: 30px; right: 30px; top: 21px; height: 4px; background: linear-gradient(90deg, var(--teal), var(--amber), var(--violet)); border-radius: 2px; }
+    #ck-takeaway .stop { position: relative; }
+    #ck-takeaway .stop .dot { width: 26px; height: 26px; border-radius: 50%; margin: 10px 0 12px 18px; border: 4px solid var(--bg); }
+    #ck-takeaway .stop p { margin: 0; }
+    #ck-takeaway .stop .nm { font-family: var(--mono); font-size: 20pt; }
+    #ck-takeaway .stop.me .nm { font-weight: 700; }
+    #ck-takeaway .foot { position: absolute; left: 64px; right: 150px; bottom: 60px; display: flex; justify-content: space-between; align-items: baseline; }
+    #ck-takeaway .foot p { margin: 0; }
+  </style>
+  <p class="kicker">05 / pi-checklist · takeaway</p>
+  <h2>The pattern this unlocks</h2>
+  <div class="row">
+    <div class="card blue" data-at="1">
+      <p class="n t-blue">1</p>
+      <h3>Give the model a tool</h3>
+      <p class="muted small">…and remind it every prompt</p>
+      <div class="chips"><span class="hook v">registerTool</span><span class="hook">before_agent_start</span></div>
+    </div>
+    <div class="card teal" data-at="2">
+      <p class="n t-teal">2</p>
+      <h3>Give the human a view</h3>
+      <p class="muted small">progress without scrolling</p>
+      <div class="chips"><span class="hook v">setWidget</span><span class="hook v">setStatus</span><span class="hook v">registerCommand</span><span class="hook v">renderResult</span></div>
+    </div>
+    <div class="card green" data-at="3">
+      <p class="n t-green">3</p>
+      <h3>Keep state in the session</h3>
+      <p class="muted small">branch, resume, fork: it follows</p>
+      <div class="chips"><span class="hook v">appendEntry</span><span class="hook">session_tree</span><span class="hook v">getBranch()</span></div>
+    </div>
+  </div>
+  <div class="spec" data-at="4">
+    <p class="kicker" style="color:var(--muted) !important">three walkthroughs, three powers</p>
+    <div class="track">
+      <div class="stop"><div class="dot" style="background:var(--teal)"></div><p class="nm t-teal">speedometer</p><p class="muted">observes</p></div>
+      <div class="stop"><div class="dot" style="background:var(--amber)"></div><p class="nm t-amber">context-prune</p><p class="muted">rewrites context</p></div>
+      <div class="stop me"><div class="dot" style="background:var(--violet)"></div><p class="nm t-violet">pi-checklist</p><p>adds abilities, UI &amp; state</p></div>
+    </div>
+  </div>
+  <div class="foot" data-at="4">
+    <p class="muted small">index.ts: 324 lines of pi wiring · rules are plain TypeScript</p>
+    <p><code>pi install npm:pi-checklist</code></p>
+  </div>
+  <aside class="notes">
+    Step 1: Give the model a tool. registerTool with a good description, prompt snippet and guidelines, and a before_agent_start hook to remind it of the current state on every prompt.
+    Step 2: Give the human a view. A widget below the editor, a ☑ n/m footer, a /checklist command, and custom renderers so tool calls read like "checklist stg" instead of JSON.
+    Step 3: Keep the state in the session. appendEntry for every change, and rebuild from getBranch() on session_start and session_tree. Then /resume, /tree, /fork and compaction all just work, and you never write a database.
+    Step 4: Put the three walkthroughs side by side. speedometer only observes events. context-prune changes what the model sees. pi-checklist adds new abilities, new UI and its own state. Same extension API, three very different powers.
+    Size: index.ts, the pi wiring, is 324 lines, and the rules live in plain TypeScript with no pi imports. A minimal version with three tools, the hook, the append and the rebuild would be well under 300 lines. The same pattern works for anything the agent should track: a scratchpad, open questions, a test matrix.
+    Try it: pi install npm:pi-checklist, or copy the pattern and write your own.
+  </aside>
+
+  <script>
+  (function () {
+    /* ---------- shared checklist model (from research/04 walkthrough) ---------- */
+    const TASKS = [
+      { id: 'stg', title: 'Pick rate-limit strategy + store', deps: [] },
+      { id: 'mid', title: 'Add rate-limit middleware', deps: ['stg'] },
+      { id: 'wir', title: 'Wire middleware into routes', deps: ['mid'] },
+      { id: 'tst', title: 'Test 429 + Retry-After', deps: ['wir'] },
+    ];
+    const ORDER = { prog: 0, redy: 1, blck: 2, done: 3 };
+    const PILL = { prog: 'PROG', redy: 'REDY', blck: 'BLCK', done: 'DONE' };
+    const GLYPH = { prog: '●', redy: '○', blck: '⊘', done: '✓' };
+    const WORD = { prog: 'ongoing', redy: 'ready', blck: 'blocked', done: 'done' };
+    const P = 'planned', O = 'ongoing', D = 'done';
+    const st = (a, b, c, d) => ({ stg: a, mid: b, wir: c, tst: d });
+
+    function views(s) {
+      return TASKS.map((t, i) => {
+        const blockedBy = t.deps.filter(d => s[d] !== D);
+        const kind = s[t.id] === O ? 'prog' : s[t.id] === D ? 'done' : blockedBy.length ? 'blck' : 'redy';
+        return { ...t, i, blockedBy, kind };
+      });
+    }
+    function mountRows(box, h) {
+      if (box.children.length) return;
+      TASKS.forEach(t => {
+        const r = document.createElement('div');
+        r.className = 'ckw-row';
+        r.dataset.id = t.id;
+        r.innerHTML = '<span class="pill"></span><span class="g"></span><span class="id">' + t.id + '</span><span class="t">' + t.title + '</span><span class="dep"></span>';
+        box.appendChild(r);
+      });
+      box.style.height = (h * 4) + 'px';
+      box.dataset.h = h;
+    }
+    function paintRows(box, s) {
+      const h = +box.dataset.h;
+      const v = views(s).sort((a, b) => ORDER[a.kind] - ORDER[b.kind] || a.i - b.i);
+      v.forEach((t, idx) => {
+        const r = box.querySelector('[data-id="' + t.id + '"]');
+        r.className = 'ckw-row ' + t.kind;
+        r.style.top = (idx * h) + 'px';
+        r.querySelector('.pill').textContent = PILL[t.kind];
+        r.querySelector('.g').textContent = GLYPH[t.kind];
+        r.querySelector('.dep').textContent = t.kind === 'blck' ? '← ' + t.blockedBy.join(', ') : '';
+      });
+      const c = { done: 0, prog: 0, redy: 0, blck: 0 };
+      v.forEach(t => c[t.kind]++);
+      return c;
+    }
+    // measure code lines so highlight bars sit exactly on source lines
+    function placeHl(codeWrap, hl, spec) {
+      const code = codeWrap.querySelector('pre code');
+      if (!code) return;
+      const cs = getComputedStyle(code);
+      const lh = parseFloat(cs.lineHeight);
+      const top0 = code.offsetTop + parseFloat(cs.borderTopWidth) + parseFloat(cs.paddingTop);
+      const [a, b] = String(spec).split('-').map(Number);
+      hl.style.top = (top0 + (a - 1) * lh - 2) + 'px';
+      hl.style.height = (((b || a) - a + 1) * lh + 4) + 'px';
+    }
+
+    /* ---------- ck-walk ---------- */
+    const WALK = [null, null, st(P, P, P, P), st(O, P, P, P), st(O, P, P, P), st(D, O, P, P), st(D, D, D, D)];
+    const MARKS = [[], [], ['s:create'], ['s:create', 's:stg'], ['s:create', 's:stg', 'x:no snapshot'],
+      ['s:create', 's:stg', 'x:no snapshot', 's:stg,mid'], ['s:create', 's:stg', 'x:no snapshot', 's:stg,mid', 's:×3']];
+    Deck.onStep('ck-walk', (step, sec) => {
+      const box = sec.querySelector('.ckw-rows');
+      mountRows(box, 40);
+      const s = WALK[step];
+      const cnt = sec.querySelector('.cnt'), ft = sec.querySelector('.ft');
+      if (s) {
+        const c = paintRows(box, s);
+        cnt.textContent = c.done + '/4 done   ' + c.prog + ' ongoing   ' + c.redy + ' ready   ' + c.blck + ' blocked';
+        ft.textContent = '☑ ' + c.done + '/4';
+        views(s).forEach(t => {
+          const g = sec.querySelector('.nd[data-id="' + t.id + '"]');
+          g.setAttribute('class', 'nd ' + t.kind);
+          g.querySelector('.gl').textContent = GLYPH[t.kind] + ' ' + t.id;
+          g.querySelector('.st').textContent = WORD[t.kind];
+          const e = sec.querySelector('.ed[data-e="' + t.id + '"]');
+          if (e) e.setAttribute('class', 'ed' + (s[t.id] === D ? ' done' : ''));
+        });
+      } else {
+        cnt.textContent = ''; ft.textContent = '';
+      }
+      // blocked-move error visuals (restart animations each time)
+      const wir = sec.querySelector('.nd[data-id="wir"]'), edge = sec.querySelector('.ed[data-e="mid"]');
+      const widget = sec.querySelector('.widget');
+      widget.classList.remove('flash');
+      if (step === 4) {
+        void wir.getBoundingClientRect();
+        wir.setAttribute('class', 'nd err shake');
+        wir.querySelector('.st').textContent = 'rejected';
+        edge.setAttribute('class', 'ed err');
+        widget.classList.add('flash');
+      }
+      const marks = sec.querySelector('.marks');
+      marks.innerHTML = MARKS[step].map((m, i, arr) => {
+        const [k, label] = m.split(':');
+        return '<span class="mk ' + k + (i === arr.length - 1 && arr.length !== (MARKS[step - 1] || []).length ? ' new' : '') + '">' + (k === 's' ? '◆ ' : '✕ ') + label + '</span>';
+      }).join('');
+      if (!MARKS[step].length) marks.innerHTML = '<span class="mk" style="color:var(--muted);border-color:var(--line);animation:none">empty</span>';
+    });
+
+    /* ---------- ck-tree ---------- */
+    const SNAP = { 1: st(P, P, P, P), 2: st(O, P, P, P), 3: st(D, O, P, P), 4: st(D, D, D, D) };
+    const NODES = {
+      n0: { x: 30, y: 60, p: null, k: 'user', lab: 'prompt' },
+      n1: { x: 140, y: 60, p: 'n0', k: 'snap', lab: 'create', snap: 1 },
+      n2: { x: 250, y: 60, p: 'n1', k: 'snap', lab: 'ongoing', snap: 2 },
+      n3: { x: 360, y: 60, p: 'n2', k: 'err', lab: 'error' },
+      n4: { x: 470, y: 60, p: 'n3', k: 'snap', lab: '1/4', snap: 3 },
+      n5: { x: 620, y: 60, p: 'n4', k: 'snap', lab: '4/4', snap: 4, leaf: 'A', dotted: true },
+      n6: { x: 360, y: 180, p: 'n2', k: 'user', lab: 'prompt' },
+      n7: { x: 470, y: 180, p: 'n6', k: 'msg', lab: 'reply', leaf: 'B' },
+      n8: { x: 140, y: 290, p: 'n0', k: 'user', lab: 'prompt' },
+      n9: { x: 250, y: 290, p: 'n8', k: 'msg', lab: 'reply', leaf: 'C' },
+    };
+    const STEP_LEAF = [null, 'n5', 'n7', 'n9'];
+    const NS = 'http://www.w3.org/2000/svg';
+    let timers = [];
+    const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
+
+    function buildTree(sec) {
+      const svg = sec.querySelector('svg.tree');
+      if (svg.childNodes.length) return;
+      const mk = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; };
+      Object.entries(NODES).forEach(([id, n]) => {
+        if (!n.p) return;
+        const q = NODES[n.p];
+        const d = q.y === n.y ? 'M' + q.x + ' ' + q.y + ' L' + n.x + ' ' + n.y
+          : 'M' + q.x + ' ' + q.y + ' C' + q.x + ' ' + (n.y - 10) + ', ' + (q.x + 20) + ' ' + n.y + ', ' + n.x + ' ' + n.y;
+        mk('path', { d, class: 'te' + (n.dotted ? ' dotted' : ''), 'data-e': id });
+      });
+      Object.entries(NODES).forEach(([id, n]) => {
+        const g = mk('g', { class: 'tn ' + n.k + (n.leaf ? ' leaf' : ''), 'data-n': id });
+        mk('circle', { class: 'ring', cx: n.x, cy: n.y, r: 30 }, g);
+        if (n.k === 'snap') mk('rect', { x: n.x - 15, y: n.y - 15, width: 30, height: 30, transform: 'rotate(45 ' + n.x + ' ' + n.y + ')' }, g);
+        else mk('circle', { cx: n.x, cy: n.y, r: 15 }, g);
+        if (n.k === 'err') { const t = mk('text', { x: n.x, y: n.y + 7, class: 'ic' }, g); t.textContent = '✕'; t.style.fill = 'var(--coral)'; }
+        const t = mk('text', { x: n.x, y: n.y - 38 }, g); t.textContent = n.lab;
+        if (n.leaf) { const l = mk('text', { x: n.leaf === 'A' ? n.x : n.x + 40, y: n.leaf === 'A' ? n.y + 58 : n.y + 7, class: 'lf' }, g); if (n.leaf !== 'A') l.style.textAnchor = 'start'; l.textContent = 'leaf ' + n.leaf; }
+        g.addEventListener('click', e => { e.stopPropagation(); walk(sec, id); });
+      });
+      const sc = mk('g', { class: 'scan' });
+      mk('circle', { cx: 0, cy: 0, r: 9, fill: 'var(--amber)' }, sc);
+      mk('circle', { cx: 0, cy: 0, r: 20, fill: 'none', stroke: 'var(--amber)', 'stroke-width': 2, opacity: .6 }, sc);
+    }
+    function pathTo(id) { const out = []; while (id) { out.unshift(id); id = NODES[id].p; } return out; }
+    function setPanel(sec, snapIdx, srcLabel) {
+      const panel = sec.querySelector('.panel'), box = panel.querySelector('.ckw-rows');
+      mountRows(box, 38);
+      const s = snapIdx ? SNAP[snapIdx] : null;
+      panel.classList.toggle('null', !s);
+      panel.querySelector('.src').textContent = srcLabel || '';
+      panel.querySelector('.ft').textContent = s ? '☑ ' + paintRows(box, s).done + '/4' : '';
+    }
+    function setHl(sec, line) {
+      const wrap = sec.querySelector('.code'), hl = wrap.querySelector('.hl');
+      if (!line) { hl.classList.remove('on'); return; }
+      placeHl(wrap, hl, line); hl.classList.add('on');
+    }
+    function walk(sec, leaf) {
+      clearTimers();
+      buildTree(sec);
+      const svg = sec.querySelector('svg.tree'), scan = svg.querySelector('.scan');
+      svg.querySelectorAll('.tn, .te').forEach(e => e.classList.remove('vis', 'hit', 'last', 'off', 'sel'));
+      if (!leaf) { sec.classList.remove('walking'); scan.classList.remove('on'); setPanel(sec, null, ''); setHl(sec, null); sec.querySelector('.panel .empty').textContent = 'pick a leaf'; return; }
+      sec.querySelector('.panel .empty').textContent = 'checklist: null';
+      const path = pathTo(leaf), on = new Set(path);
+      sec.classList.add('walking');
+      svg.querySelectorAll('.tn').forEach(g => { if (!on.has(g.dataset.n)) g.classList.add('off'); });
+      svg.querySelectorAll('.te').forEach(p => { if (!on.has(p.dataset.e)) p.classList.add('off'); });
+      svg.querySelector('.tn[data-n="' + leaf + '"]').classList.add('sel');
+      setPanel(sec, null, 'scanning…');
+      setHl(sec, 3);
+      let last = null;
+      const first = NODES[path[0]];
+      scan.style.transition = 'none';
+      scan.style.transform = 'translate(' + first.x + 'px,' + first.y + 'px)';
+      void scan.getBoundingClientRect();
+      scan.style.transition = '';
+      scan.classList.add('on');
+      path.forEach((id, i) => {
+        timers.push(setTimeout(() => {
+          const n = NODES[id], g = svg.querySelector('.tn[data-n="' + id + '"]');
+          scan.style.transform = 'translate(' + n.x + 'px,' + n.y + 'px)';
+          g.classList.add('vis');
+          const e = svg.querySelector('.te[data-e="' + id + '"]'); if (e) e.classList.add('vis');
+          if (n.snap) {
+            last = id;
+            g.classList.remove('hit'); void g.getBoundingClientRect(); g.classList.add('hit');
+            setPanel(sec, n.snap, 'scanning…');
+            setHl(sec, 6);
+          } else setHl(sec, 3);
+        }, 250 + i * 520));
+      });
+      timers.push(setTimeout(() => {
+        scan.classList.remove('on');
+        setHl(sec, 13);
+        if (last) {
+          svg.querySelector('.tn[data-n="' + last + '"]').classList.add('last');
+          setPanel(sec, NODES[last].snap, '◆ ' + NODES[last].lab);
+        } else setPanel(sec, null, 'no snapshot on path');
+      }, 250 + path.length * 520));
+    }
+    Deck.onStep('ck-tree', (step, sec) => { buildTree(sec); walk(sec, STEP_LEAF[step]); });
+    Deck.onLeave('ck-tree', () => clearTimers());
+
+    /* ---------- ck-code ---------- */
+    Deck.onStep('ck-code', (step, sec) => {
+      const tab = step <= 2 ? 0 : step === 3 ? 1 : 2;
+      sec.querySelectorAll('.tabs button').forEach((b, i) => b.classList.toggle('active', i === tab));
+      sec.querySelectorAll('.hl').forEach(hl => {
+        hl.style.opacity = +hl.dataset.show === step ? 1 : 0;
+        placeHl(hl.parentElement, hl, hl.dataset.lines);
+      });
+    });
+    document.querySelectorAll('#ck-code .tabs button').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      const i = Reveal.getIndices();
+      Reveal.slide(i.h, i.v, +b.dataset.go - 1);
+    }));
+  })();
+  </script>
+</section>

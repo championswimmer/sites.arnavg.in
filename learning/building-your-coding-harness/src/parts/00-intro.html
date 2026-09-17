@@ -1,0 +1,86 @@
+<section id="title" class="divider">
+  <style>
+    #title .pi-mark { font-family: var(--head); font-size: 150pt; font-weight: 700; line-height: .9; color: var(--amber); margin: 0 0 10px; }
+    #title h1 { font-size: 72pt; margin-bottom: 20px; }
+    #title .sub { font-size: 30pt; color: var(--muted); margin: 0; }
+    #title .orbit { position: absolute; right: 90px; top: 50%; transform: translateY(-50%); width: 520px; height: 520px; }
+    #title .orbit .ring { position: absolute; inset: 0; border: 2px dashed var(--line); border-radius: 50%; animation: spin 60s linear infinite; }
+    #title .orbit .core { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 170px; height: 170px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffd08a, var(--amber) 60%, #b86f10); display: grid; place-items: center; box-shadow: 0 0 90px rgba(255,180,84,.35); }
+    #title .orbit .core p { font-family: var(--head); font-size: 64pt; color: #1a1206; margin: 0; font-weight: 700; }
+    #title .orbit .hook { position: absolute; transform: translate(-50%,-50%); font-size: 18pt; background: #0f1b1f; }
+  </style>
+  <div style="max-width: 900px;">
+    <p class="kicker">a talk about extending AI coding agents</p>
+    <h1>Building your<br>coding harness</h1>
+    <p class="sub">Every hook in the agent loop is yours to grab.<br>Examples from <span class="t-amber">pi</span>.</p>
+  </div>
+  <div class="orbit" aria-hidden="true">
+    <div class="ring"></div>
+    <div class="core"><p>π</p></div>
+    <span class="hook" style="left:50%;top:0">tool_call</span>
+    <span class="hook" style="left:100%;top:50%">context</span>
+    <span class="hook" style="left:50%;top:100%">turn_end</span>
+    <span class="hook" style="left:0;top:50%">message_update</span>
+  </div>
+  <aside class="notes">
+    Welcome. Everyone here has used an AI coding tool: Claude Code, Cursor, Codex, something like that.
+    Very few people have changed how the tool itself works. By the end of this talk, you'll see that doing so is a
+    30-line TypeScript file, not a fork.
+    How to run this deck: the arrow keys or clicker step through every diagram. Press S for speaker notes and F for fullscreen. You can also click the buttons on the interactive slides.
+  </aside>
+</section>
+
+<section id="hands" class="stepper" data-steps="3">
+  <style>
+    #hands .q { display: grid; grid-template-columns: 110px 1fr; gap: 30px; align-items: center; margin: 0 0 44px; }
+    #hands .q .n { font-family: var(--head); font-size: 64pt; font-weight: 700; color: var(--line); text-align: right; margin: 0; transition: color .4s; }
+    #hands .q.on .n { color: var(--amber); }
+    #hands .q p.t { font-family: var(--head); font-size: 40pt; margin: 0; line-height: 1.15; }
+  </style>
+  <p class="kicker">quick show of hands</p>
+  <h2 style="margin-bottom: 50px;">Raise your hand if you have…</h2>
+  <div class="q" data-at="1"><p class="n">1</p><p class="t">used an AI coding agent this week</p></div>
+  <div class="q" data-at="2"><p class="n">2</p><p class="t">written a custom prompt, rule file or <code>AGENTS.md</code></p></div>
+  <div class="q" data-at="3"><p class="n">3</p><p class="t">changed <span class="t-amber">how the agent itself behaves</span>: its loop, its context, its tools</p></div>
+  <aside class="notes">
+    Click through the questions one at a time and wait for hands.
+    Expect nearly every hand for 1, many for 2, and very few for 3.
+    That gap is what this talk is about. Most people customise the prompt. Few customise the harness.
+  </aside>
+</section>
+
+<section id="agenda" class="stepper" data-steps="3">
+  <style>
+    #agenda .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 40px; }
+    #agenda .card { min-height: 380px; display: flex; flex-direction: column; gap: 14px; }
+    #agenda .card .big { font-family: var(--head); font-size: 70pt; font-weight: 700; line-height: 1; margin: 0; }
+    #agenda .card h3 { font-size: 30pt; }
+    #agenda .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: auto; }
+  </style>
+  <p class="kicker">the plan</p>
+  <h2>Three stops</h2>
+  <div class="row">
+    <div class="card amber" data-at="1">
+      <p class="big t-amber">1</p>
+      <h3>What a harness does</h3>
+      <p class="muted">The loop wrapped around the model</p>
+    </div>
+    <div class="card teal" data-at="2">
+      <p class="big t-teal">2</p>
+      <h3>Pi's lifecycle</h3>
+      <p class="muted">Every step fires an event you can hook</p>
+      <div class="chips"><span class="hook">context</span><span class="hook">tool_call</span></div>
+    </div>
+    <div class="card violet" data-at="3">
+      <p class="big t-violet">3</p>
+      <h3>Three real extensions</h3>
+      <p class="muted">Walkthroughs, one hook at a time</p>
+      <div class="chips"><span class="hook">context-prune</span><span class="hook">speedometer</span><span class="hook">checklist</span></div>
+    </div>
+  </div>
+  <aside class="notes">
+    First: what a coding harness is, since people rarely think of the model and the harness as separate things.
+    Second: pi's lifecycle, where every stage of the loop emits an event you can subscribe to, and some of those events let you change what happens.
+    Third: three extensions I built and use daily. context-prune shrinks old tool output, speedometer measures how fast the model streams, and checklist gives the agent a todo list.
+  </aside>
+</section>

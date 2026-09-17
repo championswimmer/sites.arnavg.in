@@ -1,0 +1,535 @@
+<!-- ============================================================
+     PART 10 — What a harness does   (id prefix: hn-)
+     Stage vocabulary shared with part 20 (lifecycle):
+     Input → Context → Provider → Stream → Tool calls → Tool results → (loop) → Done
+     ============================================================ -->
+
+<section id="hn-divider" class="divider">
+  <style>
+    #hn-divider h1 { margin-bottom: 26px; font-size: 72pt; }
+    #hn-divider .sub { font-size: 30pt; color: var(--muted); margin: 0; max-width: 1000px; }
+    #hn-divider .ghost { position: absolute; right: 60px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 22px; }
+    #hn-divider .ghost .m { width: 260px; height: 150px; border-radius: 22px; border: 2px solid var(--blue); background: rgba(116,185,255,.08); display: grid; place-items: center; }
+    #hn-divider .ghost .m p { font-family: var(--head); font-size: 30pt; color: var(--blue); margin: 0; }
+    #hn-divider .ghost .h { position: absolute; inset: -70px -80px; border: 3px dashed color-mix(in srgb, var(--amber) 70%, transparent); border-radius: 36px; }
+    #hn-divider .ghost .h span { position: absolute; top: -22px; left: 40px; background: var(--bg); padding: 0 14px; font-family: var(--mono); font-size: 18pt; color: var(--amber); }
+  </style>
+  <p class="num">01</p>
+  <h1>What a harness does</h1>
+  <p class="sub">The model is one box.<br>Everything around it is the <span class="t-amber">harness</span>.</p>
+  <div class="ghost" aria-hidden="true" style="right: 150px;">
+    <div class="h"><span>harness</span></div>
+    <div class="m"><p>model</p></div>
+  </div>
+  <aside class="notes">
+    First stop: what a coding harness actually is.
+    When we say "Claude Code is good" or "Cursor feels fast", we usually mean the model, but a large part of that experience comes from the program wrapped around the model.
+    pi describes itself exactly this way: "Pi is a minimal terminal coding harness." Its default system prompt even tells the model it is "operating inside pi, a coding agent harness."
+    Over the next few slides: what the model can and can't do on its own, the loop that turns it into an agent, the layers pi is built from, and why the same model feels different in different harnesses.
+  </aside>
+</section>
+
+<!-- ============================================================ -->
+<section id="hn-model" class="stepper" data-steps="4">
+  <style>
+    #hn-model .stage { position: relative; margin: 70px auto 0; width: 1400px; height: 470px; }
+    #hn-model .row { position: absolute; left: 0; right: 0; top: 40px; display: flex; align-items: center; justify-content: space-between; }
+    #hn-model .io { width: 400px; height: 250px; box-sizing: border-box; padding-top: 34px; }
+    #hn-model .io .lbl { font-family: var(--mono); font-size: 15pt; color: var(--muted); margin: 0 0 8px; letter-spacing: .08em; text-transform: uppercase; }
+    #hn-model .bubble { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px 22px; }
+    #hn-model .bubble p { margin: 0; font-size: 24pt; }
+    #hn-model .out { width: 440px; }
+    #hn-model .out .bubble { border-color: color-mix(in srgb, var(--blue) 60%, transparent); }
+    #hn-model .out .bubble p { font-family: var(--mono); font-size: 17pt; line-height: 1.5; }
+    #hn-model .out .bubble .tc { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 8px; }
+    #hn-model .arrow { font-family: var(--head); font-size: 44pt; color: var(--muted); margin: 0; width: 70px; text-align: center; }
+    #hn-model .box { width: 380px; height: 250px; border-radius: 24px; border: 2px solid var(--blue); background: rgba(116,185,255,.08); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; box-shadow: 0 0 60px rgba(116,185,255,.12); }
+    #hn-model .box h3 { color: var(--blue); font-size: 34pt; margin: 0 0 10px; }
+    #hn-model .box .fn { font-family: var(--mono); font-size: 22pt; margin: 0; color: var(--text); }
+    #hn-model .box .st { font-size: 17pt; color: var(--muted); margin: 8px 0 0; }
+    #hn-model .cant { position: absolute; top: 272px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; white-space: nowrap; }
+    #hn-model .cant span { font-family: var(--mono); font-size: 16pt; color: var(--coral); border: 1px solid rgba(255,111,125,.5); background: rgba(255,111,125,.08); border-radius: 999px; padding: 4px 14px; }
+    #hn-model .frame { position: absolute; inset: -34px -36px -6px -36px; border: 3px dashed var(--amber); border-radius: 30px; }
+    #hn-model .frame .tag { position: absolute; top: -24px; left: 40px; background: var(--bg); padding: 0 14px; font-family: var(--mono); font-size: 18pt; color: var(--amber); margin: 0; }
+    #hn-model .back { position: absolute; left: 0; top: 0; width: 1400px; height: 470px; }
+    #hn-model .back text { font-family: var(--mono); font-size: 21px; fill: var(--amber); }
+    /* request is not an action */
+    #hn-model .req { font-family: var(--mono); font-size: 15pt; color: var(--coral); margin: 10px 0 0; }
+  </style>
+  <p class="kicker">the model on its own</p>
+  <h2>The model is just a function</h2>
+
+  <div class="stage">
+    <div class="frame" data-at="4"><p class="tag">harness</p></div>
+    <div class="row">
+      <div class="io">
+        <p class="lbl">text in</p>
+        <div class="bubble" data-at="1"><p>“Fix the failing login test”</p></div>
+      </div>
+      <p class="arrow">→</p>
+      <div class="box">
+        <h3>model</h3>
+        <p class="fn">f(text) → text</p>
+        <p class="st">stateless · no hands</p>
+        <div class="cant" data-at="2"><span>✗ read files</span><span>✗ run commands</span><span>✗ remember</span></div>
+      </div>
+      <p class="arrow">→</p>
+      <div class="io out">
+        <p class="lbl">text out</p>
+        <div class="bubble" data-at="3">
+          <p>I'll run the tests first.</p>
+          <p class="tc"><span class="t-blue">toolCall</span> bash<br>{ command: "npm test" }</p>
+        </div>
+        <p class="req" data-at="3">a request, not an action</p>
+      </div>
+    </div>
+    <svg class="back" data-at="4" viewBox="0 0 1400 470" aria-hidden="true">
+      <defs><marker id="hn-m-ah" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="#ffb454"/></marker></defs>
+      <path d="M1180,312 V392 H200 V248" fill="none" stroke="#ffb454" stroke-width="3" marker-end="url(#hn-m-ah)"/>
+      <text x="700" y="436" text-anchor="middle">run npm test → paste the output back in → call again</text>
+    </svg>
+  </div>
+
+  <div class="captions">
+    <p data-only="0">Text in, text out. <b>Nothing else.</b></p>
+    <p data-only="1">Ask it to fix a failing test…</p>
+    <p data-only="2">It can't open a file, run a test, or recall the last call.</p>
+    <p data-only="3">The best it can do is <b>ask</b> for a tool to be run.</p>
+    <p data-only="4">Something has to run it and call back. <b>That's the harness.</b></p>
+  </div>
+  <aside class="notes">
+    Step 0: Strip away the product and a language model is a function: text in, text out. It doesn't keep state between calls. Everything it "knows" about your conversation has to be in the text you send it.
+    Step 1: Say we ask it to fix a failing login test.
+    Step 2: The model can't read login.ts, it can't run npm test, and it doesn't remember the previous request. Each call starts from zero.
+    Step 3: What a tool-using model can do is reply with a structured request: "please call the bash tool with command npm test". In pi, the provider layer normalises this into a toolCall block in the assistant message, whichever provider you use. The exact shape on the slide is simplified.
+    Step 4: Some program has to see that request, actually run the command, paste the output back into the conversation, and call the model again. That program is the harness. Next slide: what that loop looks like.
+  </aside>
+</section>
+
+<!-- ============================================================ -->
+<section id="hn-loop" class="stepper" data-steps="10">
+  <style>
+    #hn-loop .play { position: absolute; top: 44px; right: 64px; z-index: 5; }
+    #hn-loop .wrap { display: flex; gap: 40px; margin-top: 18px; }
+    /* ---- loop diagram ---- */
+    #hn-loop .loop { position: relative; width: 920px; height: 600px; flex: none; }
+    #hn-loop .loop svg { position: absolute; left: 0; top: 0; width: 920px; height: 600px; overflow: visible; }
+    #hn-loop .loop svg path { fill: none; stroke: var(--line); stroke-width: 3; transition: stroke .35s, stroke-width .35s; }
+    #hn-loop .loop svg path.hot { stroke: var(--amber); stroke-width: 5; }
+    #hn-loop .loop svg path.loopback.hot { stroke: var(--teal); }
+    #hn-loop .loop svg text { font-family: var(--mono); font-size: 20px; fill: var(--muted); }
+    #hn-loop .node { position: absolute; width: 180px; height: 88px; box-sizing: border-box; border-radius: 16px; border: 2px solid var(--line); background: var(--panel); display: flex; flex-direction: column; justify-content: center; align-items: center; transition: all .35s var(--ease); }
+    #hn-loop .node p { margin: 0; text-align: center; }
+    #hn-loop .node .nm { font-family: var(--head); font-size: 20pt; font-weight: 600; line-height: 1.1; }
+    #hn-loop .node .sb { font-size: 15pt; color: var(--muted); line-height: 1.2; }
+    #hn-loop .node.hot { border-color: var(--amber); background: #2a2111; box-shadow: 0 0 0 6px rgba(255,180,84,.15), 0 0 30px rgba(255,180,84,.35); }
+    #hn-loop .node.model.hot { border-color: var(--blue); background: #12233a; box-shadow: 0 0 0 6px rgba(116,185,255,.15), 0 0 30px rgba(116,185,255,.4); }
+    #hn-loop .node.model .nm { color: var(--blue); }
+    #hn-loop .node.done.hot { border-color: var(--green); background: #112619; box-shadow: 0 0 0 6px rgba(127,227,164,.15), 0 0 30px rgba(127,227,164,.4); }
+    #hn-loop .turn { position: absolute; left: 562px; top: 178px; transform: translateX(-50%); font-family: var(--mono); font-size: 20pt; color: var(--teal); border: 1px solid rgba(63,220,214,.5); background: rgba(63,220,214,.08); border-radius: 999px; padding: 4px 18px; transition: opacity .35s; }
+    #hn-loop .now { position: absolute; left: 0; top: 410px; width: 660px; height: 150px; box-sizing: border-box; background: #0a0c11; border: 1px solid var(--line); border-radius: 14px; padding: 14px 20px; }
+    #hn-loop .now .k { font-family: var(--mono); font-size: 15pt; color: var(--muted); margin: 0 0 6px; letter-spacing: .1em; text-transform: uppercase; }
+    #hn-loop .now .lines { position: relative; }
+    #hn-loop .now .lines p { position: absolute; left: 0; right: 0; top: 0; font-family: var(--mono); font-size: 18pt; line-height: 1.45; margin: 0; }
+    /* ---- context stack ---- */
+    #hn-loop .ctxcol { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    #hn-loop .ctxhead { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 8px; }
+    #hn-loop .ctxhead p { margin: 0; font-family: var(--mono); font-size: 15pt; }
+    #hn-loop .win { height: 520px; box-sizing: border-box; border: 2px solid var(--line); border-radius: 14px; padding: 10px; background: rgba(22,26,36,.6); overflow: hidden; transition: border-color .35s, box-shadow .35s; }
+    #hn-loop .win.sent { border-color: var(--blue); box-shadow: 0 0 30px rgba(116,185,255,.3); }
+    #hn-loop .win { position: relative; }
+    #hn-loop .empty { position: absolute; left: 0; right: 0; top: 46%; text-align: center; font-family: var(--mono); font-size: 16pt; color: var(--muted); margin: 0; }
+    #hn-loop .blk { display: flex; align-items: center; gap: 10px; height: 34px; box-sizing: border-box; margin-bottom: 6px; padding: 0 10px; border-radius: 8px; background: var(--panel-2); border-left: 5px solid var(--amber); overflow: hidden; white-space: nowrap; transition: opacity .45s var(--ease), height .45s var(--ease), margin .45s var(--ease); }
+    #hn-loop .blk:not(.on) { height: 0; margin-bottom: 0; }
+    #hn-loop .blk b { font-family: var(--mono); font-size: 15pt; font-weight: 700; color: var(--amber); flex: none; width: 124px; }
+    #hn-loop .blk span { font-family: var(--mono); font-size: 15pt; color: var(--text); overflow: hidden; text-overflow: ellipsis; }
+    #hn-loop .blk.u { border-left-color: var(--text); } #hn-loop .blk.u b { color: var(--text); }
+    #hn-loop .blk.a { border-left-color: var(--blue); } #hn-loop .blk.a b { color: var(--blue); }
+    #hn-loop .blk.r { border-left-color: var(--coral); background: rgba(255,111,125,.1); align-items: flex-start; padding-top: 4px; } #hn-loop .blk.r b { color: var(--coral); }
+    #hn-loop .blk.r.big.on { height: 58px; } #hn-loop .blk.r.huge.on { height: 80px; }
+    #hn-loop .meter { margin-top: 12px; display: flex; align-items: center; gap: 14px; }
+    #hn-loop .meter p { margin: 0; font-family: var(--mono); font-size: 15pt; color: var(--muted); flex: none; }
+    #hn-loop .meter .bar { flex: 1; height: 16px; border-radius: 8px; background: var(--panel-2); overflow: hidden; }
+    #hn-loop .meter .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--amber), var(--coral)); transition: width .6s var(--ease); }
+  </style>
+  <button class="btn play" type="button">▶ auto-play loop</button>
+  <p class="kicker">the harness in motion</p>
+  <h2>The agent loop</h2>
+
+  <div class="wrap">
+    <div class="loop">
+      <svg viewBox="0 0 920 600" aria-hidden="true">
+        <defs>
+          <marker id="hn-l-ah" markerWidth="20" markerHeight="20" refX="16" refY="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,2 L18,10 L0,18 z" fill="context-stroke"/></marker>
+        </defs>
+        <path data-a="ic" d="M180,74 H234" marker-end="url(#hn-l-ah)"/>
+        <path data-a="cp" d="M416,74 H470" marker-end="url(#hn-l-ah)"/>
+        <path data-a="ps" d="M652,74 H706" marker-end="url(#hn-l-ah)"/>
+        <path data-a="st" d="M798,118 V258" marker-end="url(#hn-l-ah)"/>
+        <path data-a="tt" d="M708,304 H418" marker-end="url(#hn-l-ah)"/>
+        <path data-a="loop" class="loopback" d="M326,260 V120" marker-end="url(#hn-l-ah)"/>
+        <path data-a="done" d="M888,74 H910 V514 H890" marker-end="url(#hn-l-ah)"/>
+        <text x="563" y="290" text-anchor="middle">harness runs them</text>
+        <text x="312" y="198" text-anchor="end">loop</text>
+        <text x="784" y="198" text-anchor="end">tool calls?</text>
+      </svg>
+      <div class="node" data-n="in" style="left:0;top:30px"><p class="nm">Input</p><p class="sb">your prompt</p></div>
+      <div class="node" data-n="ctx" style="left:236px;top:30px"><p class="nm">Context</p><p class="sb">harness builds</p></div>
+      <div class="node model" data-n="prov" style="left:472px;top:30px"><p class="nm">Provider</p><p class="sb">the model</p></div>
+      <div class="node" data-n="str" style="left:708px;top:30px"><p class="nm">Stream</p><p class="sb">tokens arrive</p></div>
+      <div class="node" data-n="tc" style="left:708px;top:260px"><p class="nm">Tool calls</p><p class="sb">harness runs</p></div>
+      <div class="node" data-n="tr" style="left:236px;top:260px"><p class="nm">Tool results</p><p class="sb">appended</p></div>
+      <div class="node done" data-n="done" style="left:708px;top:470px"><p class="nm">Done</p><p class="sb">no tool calls</p></div>
+      <p class="turn" data-at="2">turn <span class="tn">1</span></p>
+      <div class="now">
+        <p class="k">now</p>
+        <div class="lines">
+          <p data-only="0" class="muted">→ step through, or ▶ auto-play</p>
+          <p data-only="1"><span class="t-green">&gt;</span> fix the failing login test</p>
+          <p data-only="2">system prompt + AGENTS.md<br>+ tool definitions + history</p>
+          <p data-only="3"><span class="t-blue">request →</span> the whole context,<br>to whichever model you picked</p>
+          <p data-only="4">“I'll run the tests first.”<br><span class="t-blue">toolCall</span> bash { command: "npm test" }</p>
+          <p data-only="5"><span class="t-amber">$</span> npm test<br><span class="t-coral">FAIL</span> login.test.ts · 1 failing</p>
+          <p data-only="6"><span class="t-coral">toolResult</span> appended to context<br><span class="t-teal">↺</span> back to Context, call again</p>
+          <p data-only="7"><span class="t-teal">turn 2</span> <span class="t-blue">toolCall</span> read<br>src/auth/login.ts → file appended</p>
+          <p data-only="8"><span class="t-teal">turn 3</span> <span class="t-blue">toolCall</span> edit<br>src/auth/login.ts → edit applied</p>
+          <p data-only="9"><span class="t-teal">turn 4</span> “Fixed: expiry compared<br>seconds with ms.” · no tool calls</p>
+          <p data-only="10"><span class="t-green">done</span> · 1 prompt · 4 model calls<br>3 tool runs, all by the harness</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="ctxcol">
+      <div class="ctxhead"><p class="muted">context window</p><p class="t-coral" data-at="3">re-sent every call</p></div>
+      <div class="win">
+        <p class="empty" data-only="0 1">empty: the model knows nothing yet</p>
+        <div class="blk" data-at="2"><b>system</b><span>You are an expert coding assistant…</span></div>
+        <div class="blk" data-at="2"><b>AGENTS.md</b><span>project rules</span></div>
+        <div class="blk" data-at="2"><b>tools</b><span>read · bash · edit · write</span></div>
+        <div class="blk u" data-at="2"><b>user</b><span>fix the failing login test</span></div>
+        <div class="blk a" data-at="4"><b>model</b><span>→ bash: npm test</span></div>
+        <div class="blk r big" data-at="6"><b>result</b><span>FAIL login.test.ts … (test log)</span></div>
+        <div class="blk a" data-at="7"><b>model</b><span>→ read: src/auth/login.ts</span></div>
+        <div class="blk r huge" data-at="7"><b>result</b><span>the whole file</span></div>
+        <div class="blk a" data-at="8"><b>model</b><span>→ edit: src/auth/login.ts</span></div>
+        <div class="blk r" data-at="8"><b>result</b><span>edit applied</span></div>
+        <div class="blk a" data-at="9"><b>model</b><span>Fixed: expiry seconds vs ms</span></div>
+      </div>
+      <div class="meter"><p>size</p><div class="bar"><i></i></div></div>
+    </div>
+  </div>
+
+  <div class="captions">
+    <p data-only="0">One task: <b>fix the failing login test</b></p>
+    <p data-only="1">You type one line.</p>
+    <p data-only="2">The harness builds the context: <b>instructions, tools, history</b>.</p>
+    <p data-only="3">It sends <b>all of it</b> to the model.</p>
+    <p data-only="4">The model streams back text and a <b>tool call</b>.</p>
+    <p data-only="5">The harness runs <b>npm test</b>. The model can't.</p>
+    <p data-only="6">The output joins the context. <b>Loop.</b></p>
+    <p data-only="7">Turn 2: the model asks to <b>read</b> login.ts.</p>
+    <p data-only="8">Turn 3: it asks to <b>edit</b> it.</p>
+    <p data-only="9">Turn 4: plain text, no tool calls…</p>
+    <p data-only="10">…so the loop ends. <b>One prompt, four model calls.</b></p>
+  </div>
+  <aside class="notes">
+    This is the core of every coding agent. The task: "fix the failing login test". The file names, test output and the fix itself are illustrative, and the size bar has no real numbers. The loop structure is pi's real code path.
+    Step 1 (Input): you type one line. pi first checks for built-in and extension slash commands, expands skills and prompt templates, then builds the user message.
+    Step 2 (Context): the harness assembles what the model sees. The system prompt comes from buildSystemPrompt: tool snippets, guidelines, AGENTS.md context files, skills, the cwd. Then the tool definitions and the message history. The model knows only what is in this stack.
+    Step 3 (Provider): pi-ai turns that provider-neutral context into an HTTP request for Anthropic, OpenAI, Google, Bedrock or others. Note the label on the right: the whole stack is sent on every call, not just the new message.
+    Step 4 (Stream): the answer streams back as normalised events: text deltas, thinking deltas, tool-call deltas. Here it says it will run the tests and emits a tool call for bash.
+    Step 5 (Tool calls): the harness looks up the tool, validates the arguments against its schema, and runs it. pi runs multiple tool calls in parallel by default.
+    Step 6 (Tool results): the output is wrapped as a toolResult message and appended. Because there were tool calls, the loop goes back to Context and calls the model again.
+    Steps 7–8: two more laps: read the file, then edit it. Watch the context stack: the test log and the whole file are still in there, and they are re-sent on every later call. Hold that thought; the context-prune extension later in the talk deals with exactly this.
+    Step 9–10: the model replies with plain text and no tool calls, so the inner loop exits and the run is done. Between laps pi can also auto-compact if the context gets too big, and after the run it may retry an error. One prompt from you, four model calls, three tool runs, all driven by the harness.
+    Demo tip: the "auto-play loop" button steps through the whole loop on a timer; click it again to pause.
+  </aside>
+  <script>
+  (function () {
+    const ID = 'hn-loop', N = 10;
+    const sec = document.getElementById(ID);
+    const HOT = {
+      0: [], 1: ['in'], 2: ['ctx', 'ic'], 3: ['prov', 'cp'], 4: ['str', 'ps'], 5: ['tc', 'st'], 6: ['tr', 'tt', 'loop'],
+      7: ['ctx', 'prov', 'str', 'tc', 'tr', 'cp', 'ps', 'st', 'tt', 'loop'], 8: ['ctx', 'prov', 'str', 'tc', 'tr', 'cp', 'ps', 'st', 'tt', 'loop'],
+      9: ['ctx', 'prov', 'str', 'cp', 'ps'], 10: ['done', 'done-a'],
+    };
+    const TURN = [1, 1, 1, 1, 1, 1, 1, 2, 3, 4, 4];
+    const SIZE = [0, 0, 22, 22, 26, 42, 42, 70, 80, 84, 84];
+    const SENT = [3, 7, 8, 9];
+    Deck.onStep(ID, (step) => {
+      const hot = HOT[step] || [];
+      sec.querySelectorAll('.node').forEach(n => n.classList.toggle('hot', hot.includes(n.dataset.n)));
+      sec.querySelectorAll('svg path[data-a]').forEach(p => {
+        const key = p.dataset.a === 'done' ? 'done-a' : p.dataset.a;
+        p.classList.toggle('hot', hot.includes(key));
+      });
+      sec.querySelector('.tn').textContent = TURN[step];
+      sec.querySelector('.meter i').style.width = SIZE[step] + '%';
+      sec.querySelector('.win').classList.toggle('sent', SENT.includes(step));
+    });
+
+    let timer = null;
+    const btn = sec.querySelector('.play');
+    function stop() {
+      if (timer) clearInterval(timer);
+      timer = null;
+      btn.classList.remove('active');
+      btn.textContent = '▶ auto-play loop';
+    }
+    function tick() {
+      if (Reveal.getCurrentSlide() !== sec) return stop();
+      if (+sec.dataset.step >= N) return stop();
+      Reveal.nextFragment();
+      if (+sec.dataset.step >= N) stop();
+    }
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      btn.blur();
+      if (timer) return stop();
+      if (+sec.dataset.step >= N) {
+        const { h, v } = Reveal.getIndices(sec);
+        Reveal.slide(h, v, -1);
+      }
+      btn.classList.add('active');
+      btn.textContent = '❚❚ pause';
+      timer = setInterval(tick, 1700);
+      setTimeout(tick, 250);
+    });
+    Deck.onLeave(ID, stop);
+  })();
+  </script>
+</section>
+
+<!-- ============================================================ -->
+<section id="hn-anatomy" class="stepper" data-steps="5">
+  <style>
+    #hn-anatomy .cake { position: relative; margin: 26px 0 0 120px; width: 1352px; }
+    #hn-anatomy .layer { display: grid; grid-template-columns: 340px 1fr; align-items: center; gap: 24px; min-height: 96px; box-sizing: border-box; padding: 12px 26px; margin-bottom: 14px; border-radius: 16px; border: 2px solid var(--line); background: var(--panel); opacity: .5; transition: all .4s var(--ease); }
+    #hn-anatomy .layer.lit { opacity: 1; border-color: color-mix(in srgb, var(--amber) 55%, transparent); }
+    #hn-anatomy .layer.cur { background: #231c10; border-color: var(--amber); box-shadow: 0 0 0 6px rgba(255,180,84,.12), 0 0 32px rgba(255,180,84,.28); }
+    #hn-anatomy .layer p { margin: 0; }
+    #hn-anatomy .layer .pkg { font-family: var(--mono); font-size: 15pt; color: var(--muted); }
+    #hn-anatomy .layer .ttl { font-family: var(--head); font-size: 26pt; font-weight: 600; line-height: 1.15; }
+    #hn-anatomy .layer.lit .ttl { color: var(--amber); }
+    #hn-anatomy .layer .desc { font-size: 24pt; }
+    #hn-anatomy .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; align-items: center; }
+    #hn-anatomy .chip { font-family: var(--mono); font-size: 16pt; border-radius: 999px; padding: 3px 14px; border: 1px solid var(--line); color: var(--text); background: var(--panel-2); }
+    #hn-anatomy .chip.tool { border-color: rgba(255,180,84,.6); color: var(--amber); background: rgba(255,180,84,.08); }
+    #hn-anatomy .chip.lbl { border: none; background: none; color: var(--muted); padding-left: 0; }
+    #hn-anatomy .wire { display: flex; align-items: center; gap: 16px; margin: 0 0 14px 26px; height: 28px; }
+    #hn-anatomy .wire i { width: 3px; height: 28px; background: repeating-linear-gradient(var(--blue) 0 6px, transparent 6px 11px); }
+    #hn-anatomy .wire span { font-family: var(--mono); font-size: 15pt; color: var(--blue); }
+    #hn-anatomy .layer.model { opacity: 1; border-color: var(--blue); background: rgba(116,185,255,.07); }
+    #hn-anatomy .layer.model .ttl { color: var(--blue); }
+    #hn-anatomy .bracket { position: absolute; left: -104px; top: 0; height: 440px; width: 70px; border: 3px solid var(--amber); border-right: none; border-radius: 18px 0 0 18px; }
+    #hn-anatomy .bracket p { position: absolute; left: -18px; top: 50%; transform: translate(-50%,-50%) rotate(-90deg); font-family: var(--mono); font-size: 20pt; color: var(--amber); margin: 0; background: var(--bg); padding: 0 12px; }
+    #hn-anatomy .notharness { font-family: var(--mono); font-size: 16pt; color: var(--blue); justify-self: end; }
+  </style>
+  <p class="kicker">pi, layer by layer</p>
+  <h2>Everything around the model is the harness</h2>
+
+  <div class="cake">
+    <div class="bracket" data-at="5"><p>harness</p></div>
+
+    <div class="layer" data-layer="4">
+      <div><p class="pkg">pi-tui · interactive mode</p><p class="ttl">Terminal UI</p></div>
+      <div data-at="4">
+        <p class="desc">Renders transcript, editor, footer</p>
+        <div class="chips"><span class="chip lbl">same session, no TUI:</span><span class="chip">print</span><span class="chip">rpc</span><span class="chip">SDK</span></div>
+      </div>
+    </div>
+
+    <div class="layer" data-layer="3">
+      <div><p class="pkg">pi-coding-agent</p><p class="ttl">AgentSession</p></div>
+      <div data-at="3">
+        <p class="desc">Tools, sessions, compaction, extensions</p>
+        <div class="chips"><span class="chip lbl">default tools:</span><span class="chip tool">read</span><span class="chip tool">bash</span><span class="chip tool">edit</span><span class="chip tool">write</span></div>
+      </div>
+    </div>
+
+    <div class="layer" data-layer="2">
+      <div><p class="pkg">pi-agent-core</p><p class="ttl">Agent loop</p></div>
+      <p class="desc" data-at="2">Stream, run tools, repeat</p>
+    </div>
+
+    <div class="layer" data-layer="1">
+      <div><p class="pkg">pi-ai</p><p class="ttl">Providers</p></div>
+      <p class="desc" data-at="1">Any provider, one stream shape</p>
+    </div>
+
+    <div class="wire"><i></i><span>HTTP</span></div>
+
+    <div class="layer model">
+      <div><p class="pkg">Anthropic · OpenAI · …</p><p class="ttl">The model</p></div>
+      <p class="notharness" data-at="5">the only part you don't build</p>
+    </div>
+  </div>
+
+  <aside class="notes">
+    pi is split into npm packages, and each one is a layer of the harness. We'll light them from the bottom up.
+    Step 1, pi-ai: the provider abstraction. It takes a provider-neutral context (system prompt, messages, tools), builds the Anthropic, OpenAI, Google or Bedrock request, and streams back one normalised event shape: text, thinking and tool-call deltas, then done or error. Nothing above this layer sees provider wire formats.
+    Step 2, pi-agent-core: the generic agent loop from the previous slide. Stream the assistant message, run the tool calls, append the results, repeat. It has no UI and knows nothing about coding.
+    Step 3, pi-coding-agent's AgentSession: this turns the generic loop into a coding agent. It adds the coding tools, JSONL session files that store a branching tree, compaction, retries, the system prompt, and the extension runner. By default the model gets four tools: read, bash, edit and write. grep, find and ls exist but are off by default.
+    Step 4, the terminal UI: renders the transcript, the editor, the footer and widgets, and handles built-in slash commands. The same AgentSession also runs without the TUI in print mode, RPC mode, or embedded through the SDK.
+    Step 5: all four layers are the harness. The model sits outside, at the end of an HTTP call. It is the one piece you rent rather than build.
+  </aside>
+  <script>
+  (function () {
+    const sec = document.getElementById('hn-anatomy');
+    Deck.onStep('hn-anatomy', (step) => {
+      sec.querySelectorAll('.layer[data-layer]').forEach(l => {
+        const k = +l.dataset.layer;
+        l.classList.toggle('lit', step >= k);
+        l.classList.toggle('cur', step === k || step === 5);
+      });
+    });
+  })();
+  </script>
+</section>
+
+<!-- ============================================================ -->
+<section id="hn-same" class="stepper" data-steps="6">
+  <style>
+    #hn-same .model { position: relative; margin: 6px auto 0; width: max-content; display: flex; align-items: center; gap: 16px; border: 2px solid var(--blue); background: rgba(116,185,255,.08); border-radius: 999px; padding: 8px 30px; transition: box-shadow .4s; }
+    #hn-same .model p { margin: 0; }
+    #hn-same .model .n { font-family: var(--head); font-size: 24pt; color: var(--blue); font-weight: 600; }
+    #hn-same .model .same { position: absolute; left: calc(100% + 18px); white-space: nowrap; font-family: var(--mono); font-size: 16pt; color: var(--green); }
+    #hn-same.s6 .model { box-shadow: 0 0 0 6px rgba(116,185,255,.14), 0 0 34px rgba(116,185,255,.35); }
+    #hn-same .fork { display: block; margin: 0 auto; width: 900px; height: 44px; }
+    #hn-same .fork path { fill: none; stroke: var(--blue); stroke-width: 3; opacity: .7; }
+    #hn-same .grid { display: grid; grid-template-columns: 1fr 250px 1fr; column-gap: 0; }
+    #hn-same .hd { margin: 0 0 8px; padding: 10px 22px; border-radius: 14px 14px 0 0; }
+    #hn-same .hd p { margin: 0; font-family: var(--head); font-size: 24pt; font-weight: 600; }
+    #hn-same .hd.a { background: rgba(255,180,84,.1); border-bottom: 3px solid var(--amber); }
+    #hn-same .hd.a p { color: var(--amber); }
+    #hn-same .hd.b { background: rgba(185,162,255,.1); border-bottom: 3px solid var(--violet); }
+    #hn-same .hd.b p { color: var(--violet); }
+    #hn-same .cell { display: flex; align-items: center; min-height: 76px; padding: 0 22px; border-bottom: 1px solid var(--line); box-sizing: border-box; }
+    #hn-same .cell p { margin: 0; font-size: 21pt; line-height: 1.2; }
+    #hn-same .cell.b p { color: var(--text); }
+    #hn-same .cell.b .plus { color: var(--violet); font-family: var(--mono); }
+    #hn-same .dial { display: flex; flex-direction: column; align-items: center; justify-content: center; border-bottom: 1px solid var(--line); min-height: 76px; gap: 2px; }
+    #hn-same .dial p { margin: 0; font-family: var(--mono); font-size: 15pt; color: var(--teal); text-align: center; line-height: 1.15; }
+    #hn-same .knob { width: 32px; height: 32px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--teal); background: rgba(63,220,214,.12); position: relative; transition: transform .8s var(--ease); transform: rotate(-150deg); }
+    #hn-same .knob::after { content: ""; position: absolute; left: 50%; top: 1px; width: 4px; height: 13px; margin-left: -2px; background: var(--teal); border-radius: 2px; }
+    #hn-same .dial.on .knob { transform: rotate(50deg); }
+    #hn-same.s6 .cell.b { background: rgba(185,162,255,.06); }
+  </style>
+  <p class="kicker">why it feels different</p>
+  <h2>Same model, different harness</h2>
+
+  <div class="model"><p class="n">one model</p><p class="same" data-at="6">✓ unchanged</p></div>
+  <svg class="fork" viewBox="0 0 900 44" aria-hidden="true"><path d="M450,0 V14 Q450,22 440,22 H130 Q120,22 120,32 V44 M450,14 Q450,22 460,22 H770 Q780,22 780,32 V44"/></svg>
+
+  <div class="grid">
+    <div class="hd a"><p>pi, defaults</p></div>
+    <div></div>
+    <div class="hd b"><p>pi + your extensions</p></div>
+
+    <div class="cell a" data-at="1"><p>every tool output, until compaction</p></div>
+    <div class="dial" data-at="1"><div class="knob"></div><p>in context</p></div>
+    <div class="cell b" data-at="1"><p>finished outputs → short summaries</p></div>
+
+    <div class="cell a" data-at="2"><p>read · bash · edit · write</p></div>
+    <div class="dial" data-at="2"><div class="knob"></div><p>tools</p></div>
+    <div class="cell b" data-at="2"><p><span class="plus">+</span> checklist tools · <span class="t-coral">rm -rf</span> blocked</p></div>
+
+    <div class="cell a" data-at="3"><p>model stops calling tools</p></div>
+    <div class="dial" data-at="3"><div class="knob"></div><p>when to stop</p></div>
+    <div class="cell b" data-at="3"><p><span class="plus">+</span> a tool can end the run</p></div>
+
+    <div class="cell a" data-at="4"><p>transcript, editor, footer</p></div>
+    <div class="dial" data-at="4"><div class="knob"></div><p>what you see</p></div>
+    <div class="cell b" data-at="4"><p><span class="plus">+</span> ⚡ t/s meter · ☑ 1/4 tasks</p></div>
+
+    <div class="cell a" data-at="5"><p>JSONL session tree</p></div>
+    <div class="dial" data-at="5"><div class="knob"></div><p>what's saved</p></div>
+    <div class="cell b" data-at="5"><p><span class="plus">+</span> extension state entries</p></div>
+  </div>
+
+  <div class="captions">
+    <p data-only="0">Both columns call <b>the same model</b>.</p>
+    <p data-only="1">Dial 1: what the model gets to see.</p>
+    <p data-only="2">Dial 2: what it's allowed to do.</p>
+    <p data-only="3">Dial 3: when the loop ends.</p>
+    <p data-only="4">Dial 4: what <b>you</b> get to see.</p>
+    <p data-only="5">Dial 5: what survives the session.</p>
+    <p data-only="6">Same weights. <b>Different agent.</b></p>
+  </div>
+  <aside class="notes">
+    Everyone compares models. Very few people compare harnesses, but the harness sets most of these dials. Both columns here send requests to the same model.
+    Dial 1, context: by default pi keeps every tool output in context until compaction summarises the older part. With the context-prune extension, outputs from a finished task are swapped for short summaries in the model's view, while the originals stay in the session.
+    Dial 2, tools: pi's defaults are read, bash, edit and write. An extension can register new tools, like the checklist extension's three tools, or block a call such as rm -rf before it runs.
+    Dial 3, stopping: by default the loop ends when the model replies without tool calls. A tool can also return terminate to end the run.
+    Dial 4, what you see: the TUI shows the transcript, editor and footer. Extensions can paint the footer and widgets: speedometer shows tokens per second, and checklist shows task progress.
+    Dial 5, what's saved: pi writes a JSONL session file shaped like a tree, and extensions can store their own state entries in that same file.
+    Step 6: nothing about the model changed. Every difference in the right column is harness code, and each one is a real extension you'll see later in this talk.
+  </aside>
+</section>
+
+<!-- ============================================================ -->
+<section id="hn-bridge" class="stepper" data-steps="2">
+  <style>
+    #hn-bridge blockquote { margin: 40px 0 0; padding: 0 0 0 36px; border-left: 6px solid var(--amber); width: auto; box-shadow: none; background: none; font-style: normal; }
+    #hn-bridge blockquote p { font-family: var(--head); font-size: 36pt; line-height: 1.25; margin: 0 0 16px; }
+    #hn-bridge blockquote p.first { color: var(--muted); font-size: 28pt; }
+    #hn-bridge .cite { font-family: var(--mono); font-size: 16pt !important; color: var(--muted) !important; margin: 0 0 0 42px !important; }
+    #hn-bridge .strip { position: relative; margin: 80px 0 0; display: flex; align-items: center; justify-content: center; }
+    #hn-bridge .st { font-family: var(--head); font-size: 20pt; font-weight: 600; border: 2px solid var(--line); background: var(--panel); border-radius: 12px; padding: 8px 16px; margin: 0; white-space: nowrap; }
+    #hn-bridge .st.model { color: var(--blue); border-color: rgba(116,185,255,.6); }
+    #hn-bridge .ar { position: relative; width: 62px; height: 3px; background: var(--muted); margin: 0 6px; }
+    #hn-bridge .ar::after { content: ""; position: absolute; right: -2px; top: -6px; border: 7px solid transparent; border-left: 10px solid var(--muted); border-right: none; }
+    #hn-bridge .ev { position: absolute; left: 50%; top: -34px; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 5px rgba(63,220,214,.2), 0 0 18px rgba(63,220,214,.6); }
+    #hn-bridge.s2 .ev { animation: hnPulse 1.4s ease-in-out infinite; }
+    #hn-bridge .ar:nth-of-type(2) .ev { animation-delay: .2s; }
+    @keyframes hnPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.35); } }
+    #hn-bridge .back { position: absolute; top: 100%; height: 30px; border: 3px solid var(--muted); border-top: none; border-radius: 0 0 14px 14px; opacity: .8; }
+    #hn-bridge .back::after { content: ""; position: absolute; left: -9px; top: -12px; border: 7px solid transparent; border-bottom: 10px solid var(--muted); border-top: none; }
+    #hn-bridge .back span { position: absolute; left: 50%; top: 100%; transform: translate(-50%, 2px); font-family: var(--mono); font-size: 15pt; color: var(--muted); background: var(--bg); padding: 0 10px; }
+    #hn-bridge .next { text-align: center; font-family: var(--mono); font-size: 17pt !important; color: var(--muted) !important; margin: 18px 0 0 !important; }
+    #hn-bridge .tease { margin: 80px 0 0; text-align: center; font-family: var(--head); font-size: 30pt; }
+    #hn-bridge .tease b { color: var(--teal); font-weight: 600; }
+  </style>
+  <p class="kicker">pi's philosophy</p>
+  <h2>Built to be bent</h2>
+
+  <blockquote>
+    <p class="first">“Pi is a minimal terminal coding harness.</p>
+    <p>Adapt pi to your workflows, not the other way around, without having to fork and modify pi internals.”</p>
+  </blockquote>
+  <p class="cite">— pi README</p>
+
+  <div class="strip" data-at="1">
+    <p class="st">Input</p><div class="ar"><i class="ev" data-at="2"></i></div>
+    <p class="st">Context</p><div class="ar"><i class="ev" data-at="2"></i></div>
+    <p class="st model">Provider</p><div class="ar"><i class="ev" data-at="2"></i></div>
+    <p class="st">Stream</p><div class="ar"><i class="ev" data-at="2"></i></div>
+    <p class="st">Tool calls</p><div class="ar"><i class="ev" data-at="2"></i></div>
+    <p class="st">Tool results</p><div class="ar"><i class="ev" data-at="2"></i></div>
+    <p class="st">Done</p>
+    <div class="back"><span>loop</span></div>
+  </div>
+  <p class="tease" data-at="2">Every arrow in this loop <b>fires an event you can hook</b>.</p>
+  <p class="next" data-at="2">next: pi's lifecycle →</p>
+
+  <aside class="notes">
+    This is the line from pi's README that sums up the design: "Pi is a minimal terminal coding harness. Adapt pi to your workflows, not the other way around, without having to fork and modify pi internals."
+    pi leaves features out on purpose. The README says it "skips features like sub agents and plan mode" and suggests building them with extensions or installing a package instead. There are no permission popups either; you build your own confirmation flow if you want one.
+    Step 1: here is the loop we just walked through, flattened: Input, Context, Provider, Stream, Tool calls, Tool results, Done.
+    Step 2: the reason pi can stay minimal is that every one of these boundaries is an event. An extension, just a TypeScript file, can observe it, and at many of them it can change what happens next. pi's own core wires its behaviour through the same seams, so extensions aren't a bolted-on plugin layer.
+    Transition: next section, we open up that lifecycle event by event.
+  </aside>
+  <script>
+  (function () {
+    const sec = document.getElementById('hn-bridge');
+    function place() {
+      const strip = sec.querySelector('.strip'), pills = strip.querySelectorAll('.st'), back = strip.querySelector('.back');
+      const ctx = pills[1], tr = pills[5];
+      const x1 = ctx.offsetLeft + ctx.offsetWidth / 2, x2 = tr.offsetLeft + tr.offsetWidth / 2;
+      back.style.left = x1 + 'px'; back.style.width = (x2 - x1) + 'px';
+    }
+    Deck.onEnter('hn-bridge', place);
+    Deck.onStep('hn-bridge', place);
+  })();
+  </script>
+</section>
