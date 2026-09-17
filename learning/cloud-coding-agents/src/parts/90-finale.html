@@ -1,0 +1,117 @@
+<!-- ============================================================
+     90 / Finale — the whole machine, takeaways, close
+     ids: fn-full, fn-take, fn-close
+     ============================================================ -->
+
+<section id="fn-full" class="stepper" data-steps="5">
+  <style>
+    #fn-full .map { display: grid; grid-template-columns: 300px 1fr 300px; gap: 20px; margin-top: 20px; align-items: stretch; }
+    #fn-full .col { display: flex; flex-direction: column; gap: 12px; }
+    #fn-full .nd { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; text-align: center; opacity: .35; transition: all .4s var(--ease); cursor: pointer; }
+    #fn-full .nd.on { opacity: 1; }
+    #fn-full .nd b { display: block; font-family: var(--head); font-size: 19pt; margin: 0; }
+    #fn-full .nd span { font-family: var(--mono); font-size: 13pt; color: var(--muted); }
+    #fn-full .nd.s1.on { border-color: var(--blue); } #fn-full .nd.s2.on { border-color: var(--amber); }
+    #fn-full .nd.s3.on { border-color: var(--violet); } #fn-full .nd.s4.on { border-color: var(--teal); }
+    #fn-full .nd.sel { border-color: var(--teal) !important; box-shadow: 0 0 0 4px rgba(63,220,214,.15), 0 0 24px rgba(63,220,214,.3) !important; }
+    #fn-full .core { background: linear-gradient(180deg, #18222e, #10131b); border: 2px solid var(--line); border-radius: 20px; padding: 18px; text-align: center; transition: border-color .4s; }
+    #fn-full.s4 .core { border-color: var(--teal); }
+    #fn-full .core h3 { margin: 0; font-size: 24pt; color: var(--teal); }
+    #fn-full .core p { font-family: var(--mono); font-size: 14pt; color: var(--muted); margin: 4px 0 10px; }
+    #fn-full #fnDetail { margin-top: 14px; min-height: 72px; }
+    #fn-full #fnDetail p { font-size: 19pt; margin: 0; }
+    #fn-full #fnOut { font-size: 19pt; margin: 10px 0 0; }
+    #fn-full #fnOut:empty { display: none; }
+  </style>
+  <p class="kicker">the whole machine — click any part</p>
+  <h2>Five clicks, one system</h2>
+  <div class="map">
+    <div class="col">
+      <div class="nd s1" data-n="model" data-at="1"><b>🧠 model</b><span>plans, writes code</span></div>
+      <div class="nd s2" data-n="loop" data-at="2"><b>🔁 loop</b><span>act → observe → repair</span></div>
+      <div class="nd s2" data-n="mcp" data-at="2"><b>🔌 MCP</b><span>docs · gh · db</span></div>
+    </div>
+    <div class="core" data-at="1">
+      <h3>agent VM</h3><p>one pausable microVM per session</p>
+      <div><span class="hook" data-hot="2">exec</span> <span class="hook" data-hot="3">snapshot</span> <span class="hook" data-hot="4">virtiofs</span></div>
+    </div>
+    <div class="col">
+      <div class="nd s3" data-n="snap" data-at="3"><b>❄️ snapshots</b><span>RAM + disk → store</span></div>
+      <div class="nd s4" data-n="cow" data-at="4"><b>▦ warm repo</b><span>CoW views, ~0 bytes</span></div>
+      <div class="nd s5" data-n="bill" data-at="5"><b>⚡ meter</b><span>pay to run, park free</span></div>
+    </div>
+  </div>
+  <div id="fnDetail" class="card teal"><p>Click any box — each is one section of this talk, wired together.</p><p id="fnOut"></p></div>
+  <div class="captions">
+    <p data-only="0">Everything from tonight, on one slide.</p>
+    <p data-only="1">The model plans and writes code…</p>
+    <p data-only="2">…the loop executes it, tools plug in…</p>
+    <p data-only="3">…idle state freezes into snapshots…</p>
+    <p data-only="4">…repos are shared copy-on-write…</p>
+    <p data-only="5">…and the meter only runs <b>while computing</b>.</p>
+  </div>
+  <aside class="notes">
+    The payoff slide — advance all five steps, then invite clicks. Each box is one section of the talk: the model, the loop with MCP tools, snapshots, the warm CoW repo, the meter.
+    Say it as one sentence: the model plans, the loop runs code against a shared repo view, idle VMs freeze into cheap snapshots, and you pay compute only while the agent works.
+    Every box is clickable for Q&A detours back into any section.
+  </aside>
+  <script>
+  (function () {
+    const D = {
+      model: '🧠 <b>Model</b> (§1) — plans, writes programs in code mode. Knows bash, Python, pytest already. Token-efficient, composable.',
+      loop: '↻ <b>Loop</b> (§1) — plan → act → observe → repair until checks pass. Lint, build, tests inside the loop: no run, no trust.',
+      mcp: '◈ <b>MCP</b> (§1) — one plug shape for docs, GitHub, DBs, tickets. Local servers share the VM, so they get sandboxed too.',
+      snap: '❄️ <b>Snapshots</b> (§3) — RAM + disk frozen to storage, CPU/RAM released. Resume mmaps pages back on demand, ~1 second. Firecracker: &lt;125 ms boot, &lt;5 MiB overhead.',
+      cow: '▦ <b>Warm repo</b> (§4) — one checkout on the dev server, per-session OverlayFS/ZFS views. Reads shared, writes copy up. Page cache shared.',
+      bill: '⚡ <b>Meter</b> (§2+§5) — 2,000 always-on 4 GiB VMs ≈ $56k/mo, ~75% of it waiting money. Parked state costs disk-only or free. Pay compute-seconds, not open tabs.'
+    };
+    const sec = document.getElementById('fn-full');
+    sec.querySelectorAll('[data-n]').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      sec.querySelectorAll('[data-n]').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+      document.getElementById('fnOut').innerHTML = D[b.dataset.n];
+    }));
+  })();
+  </script>
+</section>
+
+<section id="fn-take" class="stepper" data-steps="3">
+  <style>
+    #fn-take .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 30px; }
+    #fn-take .card { min-height: 300px; }
+    #fn-take .card .big { font-family: var(--head); font-size: 56pt; font-weight: 700; line-height: 1; margin: 0; }
+    #fn-take .card h3 { font-size: 26pt; margin: 8px 0; }
+  </style>
+  <p class="kicker">take it home</p>
+  <h2>Three sentences</h2>
+  <div class="row">
+    <div class="card amber" data-at="1"><p class="big t-amber">run it</p><h3>Agents need computers</h3><p class="muted">Loop, code mode, verify — all execute.</p></div>
+    <div class="card violet" data-at="2"><p class="big t-violet">freeze it</p><h3>Idle is storable</h3><p class="muted">Snapshots + CoW kill the bill.</p></div>
+    <div class="card green" data-at="3"><p class="big t-green">rent it</p><h3>Primitives exist</h3><p class="muted">Pause, resume, pay per second.</p></div>
+  </div>
+  <aside class="notes">
+    Three sentences to carry out. Agents need computers: everything that makes them good — the loop, code mode, verification — is execution.
+    Idle is storable: snapshots turn waiting RAM into cheap storage, and copy-on-write means repos are barely copied at all.
+    And you can rent it: pausable sandbox primitives with per-second metering already exist — start there, not with a VM fleet.
+  </aside>
+</section>
+
+<section id="fn-close" class="divider">
+  <style>
+    #fn-close h1 { font-size: 64pt; }
+    #fn-close .links { display: flex; gap: 16px; margin-top: 30px; flex-wrap: wrap; }
+    #fn-close .links a { font-family: var(--mono); font-size: 17pt; color: var(--teal); background: rgba(63,220,214,.08); border: 1px solid rgba(63,220,214,.4); border-radius: 12px; padding: 10px 22px; text-decoration: none; }
+    #fn-close .src { margin-top: 26px; font-family: var(--mono); font-size: 14pt; color: var(--muted); max-width: 1000px; line-height: 1.6; }
+  </style>
+  <div>
+    <p class="kicker">thank you — questions</p>
+    <h1>Give every agent<br>a cloud to live in.</h1>
+    <div class="links"><a href="https://github.com/firecracker-microvm/firecracker">▸ firecracker</a><a href="https://www.e2b.dev/docs">▸ e2b docs</a><a href="https://www.daytona.io/docs/en/sandboxes/">▸ daytona docs</a></div>
+    <p class="src">sources: research/01–05 in this folder · pricing figures illustrative, check provider pages · slide deck: reveal.js, press S for notes</p>
+  </div>
+  <aside class="notes">
+    Close warmly and open the floor. The one-liner: give every agent a cloud to live in — a pausable VM, a shared view of the repo, and a meter that only runs while it computes.
+    Links go to Firecracker and the two RAM-preserving sandbox docs for anyone who wants to build this next week. Offer the research folder and Q&A detours via the previous slide's clickable map.
+  </aside>
+</section>

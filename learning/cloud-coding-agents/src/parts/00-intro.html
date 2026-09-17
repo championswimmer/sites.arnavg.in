@@ -1,0 +1,97 @@
+<!-- ============================================================
+     00 / Intro — title, hands, agenda
+     ids: in-title, in-hands, in-agenda
+     ============================================================ -->
+
+<section id="in-title" class="divider">
+  <style>
+    #in-title h1 { font-size: 66pt; margin-bottom: 20px; }
+    #in-title .sub { font-size: 28pt; color: var(--muted); margin: 0; line-height: 1.3; }
+    #in-title .sky { position: absolute; right: 40px; top: 50%; transform: translateY(-50%); width: 560px; height: 560px; }
+    #in-title .cloud { position: absolute; left: 50%; top: 42%; transform: translate(-50%,-50%); width: 340px; height: 150px; }
+    #in-title .cloud i { position: absolute; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #5ff2ec, var(--teal) 55%, #0f766e); box-shadow: 0 0 70px rgba(63,220,214,.35); }
+    #in-title .cloud i:nth-child(1) { width: 150px; height: 150px; left: 30px; top: 0; }
+    #in-title .cloud i:nth-child(2) { width: 190px; height: 190px; left: 110px; top: -60px; }
+    #in-title .cloud i:nth-child(3) { width: 130px; height: 130px; left: 200px; top: 10px; }
+    #in-title .cloud b { position: absolute; left: 20px; right: 0; bottom: -6px; height: 110px; border-radius: 55px; background: linear-gradient(180deg, var(--teal), #0f766e); box-shadow: 0 0 70px rgba(63,220,214,.35); }
+    #in-title .chip { position: absolute; transform: translate(-50%,-50%); animation: inFloat 5s ease-in-out infinite; }
+    #in-title .chip:nth-of-type(1) { animation-delay: 0s; } #in-title .chip:nth-of-type(2) { animation-delay: 1.2s; }
+    #in-title .chip:nth-of-type(3) { animation-delay: 2.1s; } #in-title .chip:nth-of-type(4) { animation-delay: 3s; }
+    @keyframes inFloat { 0%,100% { margin-top: 0; } 50% { margin-top: -14px; } }
+  </style>
+  <div style="max-width: 880px;">
+    <p class="kicker">a talk about where coding agents really run</p>
+    <h1>Why your coding agent needs <span class="t-teal">a cloud</span></h1>
+    <p class="sub">The machine behind the model:<br>VMs you can pause, snapshots, shared repos.</p>
+  </div>
+  <div class="sky" aria-hidden="true">
+    <div class="cloud"><i></i><i></i><i></i><b></b></div>
+    <span class="hook chip" style="left:12%;top:16%">shell</span>
+    <span class="hook chip" style="left:88%;top:26%">repo</span>
+    <span class="hook chip" style="left:8%;top:74%">tests</span>
+    <span class="hook chip" style="left:90%;top:70%">MCP tools</span>
+  </div>
+  <aside class="notes">
+    Welcome. You all use coding agents. This talk is about the half nobody sees: the machine each agent lives on.
+    I will show you what the agent does with that machine, why one VM per chat goes broke at workplace scale,
+    and the two tricks that fix it: pausing VMs into snapshots, and sharing one repo with copy-on-write.
+    Drive with clicker or arrows. Press S for these notes, F for fullscreen. Several diagrams are clickable — try them.
+  </aside>
+</section>
+
+<section id="in-hands" class="stepper" data-steps="3">
+  <style>
+    #in-hands .q { display: grid; grid-template-columns: 110px 1fr; gap: 30px; align-items: center; margin: 0 0 40px; }
+    #in-hands .q .n { font-family: var(--head); font-size: 64pt; font-weight: 700; color: var(--line); text-align: right; margin: 0; transition: color .4s; }
+    #in-hands .q.on .n { color: var(--teal); }
+    #in-hands .q p.t { font-family: var(--head); font-size: 38pt; margin: 0; line-height: 1.15; }
+  </style>
+  <p class="kicker">quick show of hands</p>
+  <h2 style="margin-bottom: 46px;">Raise your hand if you have…</h2>
+  <div class="q" data-at="1"><p class="n">1</p><p class="t">used an AI coding agent this week</p></div>
+  <div class="q" data-at="2"><p class="n">2</p><p class="t">watched it <span class="t-amber">run</span> something: tests, builds, a script</p></div>
+  <div class="q" data-at="3"><p class="n">3</p><p class="t">thought about <span class="t-teal">where that run happened</span></p></div>
+  <aside class="notes">
+    Click through one question at a time and wait for hands. Expect nearly all hands for 1, most for 2, few for 3.
+    That gap is the talk: everyone sees the chat, almost nobody sees the computer behind it. Today we open that box.
+  </aside>
+</section>
+
+<section id="in-agenda" class="stepper" data-steps="4">
+  <style>
+    #in-agenda .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 36px; }
+    #in-agenda .card { min-height: 400px; display: flex; flex-direction: column; gap: 12px; }
+    #in-agenda .card .big { font-family: var(--head); font-size: 64pt; font-weight: 700; line-height: 1; margin: 0; }
+    #in-agenda .card h3 { font-size: 27pt; }
+  </style>
+  <p class="kicker">the plan</p>
+  <h2>Four stops</h2>
+  <div class="row">
+    <div class="card amber" data-at="1">
+      <p class="big t-amber">1</p>
+      <h3>What agents do</h3>
+      <p class="muted">Loop, code mode, MCP, verify</p>
+    </div>
+    <div class="card coral" data-at="2">
+      <p class="big t-coral">2</p>
+      <h3>The bill</h3>
+      <p class="muted">Why one VM per chat breaks</p>
+    </div>
+    <div class="card violet" data-at="3">
+      <p class="big t-violet">3</p>
+      <h3>Pause &amp; share</h3>
+      <p class="muted">Snapshots, resume, CoW repos</p>
+    </div>
+    <div class="card teal" data-at="4">
+      <p class="big t-teal">4</p>
+      <h3>Primitives</h3>
+      <p class="muted">Sandbox APIs, end to end</p>
+    </div>
+  </div>
+  <aside class="notes">
+    Four stops. First, what an agent session actually does with its machine — the loop, running code, tools, and why it must verify by running things.
+    Second, the bill: what thousands of always-on VMs cost and where the money really burns.
+    Third, the two fixes: pause VMs into snapshots and resume in a second, and share one warm repo with copy-on-write.
+    Fourth, the off-the-shelf sandbox primitives and the whole picture wired together.
+  </aside>
+</section>

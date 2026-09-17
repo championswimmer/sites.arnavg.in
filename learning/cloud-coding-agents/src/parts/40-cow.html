@@ -1,0 +1,155 @@
+<!-- ============================================================
+     40 / Share — one warm repo, CoW views per session
+     ids: cw-divider, cw-prob, cw-cow, cw-edit
+     ============================================================ -->
+
+<section id="cw-divider" class="divider">
+  <style>
+    #cw-divider .sub { font-family: var(--head); font-size: 28pt; color: var(--muted); margin: 0; max-width: 880px; line-height: 1.25; }
+    #cw-divider .stack { position: absolute; right: 150px; top: 50%; transform: translateY(-50%); width: 330px; }
+    #cw-divider .disk { border: 2px solid var(--line); border-radius: 16px; padding: 18px; text-align: center; font-family: var(--mono); font-size: 17pt; color: var(--muted); background: var(--panel); margin-bottom: -14px; }
+    #cw-divider .disk.warm { border-color: var(--amber); color: var(--amber); margin-bottom: 26px; }
+    #cw-divider .disk.c1 { border-color: rgba(63,220,214,.5); } #cw-divider .disk.c2 { border-color: rgba(185,162,255,.5); }
+  </style>
+  <div>
+    <p class="num">04 / Share</p>
+    <h1>Copy the repo<br><span class="t-amber">never.</span></h1>
+    <p class="sub">One warm monorepo. Every session sees it, nobody recopies it.</p>
+  </div>
+  <div class="stack" aria-hidden="true">
+    <div class="disk warm">warm monorepo · 40 GiB</div>
+    <div class="disk c1">session A view</div>
+    <div class="disk c2">session B view</div>
+    <div class="disk c1">session C view</div>
+  </div>
+  <aside class="notes">
+    Stop four: the second fix. Workplace code is often one giant monorepo — tens of gigs. Copying it per session is slow and wasteful, and most sessions barely touch it.
+    So keep one warm checkout on the dev server, hot in page cache, and give each session an instant copy-on-write view. Only changed blocks cost anything.
+  </aside>
+</section>
+
+<section id="cw-prob" class="stepper" data-steps="2">
+  <style>
+    #cw-prob .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 28px; }
+    #cw-prob .card { text-align: center; }
+    #cw-prob .repo { font-family: var(--mono); font-size: 16pt; background: #0a0c11; border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin: 10px 0; color: var(--muted); }
+    #cw-prob .big { font-family: var(--head); font-size: 44pt; font-weight: 700; margin: 8px 0 0; }
+  </style>
+  <p class="kicker">the naive way</p>
+  <h2>2,000 clones of a <span class="t-coral">40 GiB</span> monorepo?</h2>
+  <div class="vs">
+    <div class="card coral" data-at="1"><h3>Full copy each</h3><div class="repo">git clone × 2,000</div><p class="big t-coral">80 TB</p><p class="muted">moved, stored… to change 3 files</p></div>
+    <div class="card green" data-at="2"><h3>CoW view each</h3><div class="repo">clone = metadata only</div><p class="big t-green">~0 GB</p><p class="muted">until a session writes</p></div>
+  </div>
+  <aside class="notes">
+    Two clicks. Naive: two thousand full clones of a forty-gig monorepo is eighty terabytes moved and stored — so each agent can change three files.
+    Copy-on-write: a clone is metadata pointing at the same blocks, near-zero cost until a session actually writes. Reads are free and shared; writes pay per changed block.
+  </aside>
+</section>
+
+<section id="cw-cow" class="stepper" data-steps="4">
+  <style>
+    #cw-cow .stage { display: grid; grid-template-columns: 380px 1fr 1fr; gap: 24px; margin-top: 22px; align-items: stretch; }
+    #cw-cow .warm { background: linear-gradient(180deg, #241c0c, #161a24); border: 2px solid var(--amber); border-radius: 20px; padding: 20px; text-align: center; }
+    #cw-cow .warm h3 { margin: 0; color: var(--amber); font-size: 24pt; }
+    #cw-cow .warm p { font-family: var(--mono); font-size: 15pt; color: var(--muted); margin: 4px 0 12px; }
+    #cw-cow .fb { display: inline-block; font-family: var(--mono); font-size: 14pt; background: rgba(255,180,84,.12); border: 1px solid rgba(255,180,84,.5); color: var(--amber); border-radius: 8px; padding: 3px 10px; margin: 3px; }
+    #cw-cow .sess { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 20px; text-align: center; cursor: pointer; transition: all .3s var(--ease); opacity: .45; }
+    #cw-cow .sess.on { opacity: 1; }
+    #cw-cow .sess.sel { border-color: var(--teal); box-shadow: 0 0 0 4px rgba(63,220,214,.15), 0 0 24px rgba(63,220,214,.3); }
+    #cw-cow .sess h3 { margin: 0 0 4px; font-size: 24pt; }
+    #cw-cow .sess .blk { display: inline-block; font-family: var(--mono); font-size: 14pt; border-radius: 8px; padding: 3px 10px; margin: 3px; border: 1px solid var(--line); color: var(--muted); }
+    #cw-cow .sess .blk.shared { border-color: rgba(255,180,84,.5); color: var(--amber); }
+    #cw-cow .sess .blk.own { border-color: var(--teal); color: var(--teal); background: rgba(63,220,214,.08); }
+    #cw-cow #cowDetail { margin-top: 16px; min-height: 72px; }
+    #cw-cow #cowDetail p { font-size: 20pt; margin: 0; }
+    #cw-cow #cowOut { font-size: 20pt; margin: 10px 0 0; }
+    #cw-cow #cowOut:empty { display: none; }
+  </style>
+  <p class="kicker">click a session — watch what it owns</p>
+  <h2>One base, <em>instant</em> views</h2>
+  <div class="stage">
+    <div class="warm" data-at="1"><h3>🔥 warm copy</h3><p>dev server · hot in cache</p><div><span class="fb">▦</span><span class="fb">▦</span><span class="fb">▦</span><span class="fb">▦</span><span class="fb">▦</span><span class="fb">▦</span></div></div>
+    <div class="sess" data-sess="a" data-at="2"><h3>Session A</h3><div><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span><span class="blk own" data-at="3">✎ auth.ts</span></div><p class="muted" style="font-size:16pt">click me</p></div>
+    <div class="sess" data-sess="b" data-at="2"><h3>Session B</h3><div><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span></div><p class="muted" style="font-size:16pt">read-only so far</p></div>
+  </div>
+  <div id="cowDetail" class="card amber"><p data-only="0">Click session A, then B. Count who pays for what.</p><p data-only="1">The warm copy sits on fast SSD, shared by all.</p><p data-only="2">Each view is <b>metadata</b> — created instantly, ~0 bytes.</p><p data-only="3">A writes <b>auth.ts</b> → only that file is copied up. The rest stays shared.</p><p data-only="4">Session B changed nothing → still <b>pays nothing</b>. Page cache shared too.</p><p id="cowOut"></p></div>
+  <aside class="notes">
+    The heart of the talk — let the audience click. The warm copy is one checkout on the dev server's fast SSD, hot in page cache.
+    Each session view is metadata pointing at the same blocks: instant, near-zero bytes. When session A edits auth.ts, only that file copies up into its private layer — the rest stays shared.
+    Session B changed nothing and pays nothing, and unmodified files share the host page cache, so two thousand sessions don't need two thousand copies in RAM either.
+    Implementation notes for Q&A: OverlayFS merges a shared lowerdir with a private upperdir per session; ZFS or btrfs clones do it at block level; expose into the microVM via virtiofs.
+  </aside>
+  <script>
+  (function () {
+    const D = {
+      a: '🟢 <b>Session A</b> owns <b>1 file</b> (auth.ts, 12 KiB). Everything else is shared blocks — reads cost nothing.',
+      b: '🔵 <b>Session B</b> owns <b>0 bytes</b>. Pure metadata view. When it writes, only touched files copy up.'
+    };
+    const sec = document.getElementById('cw-cow');
+    sec.querySelectorAll('[data-sess]').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      sec.querySelectorAll('[data-sess]').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+      document.getElementById('cowOut').innerHTML = D[b.dataset.sess];
+    }));
+  })();
+  </script>
+</section>
+
+<section id="cw-edit" class="stepper" data-steps="3">
+  <style>
+    #cw-edit .flow { display: grid; grid-template-columns: 1fr 60px 1fr 60px 1fr; margin-top: 26px; align-items: stretch; }
+    #cw-edit .st { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px 14px; text-align: center; opacity: .35; transition: all .4s var(--ease); }
+    #cw-edit .st.on { opacity: 1; transform: translateY(-6px); }
+    #cw-edit .st b { display: block; font-family: var(--head); font-size: 21pt; margin: 6px 0 4px; }
+    #cw-edit .st span { font-family: var(--mono); font-size: 15pt; color: var(--muted); }
+    #cw-edit .st .e { font-size: 44pt; margin: 0; }
+    #cw-edit .arr { display: grid; place-items: center; font-size: 32pt; color: var(--muted); opacity: .35; }
+    #cw-edit .arr.on { opacity: 1; color: var(--amber); }
+    #cw-edit .pick { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
+  </style>
+  <p class="kicker">what "copy on write" literally means</p>
+  <h2>Read shared. Write <span class="t-amber">copies up</span>.</h2>
+  <div class="flow">
+    <div class="st" data-at="1"><p class="e">📖</p><b>Read</b><span>served from base</span></div>
+    <div class="arr" data-at="2">→</div>
+    <div class="st" data-at="2" style="border-color: var(--amber)"><p class="e">✎</p><b>First write</b><span>copy_up that file</span></div>
+    <div class="arr" data-at="3">→</div>
+    <div class="st" data-at="3" style="border-color: var(--teal)"><p class="e">🔀</p><b>Diverged</b><span>private layer grows</span></div>
+  </div>
+  <div class="pick" data-at="3">
+    <button class="btn" data-fs="overlay">OverlayFS · file-level</button>
+    <button class="btn" data-fs="zfs">ZFS clones · block-level</button>
+    <button class="btn" data-fs="btrfs">btrfs · extents</button>
+  </div>
+  <div class="captions">
+    <p data-only="0">Reads never copy anything.</p>
+    <p data-only="1">Reads come from the shared lower tree.</p>
+    <p data-only="2">First write to a file <b>copies just that file</b> up. Deletes become whiteouts.</p>
+    <p data-only="3">Pick a filesystem — trade-offs differ, pattern holds.</p>
+  </div>
+  <aside class="notes">
+    Spell out the literal mechanism. Reads are served from the shared base — zero cost. The first write to a file copies just that file into the private upper layer; deletions become whiteout markers.
+    The buttons compare implementations: OverlayFS is ubiquitous and file-granular, great for read-mostly repos; ZFS clones share at block level with native snapshots — better for heavy writes, costs running ZFS; btrfs gives the Linux-native middle ground.
+    And pause composes with this: the per-session writable layer is exactly what gets snapshotted to block storage.
+  </aside>
+  <script>
+  (function () {
+    const D = {
+      overlay: 'OverlayFS: shared <b>lowerdir</b> + private <b>upperdir</b> per session. Ubiquitous, simple, file-granular copy_up.',
+      zfs: 'ZFS: snapshot the warm dataset, hand each session a <b>writable clone</b>. Block-level sharing, native replication. Operate ZFS.',
+      btrfs: 'btrfs: read-write <b>subvolume snapshots</b>. Fast metadata ops, shared extents until written. Linux-native.'
+    };
+    const sec = document.getElementById('cw-edit');
+    sec.querySelectorAll('[data-fs]').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      sec.querySelectorAll('[data-fs]').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      let d = sec.querySelector('.fsdetail');
+      if (!d) { d = document.createElement('p'); d.className = 'fsdetail center'; d.style.cssText = 'font-size:19pt;margin:14px 0 0;min-height:34px'; sec.appendChild(d); }
+      d.innerHTML = D[b.dataset.fs];
+    }));
+  })();
+  </script>
+</section>

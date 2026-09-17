@@ -1,0 +1,115 @@
+<!-- ============================================================
+     20 / The bill — why one VM per chat breaks
+     ids: bl-divider, bl-math, bl-burn, bl-meter
+     ============================================================ -->
+
+<section id="bl-divider" class="divider">
+  <style>
+    #bl-divider .sub { font-family: var(--head); font-size: 28pt; color: var(--muted); margin: 0; max-width: 880px; line-height: 1.25; }
+    #bl-divider .bill { position: absolute; right: 110px; top: 50%; transform: translateY(-50%) rotate(4deg); width: 380px; background: #f5f1e6; color: #221c10; border-radius: 12px; padding: 34px 36px; font-family: var(--mono); box-shadow: 0 40px 90px rgba(0,0,0,.5); }
+    #bl-divider .bill p { font-family: var(--mono); font-size: 17pt; margin: 0 0 8px; color: #221c10; }
+    #bl-divider .bill .tot { font-size: 30pt; font-weight: 700; color: #b3261e; margin-top: 12px; }
+  </style>
+  <div>
+    <p class="num">02 / The bill</p>
+    <h1>One VM per chat<br><span class="t-coral">goes broke.</span></h1>
+    <p class="sub">Sessions scale. Idle doesn't pay.</p>
+  </div>
+  <div class="bill" aria-hidden="true"><p>500 devs × 4 sessions</p><p>= ~2,000 VMs</p><p>× 4 GiB, always on</p><p class="tot">≈ $56k / month</p></div>
+  <aside class="notes">
+    Stop two: the economics. If every open chat holds its own always-on VM, cost scales with open sessions, not useful work.
+    The receipt on the right is the headline: two thousand 4-gig VMs, always on, roughly fifty-six thousand dollars a month in compute alone, before disks and egress.
+    The next three slides derive that number and show where it burns.
+  </aside>
+</section>
+
+<section id="bl-math" class="stepper" data-steps="3">
+  <style>
+    #bl-math .eq { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 34px 0 30px; flex-wrap: wrap; }
+    #bl-math .pill { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px 26px; text-align: center; transition: all .4s var(--ease); opacity: .35; }
+    #bl-math .pill.on { opacity: 1; }
+    #bl-math .pill b { display: block; font-family: var(--head); font-size: 34pt; margin: 0; }
+    #bl-math .pill span { font-family: var(--mono); font-size: 15pt; color: var(--muted); }
+    #bl-math .op { font-family: var(--head); font-size: 40pt; color: var(--muted); margin: 0; }
+    #bl-math table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 19pt; }
+    #bl-math th { font-family: var(--mono); font-size: 15pt; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; text-align: left; padding: 8px 14px; border-bottom: 1px solid var(--line); }
+    #bl-math td { padding: 10px 14px; border-bottom: 1px solid var(--line); }
+    #bl-math td:last-child { font-family: var(--mono); color: var(--coral); }
+  </style>
+  <p class="kicker">speaker's math — illustrative</p>
+  <h2>500 devs → <span class="t-coral">thousands of VMs</span></h2>
+  <div class="eq">
+    <div class="pill" data-at="1"><b>500</b><span>developers</span></div><p class="op" data-at="1">×</p>
+    <div class="pill" data-at="2"><b>3–4</b><span>sessions each</span></div><p class="op" data-at="2">≈</p>
+    <div class="pill" data-at="3" style="border-color: var(--coral)"><b class="t-coral">~2,000</b><span>live sandboxes</span></div>
+  </div>
+  <table data-at="3">
+    <tr><th>fleet</th><th>math</th><th>compute / mo</th></tr>
+    <tr><td>1,500 × 4 GiB</td><td class="muted">1,500 × 4 × ~$7</td><td>~$42k</td></tr>
+    <tr><td><b>2,000 × 4 GiB</b></td><td class="muted">2,000 × 4 × ~$7</td><td><b>~$56k</b></td></tr>
+    <tr><td>2,000 × 8 GiB</td><td class="muted">2,000 × 8 × ~$7</td><td>~$112k</td></tr>
+  </table>
+  <aside class="notes">
+    Click through the equation. Five hundred developers times three to four concurrent sessions is fifteen hundred to two thousand live sandboxes — the speaker rounds up to thousands.
+    Floor pricing: a 4-gig cloud VM is about thirty dollars a month, roughly seven dollars per gig-month. Four gigs is the plausible minimum for an agent with a repo, language server and tools.
+    The table is illustrative compute-only, before disks, egress and logging — and every figure assumes always-on.
+  </aside>
+</section>
+
+<section id="bl-burn" class="stepper" data-steps="4">
+  <style>
+    #bl-burn .bar { margin: 0 0 26px; }
+    #bl-burn .bar .lbl { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 16pt; color: var(--muted); margin-bottom: 8px; }
+    #bl-burn .track { height: 64px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; }
+    #bl-burn .seg { height: 100%; width: 0; transition: width 1s var(--ease); display: grid; place-items: center; font-family: var(--mono); font-size: 16pt; }
+    #bl-burn.s1 .w1 { width: 22%; } #bl-burn.s2 .w1 { width: 22%; } #bl-burn.s3 .w1 { width: 22%; } #bl-burn.s4 .w1 { width: 22%; }
+    #bl-burn.s2 .w2 { width: 26%; } #bl-burn.s3 .w2 { width: 26%; } #bl-burn.s4 .w2 { width: 26%; }
+    #bl-burn.s3 .w3 { width: 27%; } #bl-burn.s4 .w3 { width: 27%; }
+    #bl-burn.s4 .w4 { width: 25%; }
+    #bl-burn .w1 { background: rgba(127,227,164,.75); color: #06130c; }
+    #bl-burn .w2, #bl-burn .w3, #bl-burn .w4 { background: rgba(255,111,125,.7); color: #1c0609; }
+    #bl-burn .take { text-align: center; margin-top: 10px; margin-bottom: 110px; min-height: 70px; }
+  </style>
+  <p class="kicker">where the money goes</p>
+  <h2>Sessions <em>wait</em>. VMs <span class="t-coral">bill</span>.</h2>
+  <div class="bar">
+    <div class="lbl"><span>one session's wall-clock hour</span><span>60 min</span></div>
+    <div class="track">
+      <div class="seg w1">▸ run</div><div class="seg w2">read</div><div class="seg w3">think</div><div class="seg w4">review</div>
+    </div>
+  </div>
+  <div class="take" data-at="4">
+    <p class="lead" style="margin:0">You pay to <span class="t-coral">hold RAM open</span> while humans <span class="t-green">think</span>.</p>
+  </div>
+  <div class="captions">
+    <p data-only="0">An agent session is idle most of its life.</p>
+    <p data-only="1">Minutes of real compute…</p>
+    <p data-only="2">…then reading, thinking…</p>
+    <p data-only="3">…reviewing diffs, switching tasks — all billed.</p>
+    <p data-only="4">At 75% idle, ~$42k of the $56k is <b>waiting money</b>.</p>
+  </div>
+  <aside class="notes">
+    Advance the bar segment by segment: a few minutes of real compute, then long stretches of the human reading, thinking, reviewing diffs, switching tasks — and the VM bills through all of it, from launch until stopped.
+    At seventy-five percent idle, about forty-two of the fifty-six thousand is waiting money. The fix is not cheaper VMs; it is not paying for waiting at all.
+  </aside>
+</section>
+
+<section id="bl-meter" class="stepper" data-steps="2">
+  <style>
+    #bl-meter .split { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 26px; }
+    #bl-meter .card { text-align: center; padding: 30px 26px; }
+    #bl-meter .card .e { font-size: 52pt; margin: 0; }
+    #bl-meter .card h3 { font-size: 28pt; margin: 6px 0; }
+    #bl-meter code { font-size: 17pt; }
+  </style>
+  <p class="kicker">the fix, in one sentence</p>
+  <h2>Bill <span class="t-green">compute-seconds</span>, not open tabs</h2>
+  <div class="split">
+    <div class="card coral" data-at="1"><p class="e">🅿️</p><h3>Pay to park</h3><p class="muted">paused state → cheap storage<br><code>~$0.02 / GiB-mo</code></p></div>
+    <div class="card green" data-at="2"><p class="e">⚡</p><h3>Pay to run</h3><p class="muted">CPU + RAM only while active<br><code>per-second metering</code></p></div>
+  </div>
+  <aside class="notes">
+    Pausing does not make compute free — the snapshot still sits on storage. But parked state costs cents per gig-month while idle RAM costs dollars.
+    So the goal shape is serverless: pay storage prices to park, pay compute prices only while the agent actually runs. The next section shows the machinery that makes both halves possible.
+  </aside>
+</section>

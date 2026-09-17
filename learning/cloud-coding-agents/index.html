@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why Your Coding Agent Needs a Cloud</title>
+<meta name="description" content="A speaker-led, interactive talk on how cloud-based coding agents work: the agent loop, code mode, pausable microVMs, snapshot resume, and copy-on-write monorepos.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
+<style>
+/* ============================================================
+   THEME TOKENS — semantic colours used by every section
+   amber  = agent loop / code mode   teal   = VM / sandbox & resume
+   violet = storage / snapshot / CoW  blue   = model / provider
+   coral  = cost, waste, blocked      green  = saved, success
+   ============================================================ */
+:root {
+  --bg: #0d0f15;
+  --panel: #161a24;
+  --panel-2: #1e2331;
+  --line: #2d3346;
+  --text: #eef1f7;
+  --muted: #a3acbf;
+  --amber: #ffb454;
+  --teal: #3fdcd6;
+  --violet: #b9a2ff;
+  --blue: #74b9ff;
+  --coral: #ff6f7d;
+  --green: #7fe3a4;
+  --head: "Space Grotesk", "Inter", Helvetica, sans-serif;
+  --body: "Inter", Helvetica, Arial, sans-serif;
+  --mono: "JetBrains Mono", Menlo, Consolas, monospace;
+  --ease: cubic-bezier(.2,.8,.2,1);
+}
+html, body { background: var(--bg); }
+.reveal-viewport { background: radial-gradient(1200px 700px at 85% -10%, #1b2132 0%, var(--bg) 60%); }
+.reveal { font-family: var(--body); font-size: 22pt; color: var(--text); }
+.reveal .slides { text-align: left; }
+.reveal .slides section { padding: 36px 64px; box-sizing: border-box; height: 100%; }
+.reveal .slides section.stack { padding: 0; }
+
+/* ---------- typography (never below 15pt anywhere) ---------- */
+.reveal h1, .reveal h2, .reveal h3, .reveal h4 { font-family: var(--head); color: var(--text); text-transform: none; letter-spacing: -0.01em; margin: 0 0 18px; line-height: 1.08; }
+.reveal h1 { font-size: 64pt; font-weight: 700; }
+.reveal h2 { font-size: 38pt; font-weight: 700; }
+.reveal h3 { font-size: 26pt; font-weight: 600; }
+.reveal h4 { font-size: 21pt; font-weight: 600; }
+.reveal p, .reveal li { font-size: 22pt; line-height: 1.35; color: var(--text); margin: 0 0 12px; }
+.reveal ul, .reveal ol { margin: 0 0 0 1.1em; }
+.reveal li { margin-bottom: 10px; }
+.reveal strong { color: var(--amber); font-weight: 600; }
+.reveal em { color: var(--teal); font-style: normal; }
+.reveal code { font-family: var(--mono); font-size: 0.9em; color: var(--teal); background: rgba(63,220,214,.08); padding: 1px 8px; border-radius: 6px; }
+.reveal a { color: var(--teal); }
+.kicker { font-family: var(--mono); font-size: 15pt !important; letter-spacing: .14em; text-transform: uppercase; color: var(--teal) !important; margin-bottom: 8px !important; }
+.muted { color: var(--muted) !important; }
+.t-amber { color: var(--amber) !important; } .t-teal { color: var(--teal) !important; } .t-violet { color: var(--violet) !important; }
+.t-blue { color: var(--blue) !important; } .t-coral { color: var(--coral) !important; } .t-green { color: var(--green) !important; }
+.lead { font-size: 28pt !important; line-height: 1.3 !important; }
+.huge { font-family: var(--head); font-size: 88pt !important; font-weight: 700; line-height: 1 !important; }
+.small { font-size: 17pt !important; }
+.center { text-align: center; }
+
+/* ---------- code blocks ---------- */
+.reveal pre { width: 100%; margin: 0; box-shadow: none; font-size: 17pt; line-height: 1.45; }
+.reveal pre code { font-family: var(--mono); background: var(--panel); color: var(--text); padding: 20px 26px; border-radius: 14px; border: 1px solid var(--line); max-height: none; font-size: 1em; }
+.reveal .hljs { background: var(--panel); }
+.reveal pre code .hljs-ln-numbers { color: var(--muted); }
+.code-label { font-family: var(--mono); font-size: 15pt !important; color: var(--muted) !important; margin: 0 0 6px !important; }
+
+/* ---------- common components ---------- */
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px 26px; }
+.card h3, .card h4 { margin-bottom: 8px; }
+.card p:last-child { margin-bottom: 0; }
+.card.amber { border-color: color-mix(in srgb, var(--amber) 55%, transparent); }
+.card.teal { border-color: color-mix(in srgb, var(--teal) 55%, transparent); }
+.card.violet { border-color: color-mix(in srgb, var(--violet) 55%, transparent); }
+.card.blue { border-color: color-mix(in srgb, var(--blue) 55%, transparent); }
+.card.coral { border-color: color-mix(in srgb, var(--coral) 55%, transparent); }
+.card.green { border-color: color-mix(in srgb, var(--green) 55%, transparent); }
+
+/* event / hook chip */
+.hook { display: inline-block; font-family: var(--mono); font-size: 16pt; color: var(--teal); background: rgba(63,220,214,.1); border: 1px solid rgba(63,220,214,.45); border-radius: 999px; padding: 4px 14px; white-space: nowrap; transition: all .35s var(--ease); }
+.hook.hot { background: var(--teal); color: #041413; box-shadow: 0 0 0 6px rgba(63,220,214,.18), 0 0 28px rgba(63,220,214,.5); }
+.hook.mut::after { content: " ✎"; color: var(--amber); }
+.hook.hot.mut::after { color: #041413; }
+
+/* terminal window mock (pi TUI) */
+.term { background: #0a0c11; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; font-family: var(--mono); font-size: 17pt; }
+.term .bar { display: flex; gap: 8px; align-items: center; padding: 10px 14px; background: #141824; border-bottom: 1px solid var(--line); }
+.term .bar i { width: 13px; height: 13px; border-radius: 50%; background: #ff5f57; display: block; }
+.term .bar i:nth-child(2) { background: #febc2e; } .term .bar i:nth-child(3) { background: #28c840; }
+.term .bar b { margin-left: 10px; color: var(--muted); font-weight: 400; font-size: 15pt; }
+.term .body { padding: 16px 20px; line-height: 1.5; }
+.term .body p { font-family: var(--mono); font-size: 17pt; margin: 0 0 4px; }
+.term .status { border-top: 1px solid var(--line); padding: 8px 20px; color: var(--muted); font-size: 15pt; display: flex; gap: 26px; }
+
+/* caption bar that changes per step */
+.captions { position: absolute; left: 64px; right: 64px; bottom: 28px; min-height: 56px; }
+.captions > p { position: absolute; left: 0; right: 0; bottom: 0; margin: 0 !important; font-family: var(--head); font-size: 26pt !important; color: var(--text); }
+.captions > p b { color: var(--amber); font-weight: 600; }
+
+/* step dots (auto-rendered by engine when .dots exists) */
+.dots { display: flex; gap: 10px; }
+.dots span { width: 14px; height: 14px; border-radius: 50%; background: var(--line); transition: background .3s; }
+.dots span.on { background: var(--teal); }
+
+/* section divider */
+section.divider { display: flex !important; flex-direction: column; justify-content: center; }
+section.divider h1 { font-size: 80pt; }
+section.divider .num { font-family: var(--mono); color: var(--teal); font-size: 22pt; margin-bottom: 18px; }
+
+/* clickable things are obviously clickable */
+.clickable, [data-click] { cursor: pointer; }
+button.btn { font-family: var(--mono); font-size: 16pt; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 18px; cursor: pointer; transition: all .2s; }
+button.btn:hover { border-color: var(--teal); color: var(--teal); }
+button.btn.active { background: var(--teal); border-color: var(--teal); color: #041413; }
+
+/* ============================================================
+   STEP ENGINE — declarative state tied to the presenter's clicker
+   <section class="stepper" data-steps="5">  → adds 5 invisible fragments
+   [data-at="3"]      visible (class .on) once step >= 3
+   [data-only="2 3"]  visible only while step is 2 or 3
+   [data-hot="2"]     gets class .hot while step == 2  (not hidden)
+   section gets classes s1..sN (reached) and data-step="N" (current)
+   ============================================================ */
+.reveal [data-at], .reveal [data-only] { transition: opacity .45s var(--ease), transform .45s var(--ease); }
+.reveal [data-at]:not(.on), .reveal [data-only]:not(.on) { opacity: 0; pointer-events: none; }
+.reveal [data-only]:not(.on) { transform: translateY(8px); }
+.reveal .step-frag { display: none !important; }
+
+/* the progress bar / controls tuned for dark */
+.reveal .progress { color: var(--teal); height: 5px; }
+.reveal .controls { color: var(--teal); }
+.reveal .slide-number a { text-decoration: none; }
+.reveal .slide-number { right: 90px; bottom: 14px; background: transparent; color: var(--muted); font-family: var(--mono); font-size: 13pt; }
+</style>
+<script>
+/* Deck: tiny helper API for part scripts. Parts call Deck.onStep(id, fn) / Deck.onEnter(id, fn). */
+window.Deck = (function () {
+  const stepFns = {}, enterFns = {}, leaveFns = {};
+  const add = (m, id, fn) => { (m[id] = m[id] || []).push(fn); };
+  function stepOf(sec) { return sec.querySelectorAll('.step-frag.visible').length; }
+  function apply(sec) {
+    if (!sec) return;
+    const n = +sec.dataset.steps || 0, s = stepOf(sec);
+    sec.dataset.step = s;
+    for (let k = 1; k <= n; k++) sec.classList.toggle('s' + k, k <= s);
+    sec.querySelectorAll('[data-at]').forEach(el => el.classList.toggle('on', s >= +el.dataset.at));
+    sec.querySelectorAll('[data-only]').forEach(el => el.classList.toggle('on', el.dataset.only.split(/[ ,]+/).map(Number).includes(s)));
+    sec.querySelectorAll('[data-hot]').forEach(el => el.classList.toggle('hot', el.dataset.hot.split(/[ ,]+/).map(Number).includes(s)));
+    sec.querySelectorAll('.dots').forEach(d => {
+      if (d.children.length !== n) d.innerHTML = '<span></span>'.repeat(n);
+      [...d.children].forEach((c, i) => c.classList.toggle('on', i < s));
+    });
+    (stepFns[sec.id] || []).forEach(fn => { try { fn(s, sec); } catch (e) { console.error(e); } });
+  }
+  function prepare() {
+    document.querySelectorAll('section.stepper').forEach(sec => {
+      const n = +sec.dataset.steps || 0;
+      for (let k = 0; k < n; k++) {
+        const f = document.createElement('i');
+        f.className = 'fragment step-frag';
+        f.dataset.fragmentIndex = k;
+        sec.appendChild(f);
+      }
+    });
+  }
+  return {
+    onStep: (id, fn) => add(stepFns, id, fn),
+    onEnter: (id, fn) => add(enterFns, id, fn),
+    onLeave: (id, fn) => add(leaveFns, id, fn),
+    prepare, apply,
+    _enter(sec) { if (sec) (enterFns[sec.id] || []).forEach(fn => { try { fn(sec); } catch (e) { console.error(e); } }); },
+    _leave(sec) { if (sec) (leaveFns[sec.id] || []).forEach(fn => { try { fn(sec); } catch (e) { console.error(e); } }); },
+  };
+})();
+</script>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+
+<!-- ===== part: 00-intro.html ===== -->
+<!-- ============================================================
+     00 / Intro — title, hands, agenda
+     ids: in-title, in-hands, in-agenda
+     ============================================================ -->
+
+<section id="in-title" class="divider">
+  <style>
+    #in-title h1 { font-size: 66pt; margin-bottom: 20px; }
+    #in-title .sub { font-size: 28pt; color: var(--muted); margin: 0; line-height: 1.3; }
+    #in-title .sky { position: absolute; right: 40px; top: 50%; transform: translateY(-50%); width: 560px; height: 560px; }
+    #in-title .cloud { position: absolute; left: 50%; top: 42%; transform: translate(-50%,-50%); width: 340px; height: 150px; }
+    #in-title .cloud i { position: absolute; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #5ff2ec, var(--teal) 55%, #0f766e); box-shadow: 0 0 70px rgba(63,220,214,.35); }
+    #in-title .cloud i:nth-child(1) { width: 150px; height: 150px; left: 30px; top: 0; }
+    #in-title .cloud i:nth-child(2) { width: 190px; height: 190px; left: 110px; top: -60px; }
+    #in-title .cloud i:nth-child(3) { width: 130px; height: 130px; left: 200px; top: 10px; }
+    #in-title .cloud b { position: absolute; left: 20px; right: 0; bottom: -6px; height: 110px; border-radius: 55px; background: linear-gradient(180deg, var(--teal), #0f766e); box-shadow: 0 0 70px rgba(63,220,214,.35); }
+    #in-title .chip { position: absolute; transform: translate(-50%,-50%); animation: inFloat 5s ease-in-out infinite; }
+    #in-title .chip:nth-of-type(1) { animation-delay: 0s; } #in-title .chip:nth-of-type(2) { animation-delay: 1.2s; }
+    #in-title .chip:nth-of-type(3) { animation-delay: 2.1s; } #in-title .chip:nth-of-type(4) { animation-delay: 3s; }
+    @keyframes inFloat { 0%,100% { margin-top: 0; } 50% { margin-top: -14px; } }
+  </style>
+  <div style="max-width: 880px;">
+    <p class="kicker">a talk about where coding agents really run</p>
+    <h1>Why your coding agent needs <span class="t-teal">a cloud</span></h1>
+    <p class="sub">The machine behind the model:<br>VMs you can pause, snapshots, shared repos.</p>
+  </div>
+  <div class="sky" aria-hidden="true">
+    <div class="cloud"><i></i><i></i><i></i><b></b></div>
+    <span class="hook chip" style="left:12%;top:16%">shell</span>
+    <span class="hook chip" style="left:88%;top:26%">repo</span>
+    <span class="hook chip" style="left:8%;top:74%">tests</span>
+    <span class="hook chip" style="left:90%;top:70%">MCP tools</span>
+  </div>
+  <aside class="notes">
+    Welcome. You all use coding agents. This talk is about the half nobody sees: the machine each agent lives on.
+    I will show you what the agent does with that machine, why one VM per chat goes broke at workplace scale,
+    and the two tricks that fix it: pausing VMs into snapshots, and sharing one repo with copy-on-write.
+    Drive with clicker or arrows. Press S for these notes, F for fullscreen. Several diagrams are clickable — try them.
+  </aside>
+</section>
+
+<section id="in-hands" class="stepper" data-steps="3">
+  <style>
+    #in-hands .q { display: grid; grid-template-columns: 110px 1fr; gap: 30px; align-items: center; margin: 0 0 40px; }
+    #in-hands .q .n { font-family: var(--head); font-size: 64pt; font-weight: 700; color: var(--line); text-align: right; margin: 0; transition: color .4s; }
+    #in-hands .q.on .n { color: var(--teal); }
+    #in-hands .q p.t { font-family: var(--head); font-size: 38pt; margin: 0; line-height: 1.15; }
+  </style>
+  <p class="kicker">quick show of hands</p>
+  <h2 style="margin-bottom: 46px;">Raise your hand if you have…</h2>
+  <div class="q" data-at="1"><p class="n">1</p><p class="t">used an AI coding agent this week</p></div>
+  <div class="q" data-at="2"><p class="n">2</p><p class="t">watched it <span class="t-amber">run</span> something: tests, builds, a script</p></div>
+  <div class="q" data-at="3"><p class="n">3</p><p class="t">thought about <span class="t-teal">where that run happened</span></p></div>
+  <aside class="notes">
+    Click through one question at a time and wait for hands. Expect nearly all hands for 1, most for 2, few for 3.
+    That gap is the talk: everyone sees the chat, almost nobody sees the computer behind it. Today we open that box.
+  </aside>
+</section>
+
+<section id="in-agenda" class="stepper" data-steps="4">
+  <style>
+    #in-agenda .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 36px; }
+    #in-agenda .card { min-height: 400px; display: flex; flex-direction: column; gap: 12px; }
+    #in-agenda .card .big { font-family: var(--head); font-size: 64pt; font-weight: 700; line-height: 1; margin: 0; }
+    #in-agenda .card h3 { font-size: 27pt; }
+  </style>
+  <p class="kicker">the plan</p>
+  <h2>Four stops</h2>
+  <div class="row">
+    <div class="card amber" data-at="1">
+      <p class="big t-amber">1</p>
+      <h3>What agents do</h3>
+      <p class="muted">Loop, code mode, MCP, verify</p>
+    </div>
+    <div class="card coral" data-at="2">
+      <p class="big t-coral">2</p>
+      <h3>The bill</h3>
+      <p class="muted">Why one VM per chat breaks</p>
+    </div>
+    <div class="card violet" data-at="3">
+      <p class="big t-violet">3</p>
+      <h3>Pause &amp; share</h3>
+      <p class="muted">Snapshots, resume, CoW repos</p>
+    </div>
+    <div class="card teal" data-at="4">
+      <p class="big t-teal">4</p>
+      <h3>Primitives</h3>
+      <p class="muted">Sandbox APIs, end to end</p>
+    </div>
+  </div>
+  <aside class="notes">
+    Four stops. First, what an agent session actually does with its machine — the loop, running code, tools, and why it must verify by running things.
+    Second, the bill: what thousands of always-on VMs cost and where the money really burns.
+    Third, the two fixes: pause VMs into snapshots and resume in a second, and share one warm repo with copy-on-write.
+    Fourth, the off-the-shelf sandbox primitives and the whole picture wired together.
+  </aside>
+</section>
+
+
+<!-- ===== part: 10-loop.html ===== -->
+<!-- ============================================================
+     10 / What agents do — loop, code mode, MCP, verify
+     ids: lp-divider, lp-loop, lp-code, lp-mcp, lp-verify
+     ============================================================ -->
+
+<section id="lp-divider" class="divider">
+  <style>
+    #lp-divider .sub { font-family: var(--head); font-size: 28pt; color: var(--muted); margin: 0; max-width: 860px; line-height: 1.25; }
+  </style>
+  <p class="num">01 / What agents do</p>
+  <h1>Not a chatbot.<br>A <span class="t-amber">loop</span> with a computer.</h1>
+  <p class="sub">Plan → act → observe → repair, until the tests pass.</p>
+  <aside class="notes">
+    Stop one. Everyone pictures the chat. The real agent is a loop wrapped around the model, and that loop lives on a computer with your repo, a shell, and tools.
+    The next four slides walk that loop, then code mode, then MCP tools, then why the agent must verify by running things.
+  </aside>
+</section>
+
+<section id="lp-loop" class="stepper" data-steps="5">
+  <style>
+    #lp-loop .vmbox { margin: 24px 0 0; border: 2px dashed rgba(63,220,214,.5); border-radius: 22px; padding: 22px 26px 18px; position: relative; }
+    #lp-loop .vmbox > .tag { position: absolute; top: -24px; left: 50%; transform: translateX(-50%); font-family: var(--mono); font-size: 16pt; color: #041413; background: var(--teal); border-radius: 999px; padding: 4px 20px; white-space: nowrap; }
+    #lp-loop .flow { display: grid; grid-template-columns: 1fr 44px 1fr 44px 1fr 44px 1fr 44px 1fr; align-items: stretch; margin-top: 14px; }
+    #lp-loop .node { text-align: center; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 6px; transition: all .4s var(--ease); opacity: .4; }
+    #lp-loop .node b { display: block; font-family: var(--head); font-size: 24pt; margin: 0 0 2px; }
+    #lp-loop .node span { font-family: var(--mono); font-size: 14pt; color: var(--muted); }
+    #lp-loop .node.on { opacity: 1; transform: translateY(-6px); }
+    #lp-loop .n1.on { border-color: var(--blue); box-shadow: 0 0 22px rgba(116,185,255,.3); }
+    #lp-loop .n2.on { border-color: var(--amber); box-shadow: 0 0 22px rgba(255,180,84,.3); }
+    #lp-loop .n3.on { border-color: var(--teal); box-shadow: 0 0 22px rgba(63,220,214,.3); }
+    #lp-loop .n4.on { border-color: var(--violet); box-shadow: 0 0 22px rgba(185,162,255,.3); }
+    #lp-loop .n5.on { border-color: var(--green); box-shadow: 0 0 22px rgba(127,227,164,.3); }
+    #lp-loop .arr { display: grid; place-items: center; font-size: 28pt; color: var(--muted); opacity: .35; transition: all .4s; }
+    #lp-loop .arr.on { opacity: 1; color: var(--teal); }
+    #lp-loop .back { text-align: center; font-family: var(--mono); font-size: 16pt; color: var(--violet); margin: 12px 0 0; opacity: .35; transition: opacity .4s; }
+    #lp-loop .back.on { opacity: 1; }
+  </style>
+  <p class="kicker">one agent session</p>
+  <h2>Click through the loop</h2>
+  <div class="vmbox">
+    <span class="tag">everything runs inside one VM</span>
+    <div class="flow">
+      <div class="node n1" data-at="1"><b>Plan</b><span>inspect</span></div><div class="arr" data-at="2">→</div>
+      <div class="node n2" data-at="2"><b>Act</b><span>edit·run·call</span></div><div class="arr" data-at="3">→</div>
+      <div class="node n3" data-at="3"><b>Observe</b><span>logs·exits</span></div><div class="arr" data-at="4">→</div>
+      <div class="node n4" data-at="4"><b>Repair</b><span>re-plan</span></div><div class="arr" data-at="5">→</div>
+      <div class="node n5" data-at="5"><b>Handoff</b><span>PR·patch</span></div>
+    </div>
+    <p class="back" data-at="4">↩ repair loops back to act — until checks pass</p>
+  </div>
+  <div class="captions">
+    <p data-only="0">A session is infrastructure, not a chat log.</p>
+    <p data-only="1"><b>Plan:</b> model reads code, picks an approach.</p>
+    <p data-only="2"><b>Act:</b> edits files, runs commands, calls tools.</p>
+    <p data-only="3"><b>Observe:</b> stdout, exit codes, diffs come back.</p>
+    <p data-only="4"><b>Repair:</b> failures update the plan. Loop.</p>
+    <p data-only="5"><b>Handoff:</b> a PR — only when checks pass.</p>
+  </div>
+  <aside class="notes">
+    Walk the five clicks slowly. Plan: the model decides what to look at. Act: it edits files, runs commands, calls tools — all inside one VM that holds the repo.
+    Observe: the harness returns outputs and exit codes. Repair: the model updates its plan and loops. Handoff only happens when acceptance checks pass.
+    The punchline to land: every one of those verbs needs a real machine.
+  </aside>
+</section>
+
+<section id="lp-code" class="stepper" data-steps="4">
+  <style>
+    #lp-code .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 24px; align-items: stretch; }
+    #lp-code .term .body p { transition: opacity .4s; }
+    #lp-code .out { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 22px; font-family: var(--mono); font-size: 17pt; line-height: 1.55; }
+    #lp-code .out div { opacity: .28; transition: all .4s var(--ease); }
+    #lp-code .out div.on { opacity: 1; }
+    #lp-code .out .ok { color: var(--green); } #lp-code .out .run { color: var(--amber); }
+    #lp-code .big { font-family: var(--head); font-size: 110pt; font-weight: 700; line-height: 1; margin: 0; }
+  </style>
+  <p class="kicker">code mode</p>
+  <h2>The model writes <span class="t-amber">programs</span>, not just answers</h2>
+  <div class="wrap">
+    <div class="term">
+      <div class="bar"><i></i><i></i><i></i><b>agent — run.sh</b></div>
+      <div class="body">
+        <p data-at="1">$ grep -r "TODO(auth)" src | head</p>
+        <p data-at="2">$ python probe.py — try 3 fixes</p>
+        <p data-at="3">$ pytest tests/auth -x -q</p>
+        <p data-at="4" class="t-green">$ git diff --stat → PR</p>
+      </div>
+    </div>
+    <div class="out">
+      <div data-at="1" class="run">▸ searching 214 files… 6 hits</div>
+      <div data-at="2" class="run">▸ fix #2 passes probe (1.8s)</div>
+      <div data-at="3" class="ok">▸ 41 passed, 0 failed ✓</div>
+      <div data-at="4" class="ok">▸ done: 3 files, +88 −12</div>
+    </div>
+  </div>
+  <div class="captions">
+    <p data-only="0">Code is the agent's action language.</p>
+    <p data-only="1">One script replaces <b>dozens of tool calls</b>.</p>
+    <p data-only="2">It leans on what models <b>already know</b>: bash, Python, pytest.</p>
+    <p data-only="3"><b>State persists</b> across iterations: files, servers, REPL.</p>
+    <p data-only="4">Result: a <b>verified diff</b>, not a suggestion.</p>
+  </div>
+  <aside class="notes">
+    Code mode means the model may write and execute code instead of only chatting. Click through the four commands.
+    Why it wins: code is compact — one script with loops and retries replaces dozens of tool calls. It reuses model priors — bash, Python, Playwright are already known.
+    And state persists — the shell keeps variables, files and servers across iterations. Land on the verified diff: the output is proven by execution, not asserted.
+  </aside>
+</section>
+
+<section id="lp-mcp" class="stepper" data-steps="3">
+  <style>
+    #lp-mcp .stage { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; margin-top: 26px; align-items: stretch; }
+    #lp-mcp .col { display: flex; flex-direction: column; gap: 14px; }
+    #lp-mcp .box { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 20px; text-align: center; cursor: pointer; transition: all .3s var(--ease); }
+    #lp-mcp .box b { display: block; font-family: var(--head); font-size: 21pt; margin: 0; }
+    #lp-mcp .box span { font-family: var(--mono); font-size: 15pt; color: var(--muted); }
+    #lp-mcp .box.sel { border-color: var(--teal); box-shadow: 0 0 0 4px rgba(63,220,214,.15), 0 0 24px rgba(63,220,214,.3); }
+    #lp-mcp .vm { background: linear-gradient(180deg, #14202a, #10131b); border: 2px solid var(--teal); border-radius: 20px; padding: 20px; text-align: center; }
+    #lp-mcp .vm h3 { margin: 0 0 4px; font-size: 26pt; color: var(--teal); }
+    #lp-mcp .vm p { font-family: var(--mono); font-size: 15pt; color: var(--muted); margin: 0 0 12px; }
+    #lp-mcp .vm .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    #lp-mcp #mcpDetail { margin-top: 18px; min-height: 76px; }
+    #lp-mcp #mcpDetail p { font-size: 21pt; margin: 0; }
+    #lp-mcp #mcpDetail p[data-only]:not(.on) { display: none; }
+    #lp-mcp #mcpDetail p[data-only].on { display: block; }
+    #lp-mcp #mcpOut { font-size: 21pt; margin: 10px 0 0; }
+    #lp-mcp #mcpOut:empty { display: none; }
+  </style>
+  <p class="kicker">MCP servers — click them</p>
+  <h2>Tools are <em>processes</em> near the VM</h2>
+  <div class="stage">
+    <div class="col">
+      <div class="box" data-mcp="docs" data-at="1"><b>📚 docs</b><span>local · repo-aware</span></div>
+      <div class="box" data-mcp="github" data-at="1"><b>◈ github</b><span>remote · HTTP</span></div>
+    </div>
+    <div class="vm" data-at="1">
+      <h3>agent VM</h3>
+      <p>repo · shell · runtimes</p>
+      <div class="row"><span class="hook" data-hot="2">exec</span><span class="hook" data-hot="2">edit</span><span class="hook" data-hot="3">mcp.call</span></div>
+    </div>
+    <div class="col">
+      <div class="box" data-mcp="db" data-at="1"><b>▤ db</b><span>local · sandboxed</span></div>
+      <div class="box" data-mcp="tickets" data-at="1"><b>✈ tickets</b><span>remote · HTTP</span></div>
+    </div>
+  </div>
+  <div id="mcpDetail" class="card teal"><p data-only="0">Click any tool box to see what it gives the agent.</p><p data-only="1">MCP = one standard plug shape for all tools.</p><p data-only="2">Local servers share the repo, fs and network — <b>so they need sandboxing too</b>.</p><p data-only="3">Remote servers arrive over HTTP with scoped credentials.</p><p id="mcpOut"></p></div>
+  <aside class="notes">
+    MCP servers are tool adapters — docs, GitHub, databases, ticketing — exposed through one standard interface.
+    Invite the audience to click each box; the detail card explains it. Local servers run in or next to the VM and share its context, which is exactly why they must be sandboxed too.
+    Steps: 1 shows the plug shape, 2 highlights local exec/edit, 3 highlights remote calls.
+  </aside>
+  <script>
+  (function () {
+    const D = { docs: '📚 <b>docs server</b> — greps the repo + internal wikis. Answers cite file:line, never hallucinated APIs.', github: '<b>github server</b> — remote over HTTP. Opens PRs, reads CI status, posts reviews with a scoped token.', db: '<b>db server</b> — local, sandboxed. Runs read queries against a scrubbed seed DB inside the VM.', tickets: '<b>tickets server</b> — remote over HTTP. Files issues, links them to the diff, updates status.' };
+    const sec = document.getElementById('lp-mcp');
+    sec.querySelectorAll('[data-mcp]').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      sec.querySelectorAll('[data-mcp]').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+      document.getElementById('mcpOut').innerHTML = D[b.dataset.mcp];
+    }));
+  })();
+  </script>
+</section>
+
+<section id="lp-verify" class="stepper" data-steps="3">
+  <style>
+    #lp-verify .pipe { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 22px; margin-top: 28px; }
+    #lp-verify .card { text-align: center; opacity: .4; transition: all .4s var(--ease); }
+    #lp-verify .card.on { opacity: 1; transform: translateY(-6px); }
+    #lp-verify .card .e { font-size: 44pt; margin: 0; }
+    #lp-verify .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 22px; }
+    #lp-verify .bad { border: 1px solid var(--coral); border-radius: 14px; padding: 14px 20px; }
+    #lp-verify .good { border: 1px solid var(--green); border-radius: 14px; padding: 14px 20px; }
+  </style>
+  <p class="kicker">why the machine matters</p>
+  <h2>No run, no trust</h2>
+  <div class="pipe">
+    <div class="card amber" data-at="1"><p class="e">🔍</p><h3>lint + types</h3><p class="muted">static errors, fast</p></div>
+    <div class="card teal" data-at="2"><p class="e">🔨</p><h3>build</h3><p class="muted">integration breaks</p></div>
+    <div class="card green" data-at="3"><p class="e">🧪</p><h3>tests + browser</h3><p class="muted">runtime truth</p></div>
+  </div>
+  <div class="vs">
+    <div class="bad" data-at="1"><p style="margin:0">❌ <span class="t-coral">plausible diff</span> <span class="muted">— looks right, rots</span></p></div>
+    <div class="good" data-at="3"><p style="margin:0">✓ <span class="t-green">verified diff</span> <span class="muted">— executed, green</span></p></div>
+  </div>
+  <aside class="notes">
+    Without in-loop verification, agents optimise for plausible-looking diffs. Click through the three gates: lint and typecheck catch static errors in seconds,
+    the build catches integration breakage, tests and browser checks catch runtime failures. Each gate stops error compounding over long runs.
+    The contrast at the bottom is the sentence to say out loud: no run, no trust.
+  </aside>
+</section>
+
+
+<!-- ===== part: 20-bill.html ===== -->
+<!-- ============================================================
+     20 / The bill — why one VM per chat breaks
+     ids: bl-divider, bl-math, bl-burn, bl-meter
+     ============================================================ -->
+
+<section id="bl-divider" class="divider">
+  <style>
+    #bl-divider .sub { font-family: var(--head); font-size: 28pt; color: var(--muted); margin: 0; max-width: 880px; line-height: 1.25; }
+    #bl-divider .bill { position: absolute; right: 110px; top: 50%; transform: translateY(-50%) rotate(4deg); width: 380px; background: #f5f1e6; color: #221c10; border-radius: 12px; padding: 34px 36px; font-family: var(--mono); box-shadow: 0 40px 90px rgba(0,0,0,.5); }
+    #bl-divider .bill p { font-family: var(--mono); font-size: 17pt; margin: 0 0 8px; color: #221c10; }
+    #bl-divider .bill .tot { font-size: 30pt; font-weight: 700; color: #b3261e; margin-top: 12px; }
+  </style>
+  <div>
+    <p class="num">02 / The bill</p>
+    <h1>One VM per chat<br><span class="t-coral">goes broke.</span></h1>
+    <p class="sub">Sessions scale. Idle doesn't pay.</p>
+  </div>
+  <div class="bill" aria-hidden="true"><p>500 devs × 4 sessions</p><p>= ~2,000 VMs</p><p>× 4 GiB, always on</p><p class="tot">≈ $56k / month</p></div>
+  <aside class="notes">
+    Stop two: the economics. If every open chat holds its own always-on VM, cost scales with open sessions, not useful work.
+    The receipt on the right is the headline: two thousand 4-gig VMs, always on, roughly fifty-six thousand dollars a month in compute alone, before disks and egress.
+    The next three slides derive that number and show where it burns.
+  </aside>
+</section>
+
+<section id="bl-math" class="stepper" data-steps="3">
+  <style>
+    #bl-math .eq { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 34px 0 30px; flex-wrap: wrap; }
+    #bl-math .pill { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px 26px; text-align: center; transition: all .4s var(--ease); opacity: .35; }
+    #bl-math .pill.on { opacity: 1; }
+    #bl-math .pill b { display: block; font-family: var(--head); font-size: 34pt; margin: 0; }
+    #bl-math .pill span { font-family: var(--mono); font-size: 15pt; color: var(--muted); }
+    #bl-math .op { font-family: var(--head); font-size: 40pt; color: var(--muted); margin: 0; }
+    #bl-math table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 19pt; }
+    #bl-math th { font-family: var(--mono); font-size: 15pt; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; text-align: left; padding: 8px 14px; border-bottom: 1px solid var(--line); }
+    #bl-math td { padding: 10px 14px; border-bottom: 1px solid var(--line); }
+    #bl-math td:last-child { font-family: var(--mono); color: var(--coral); }
+  </style>
+  <p class="kicker">speaker's math — illustrative</p>
+  <h2>500 devs → <span class="t-coral">thousands of VMs</span></h2>
+  <div class="eq">
+    <div class="pill" data-at="1"><b>500</b><span>developers</span></div><p class="op" data-at="1">×</p>
+    <div class="pill" data-at="2"><b>3–4</b><span>sessions each</span></div><p class="op" data-at="2">≈</p>
+    <div class="pill" data-at="3" style="border-color: var(--coral)"><b class="t-coral">~2,000</b><span>live sandboxes</span></div>
+  </div>
+  <table data-at="3">
+    <tr><th>fleet</th><th>math</th><th>compute / mo</th></tr>
+    <tr><td>1,500 × 4 GiB</td><td class="muted">1,500 × 4 × ~$7</td><td>~$42k</td></tr>
+    <tr><td><b>2,000 × 4 GiB</b></td><td class="muted">2,000 × 4 × ~$7</td><td><b>~$56k</b></td></tr>
+    <tr><td>2,000 × 8 GiB</td><td class="muted">2,000 × 8 × ~$7</td><td>~$112k</td></tr>
+  </table>
+  <aside class="notes">
+    Click through the equation. Five hundred developers times three to four concurrent sessions is fifteen hundred to two thousand live sandboxes — the speaker rounds up to thousands.
+    Floor pricing: a 4-gig cloud VM is about thirty dollars a month, roughly seven dollars per gig-month. Four gigs is the plausible minimum for an agent with a repo, language server and tools.
+    The table is illustrative compute-only, before disks, egress and logging — and every figure assumes always-on.
+  </aside>
+</section>
+
+<section id="bl-burn" class="stepper" data-steps="4">
+  <style>
+    #bl-burn .bar { margin: 0 0 26px; }
+    #bl-burn .bar .lbl { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 16pt; color: var(--muted); margin-bottom: 8px; }
+    #bl-burn .track { height: 64px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; }
+    #bl-burn .seg { height: 100%; width: 0; transition: width 1s var(--ease); display: grid; place-items: center; font-family: var(--mono); font-size: 16pt; }
+    #bl-burn.s1 .w1 { width: 22%; } #bl-burn.s2 .w1 { width: 22%; } #bl-burn.s3 .w1 { width: 22%; } #bl-burn.s4 .w1 { width: 22%; }
+    #bl-burn.s2 .w2 { width: 26%; } #bl-burn.s3 .w2 { width: 26%; } #bl-burn.s4 .w2 { width: 26%; }
+    #bl-burn.s3 .w3 { width: 27%; } #bl-burn.s4 .w3 { width: 27%; }
+    #bl-burn.s4 .w4 { width: 25%; }
+    #bl-burn .w1 { background: rgba(127,227,164,.75); color: #06130c; }
+    #bl-burn .w2, #bl-burn .w3, #bl-burn .w4 { background: rgba(255,111,125,.7); color: #1c0609; }
+    #bl-burn .take { text-align: center; margin-top: 10px; margin-bottom: 110px; min-height: 70px; }
+  </style>
+  <p class="kicker">where the money goes</p>
+  <h2>Sessions <em>wait</em>. VMs <span class="t-coral">bill</span>.</h2>
+  <div class="bar">
+    <div class="lbl"><span>one session's wall-clock hour</span><span>60 min</span></div>
+    <div class="track">
+      <div class="seg w1">▸ run</div><div class="seg w2">read</div><div class="seg w3">think</div><div class="seg w4">review</div>
+    </div>
+  </div>
+  <div class="take" data-at="4">
+    <p class="lead" style="margin:0">You pay to <span class="t-coral">hold RAM open</span> while humans <span class="t-green">think</span>.</p>
+  </div>
+  <div class="captions">
+    <p data-only="0">An agent session is idle most of its life.</p>
+    <p data-only="1">Minutes of real compute…</p>
+    <p data-only="2">…then reading, thinking…</p>
+    <p data-only="3">…reviewing diffs, switching tasks — all billed.</p>
+    <p data-only="4">At 75% idle, ~$42k of the $56k is <b>waiting money</b>.</p>
+  </div>
+  <aside class="notes">
+    Advance the bar segment by segment: a few minutes of real compute, then long stretches of the human reading, thinking, reviewing diffs, switching tasks — and the VM bills through all of it, from launch until stopped.
+    At seventy-five percent idle, about forty-two of the fifty-six thousand is waiting money. The fix is not cheaper VMs; it is not paying for waiting at all.
+  </aside>
+</section>
+
+<section id="bl-meter" class="stepper" data-steps="2">
+  <style>
+    #bl-meter .split { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 26px; }
+    #bl-meter .card { text-align: center; padding: 30px 26px; }
+    #bl-meter .card .e { font-size: 52pt; margin: 0; }
+    #bl-meter .card h3 { font-size: 28pt; margin: 6px 0; }
+    #bl-meter code { font-size: 17pt; }
+  </style>
+  <p class="kicker">the fix, in one sentence</p>
+  <h2>Bill <span class="t-green">compute-seconds</span>, not open tabs</h2>
+  <div class="split">
+    <div class="card coral" data-at="1"><p class="e">🅿️</p><h3>Pay to park</h3><p class="muted">paused state → cheap storage<br><code>~$0.02 / GiB-mo</code></p></div>
+    <div class="card green" data-at="2"><p class="e">⚡</p><h3>Pay to run</h3><p class="muted">CPU + RAM only while active<br><code>per-second metering</code></p></div>
+  </div>
+  <aside class="notes">
+    Pausing does not make compute free — the snapshot still sits on storage. But parked state costs cents per gig-month while idle RAM costs dollars.
+    So the goal shape is serverless: pay storage prices to park, pay compute prices only while the agent actually runs. The next section shows the machinery that makes both halves possible.
+  </aside>
+</section>
+
+
+<!-- ===== part: 30-pause.html ===== -->
+<!-- ============================================================
+     30 / Pause & resume — snapshots
+     ids: ps-divider, ps-split, ps-cycle, ps-fc
+     ============================================================ -->
+
+<section id="ps-divider" class="divider">
+  <style>
+    #ps-divider .sub { font-family: var(--head); font-size: 28pt; color: var(--muted); margin: 0; max-width: 880px; line-height: 1.25; }
+    #ps-divider .zz { position: absolute; right: 150px; top: 50%; transform: translateY(-50%); font-family: var(--head); font-weight: 700; line-height: 1; }
+    #ps-divider .zz span { display: block; color: var(--violet); opacity: .9; }
+  </style>
+  <div>
+    <p class="num">03 / Pause &amp; resume</p>
+    <h1>Don't kill it.<br><span class="t-violet">Freeze it.</span></h1>
+    <p class="sub">Snapshots turn idle RAM into cheap storage.</p>
+  </div>
+  <div class="zz" aria-hidden="true"><span style="font-size:90pt">Z</span><span style="font-size:64pt;opacity:.6">Z</span><span style="font-size:44pt;opacity:.35">Z</span></div>
+  <aside class="notes">
+    Stop three: the first fix. Instead of killing idle VMs and losing everything, or paying to keep them warm, we freeze them: capture their state into snapshots on cheap storage, release the CPU and RAM, and thaw them back in about a second when the human returns.
+  </aside>
+</section>
+
+<section id="ps-split" class="stepper" data-steps="2">
+  <style>
+    #ps-split .split { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 26px; }
+    #ps-split .card { min-height: 330px; opacity: .4; transition: all .4s var(--ease); }
+    #ps-split .card.on { opacity: 1; }
+    #ps-split .card h3 { font-size: 30pt; }
+    #ps-split .card code { font-size: 16pt; }
+  </style>
+  <p class="kicker">state has two layers</p>
+  <h2>Freeze <span class="t-violet">both halves</span></h2>
+  <div class="split">
+    <div class="card violet" data-at="1"><h3>🧠 Execution state</h3><p class="muted">RAM + CPU + device state</p><p><code>memory file + state file</code></p><p class="muted">thawed on demand, page by page</p></div>
+    <div class="card teal" data-at="2"><h3>💾 Filesystem state</h3><p class="muted">writable disk / overlay</p><p><code>block snapshot → object store</code></p><p class="muted">only changed blocks travel</p></div>
+  </div>
+  <aside class="notes">
+    Two clicks. Execution state is RAM plus CPU and device state — Firecracker writes it as a memory file plus a state file, and on restore pages fault back in on demand.
+    Filesystem state is the writable disk or overlay — snapshotted to block storage, then tiered to object storage. Because the base image is shared, only changed blocks travel. Pause means capturing both, then paying storage-only while idle.
+  </aside>
+</section>
+
+<section id="ps-cycle" class="stepper" data-steps="4">
+  <style>
+    #ps-cycle .flow { display: grid; grid-template-columns: 1fr 70px 1fr 70px 1fr; gap: 0; margin-top: 30px; align-items: stretch; }
+    #ps-cycle .st { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px 16px; text-align: center; opacity: .35; transition: all .4s var(--ease); }
+    #ps-cycle .st.on { opacity: 1; transform: translateY(-6px); }
+    #ps-cycle .st .e { font-size: 46pt; margin: 0; }
+    #ps-cycle .st b { display: block; font-family: var(--head); font-size: 22pt; margin: 4px 0; }
+    #ps-cycle .st span { font-family: var(--mono); font-size: 14pt; color: var(--muted); }
+    #ps-cycle .st.run.on { border-color: var(--green); } #ps-cycle .st.frz.on { border-color: var(--violet); } #ps-cycle .st.thaw.on { border-color: var(--teal); }
+    #ps-cycle .arr { display: grid; place-items: center; font-size: 34pt; color: var(--muted); opacity: .35; transition: all .4s; }
+    #ps-cycle .arr.on { opacity: 1; color: var(--teal); }
+    #ps-cycle button.btn { margin-top: 22px; }
+  </style>
+  <p class="kicker">the lifecycle — click pause yourself</p>
+  <h2>Sleep in ms, wake in ~1s</h2>
+  <div class="flow">
+    <div class="st run" data-at="1"><p class="e">🟢</p><b>Running</b><span>CPU + RAM billed</span></div>
+    <div class="arr" data-at="2">→</div>
+    <div class="st frz" data-at="2"><p class="e">❄️</p><b>Paused</b><span>snapshot → storage</span></div>
+    <div class="arr" data-at="4">→</div>
+    <div class="st thaw" data-at="4"><p class="e">⚡</p><b>Resumed</b><span>mmap + fault-in</span></div>
+  </div>
+  <div class="center"><button class="btn" id="psPauseBtn" data-at="2">❄ pause this VM</button> <button class="btn" id="psResumeBtn" data-at="4">⚡ resume it</button></div>
+  <div class="captions">
+    <p data-only="0">Two thousand VMs idle? Don't pay for them.</p>
+    <p data-only="1">While the human thinks, the VM burns dollars.</p>
+    <p data-only="2"><b>Pause:</b> memory + disk → snapshots. CPU/RAM released.</p>
+    <p data-only="3">Parked: storage-only. Cents, not dollars.</p>
+    <p data-only="4"><b>Resume:</b> pages fault back on demand. ~1 second.</p>
+  </div>
+  <aside class="notes">
+    The lifecycle in four clicks. Running bills CPU and RAM. Pause writes the memory file, state file and disk delta to storage and frees the host — try the pause button, the card freezes.
+    Parked state costs storage pennies. Resume mmaps the memory file and faults pages in on demand — try resume, it wakes in about a second. Caveat for the Q&A: vsock resets across restore, so network handles must be re-established.
+  </aside>
+  <script>
+  (function () {
+    const p = document.getElementById('psPauseBtn'), r = document.getElementById('psResumeBtn');
+    if (p) p.addEventListener('click', e => { e.stopPropagation(); p.classList.add('active'); p.textContent = '❄ frozen ✓'; setTimeout(() => Reveal.nextFragment(), 600); });
+    if (r) r.addEventListener('click', e => { e.stopPropagation(); r.classList.add('active'); r.textContent = '⚡ awake ✓'; setTimeout(() => Reveal.nextFragment(), 300); });
+  })();
+  </script>
+</section>
+
+<section id="ps-fc" class="stepper" data-steps="3">
+  <style>
+    #ps-fc .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 28px; }
+    #ps-fc .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 26px 22px; text-align: center; opacity: .35; transition: all .4s var(--ease); }
+    #ps-fc .stat.on { opacity: 1; }
+    #ps-fc .stat b { display: block; font-family: var(--head); font-size: 52pt; line-height: 1; margin: 0; }
+    #ps-fc .stat span { font-family: var(--mono); font-size: 15pt; color: var(--muted); }
+  </style>
+  <p class="kicker">why microVMs — Firecracker numbers</p>
+  <h2>Built for <span class="t-teal">thousands</span></h2>
+  <div class="stats">
+    <div class="stat" data-at="1"><b class="t-green">&lt;125ms</b><span>boot a new microVM</span></div>
+    <div class="stat" data-at="2"><b class="t-teal">&lt;5MiB</b><span>VMM overhead each</span></div>
+    <div class="stat" data-at="3"><b class="t-violet">~1s</b><span>snapshot resume</span></div>
+  </div>
+  <div class="captions">
+    <p data-only="0">Firecracker was built for exactly this density.</p>
+    <p data-only="1">A fresh microVM boots in <b>under 125 milliseconds</b>.</p>
+    <p data-only="2">Each one costs <b>under 5 MiB</b> of host overhead.</p>
+    <p data-only="3">Resume faults pages in on demand — <b>about a second</b>, even for thousands parked.</p>
+  </div>
+  <aside class="notes">
+    Why microVMs and not plain containers or full VMs. Firecracker's advertised numbers: under 125 milliseconds to boot, under 5 megabytes of VMM overhead per VM, snapshot restore around a second via mmap plus userfaultfd on-demand paging.
+    Alternatives exist — Kata template cloning for density, gVisor where KVM is unavailable, CRIU for process-level checkpoint — but for thousands of pausable agent VMs, Firecracker-style snapshots are the reference design. Keep hot snapshots on local NVMe, tier cold ones to object storage.
+  </aside>
+</section>
+
+
+<!-- ===== part: 40-cow.html ===== -->
+<!-- ============================================================
+     40 / Share — one warm repo, CoW views per session
+     ids: cw-divider, cw-prob, cw-cow, cw-edit
+     ============================================================ -->
+
+<section id="cw-divider" class="divider">
+  <style>
+    #cw-divider .sub { font-family: var(--head); font-size: 28pt; color: var(--muted); margin: 0; max-width: 880px; line-height: 1.25; }
+    #cw-divider .stack { position: absolute; right: 150px; top: 50%; transform: translateY(-50%); width: 330px; }
+    #cw-divider .disk { border: 2px solid var(--line); border-radius: 16px; padding: 18px; text-align: center; font-family: var(--mono); font-size: 17pt; color: var(--muted); background: var(--panel); margin-bottom: -14px; }
+    #cw-divider .disk.warm { border-color: var(--amber); color: var(--amber); margin-bottom: 26px; }
+    #cw-divider .disk.c1 { border-color: rgba(63,220,214,.5); } #cw-divider .disk.c2 { border-color: rgba(185,162,255,.5); }
+  </style>
+  <div>
+    <p class="num">04 / Share</p>
+    <h1>Copy the repo<br><span class="t-amber">never.</span></h1>
+    <p class="sub">One warm monorepo. Every session sees it, nobody recopies it.</p>
+  </div>
+  <div class="stack" aria-hidden="true">
+    <div class="disk warm">warm monorepo · 40 GiB</div>
+    <div class="disk c1">session A view</div>
+    <div class="disk c2">session B view</div>
+    <div class="disk c1">session C view</div>
+  </div>
+  <aside class="notes">
+    Stop four: the second fix. Workplace code is often one giant monorepo — tens of gigs. Copying it per session is slow and wasteful, and most sessions barely touch it.
+    So keep one warm checkout on the dev server, hot in page cache, and give each session an instant copy-on-write view. Only changed blocks cost anything.
+  </aside>
+</section>
+
+<section id="cw-prob" class="stepper" data-steps="2">
+  <style>
+    #cw-prob .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 28px; }
+    #cw-prob .card { text-align: center; }
+    #cw-prob .repo { font-family: var(--mono); font-size: 16pt; background: #0a0c11; border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin: 10px 0; color: var(--muted); }
+    #cw-prob .big { font-family: var(--head); font-size: 44pt; font-weight: 700; margin: 8px 0 0; }
+  </style>
+  <p class="kicker">the naive way</p>
+  <h2>2,000 clones of a <span class="t-coral">40 GiB</span> monorepo?</h2>
+  <div class="vs">
+    <div class="card coral" data-at="1"><h3>Full copy each</h3><div class="repo">git clone × 2,000</div><p class="big t-coral">80 TB</p><p class="muted">moved, stored… to change 3 files</p></div>
+    <div class="card green" data-at="2"><h3>CoW view each</h3><div class="repo">clone = metadata only</div><p class="big t-green">~0 GB</p><p class="muted">until a session writes</p></div>
+  </div>
+  <aside class="notes">
+    Two clicks. Naive: two thousand full clones of a forty-gig monorepo is eighty terabytes moved and stored — so each agent can change three files.
+    Copy-on-write: a clone is metadata pointing at the same blocks, near-zero cost until a session actually writes. Reads are free and shared; writes pay per changed block.
+  </aside>
+</section>
+
+<section id="cw-cow" class="stepper" data-steps="4">
+  <style>
+    #cw-cow .stage { display: grid; grid-template-columns: 380px 1fr 1fr; gap: 24px; margin-top: 22px; align-items: stretch; }
+    #cw-cow .warm { background: linear-gradient(180deg, #241c0c, #161a24); border: 2px solid var(--amber); border-radius: 20px; padding: 20px; text-align: center; }
+    #cw-cow .warm h3 { margin: 0; color: var(--amber); font-size: 24pt; }
+    #cw-cow .warm p { font-family: var(--mono); font-size: 15pt; color: var(--muted); margin: 4px 0 12px; }
+    #cw-cow .fb { display: inline-block; font-family: var(--mono); font-size: 14pt; background: rgba(255,180,84,.12); border: 1px solid rgba(255,180,84,.5); color: var(--amber); border-radius: 8px; padding: 3px 10px; margin: 3px; }
+    #cw-cow .sess { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 20px; text-align: center; cursor: pointer; transition: all .3s var(--ease); opacity: .45; }
+    #cw-cow .sess.on { opacity: 1; }
+    #cw-cow .sess.sel { border-color: var(--teal); box-shadow: 0 0 0 4px rgba(63,220,214,.15), 0 0 24px rgba(63,220,214,.3); }
+    #cw-cow .sess h3 { margin: 0 0 4px; font-size: 24pt; }
+    #cw-cow .sess .blk { display: inline-block; font-family: var(--mono); font-size: 14pt; border-radius: 8px; padding: 3px 10px; margin: 3px; border: 1px solid var(--line); color: var(--muted); }
+    #cw-cow .sess .blk.shared { border-color: rgba(255,180,84,.5); color: var(--amber); }
+    #cw-cow .sess .blk.own { border-color: var(--teal); color: var(--teal); background: rgba(63,220,214,.08); }
+    #cw-cow #cowDetail { margin-top: 16px; min-height: 72px; }
+    #cw-cow #cowDetail p { font-size: 20pt; margin: 0; }
+    #cw-cow #cowOut { font-size: 20pt; margin: 10px 0 0; }
+    #cw-cow #cowOut:empty { display: none; }
+  </style>
+  <p class="kicker">click a session — watch what it owns</p>
+  <h2>One base, <em>instant</em> views</h2>
+  <div class="stage">
+    <div class="warm" data-at="1"><h3>🔥 warm copy</h3><p>dev server · hot in cache</p><div><span class="fb">▦</span><span class="fb">▦</span><span class="fb">▦</span><span class="fb">▦</span><span class="fb">▦</span><span class="fb">▦</span></div></div>
+    <div class="sess" data-sess="a" data-at="2"><h3>Session A</h3><div><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span><span class="blk own" data-at="3">✎ auth.ts</span></div><p class="muted" style="font-size:16pt">click me</p></div>
+    <div class="sess" data-sess="b" data-at="2"><h3>Session B</h3><div><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span><span class="blk shared">▦ shared</span></div><p class="muted" style="font-size:16pt">read-only so far</p></div>
+  </div>
+  <div id="cowDetail" class="card amber"><p data-only="0">Click session A, then B. Count who pays for what.</p><p data-only="1">The warm copy sits on fast SSD, shared by all.</p><p data-only="2">Each view is <b>metadata</b> — created instantly, ~0 bytes.</p><p data-only="3">A writes <b>auth.ts</b> → only that file is copied up. The rest stays shared.</p><p data-only="4">Session B changed nothing → still <b>pays nothing</b>. Page cache shared too.</p><p id="cowOut"></p></div>
+  <aside class="notes">
+    The heart of the talk — let the audience click. The warm copy is one checkout on the dev server's fast SSD, hot in page cache.
+    Each session view is metadata pointing at the same blocks: instant, near-zero bytes. When session A edits auth.ts, only that file copies up into its private layer — the rest stays shared.
+    Session B changed nothing and pays nothing, and unmodified files share the host page cache, so two thousand sessions don't need two thousand copies in RAM either.
+    Implementation notes for Q&A: OverlayFS merges a shared lowerdir with a private upperdir per session; ZFS or btrfs clones do it at block level; expose into the microVM via virtiofs.
+  </aside>
+  <script>
+  (function () {
+    const D = {
+      a: '🟢 <b>Session A</b> owns <b>1 file</b> (auth.ts, 12 KiB). Everything else is shared blocks — reads cost nothing.',
+      b: '🔵 <b>Session B</b> owns <b>0 bytes</b>. Pure metadata view. When it writes, only touched files copy up.'
+    };
+    const sec = document.getElementById('cw-cow');
+    sec.querySelectorAll('[data-sess]').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      sec.querySelectorAll('[data-sess]').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+      document.getElementById('cowOut').innerHTML = D[b.dataset.sess];
+    }));
+  })();
+  </script>
+</section>
+
+<section id="cw-edit" class="stepper" data-steps="3">
+  <style>
+    #cw-edit .flow { display: grid; grid-template-columns: 1fr 60px 1fr 60px 1fr; margin-top: 26px; align-items: stretch; }
+    #cw-edit .st { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px 14px; text-align: center; opacity: .35; transition: all .4s var(--ease); }
+    #cw-edit .st.on { opacity: 1; transform: translateY(-6px); }
+    #cw-edit .st b { display: block; font-family: var(--head); font-size: 21pt; margin: 6px 0 4px; }
+    #cw-edit .st span { font-family: var(--mono); font-size: 15pt; color: var(--muted); }
+    #cw-edit .st .e { font-size: 44pt; margin: 0; }
+    #cw-edit .arr { display: grid; place-items: center; font-size: 32pt; color: var(--muted); opacity: .35; }
+    #cw-edit .arr.on { opacity: 1; color: var(--amber); }
+    #cw-edit .pick { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
+  </style>
+  <p class="kicker">what "copy on write" literally means</p>
+  <h2>Read shared. Write <span class="t-amber">copies up</span>.</h2>
+  <div class="flow">
+    <div class="st" data-at="1"><p class="e">📖</p><b>Read</b><span>served from base</span></div>
+    <div class="arr" data-at="2">→</div>
+    <div class="st" data-at="2" style="border-color: var(--amber)"><p class="e">✎</p><b>First write</b><span>copy_up that file</span></div>
+    <div class="arr" data-at="3">→</div>
+    <div class="st" data-at="3" style="border-color: var(--teal)"><p class="e">🔀</p><b>Diverged</b><span>private layer grows</span></div>
+  </div>
+  <div class="pick" data-at="3">
+    <button class="btn" data-fs="overlay">OverlayFS · file-level</button>
+    <button class="btn" data-fs="zfs">ZFS clones · block-level</button>
+    <button class="btn" data-fs="btrfs">btrfs · extents</button>
+  </div>
+  <div class="captions">
+    <p data-only="0">Reads never copy anything.</p>
+    <p data-only="1">Reads come from the shared lower tree.</p>
+    <p data-only="2">First write to a file <b>copies just that file</b> up. Deletes become whiteouts.</p>
+    <p data-only="3">Pick a filesystem — trade-offs differ, pattern holds.</p>
+  </div>
+  <aside class="notes">
+    Spell out the literal mechanism. Reads are served from the shared base — zero cost. The first write to a file copies just that file into the private upper layer; deletions become whiteout markers.
+    The buttons compare implementations: OverlayFS is ubiquitous and file-granular, great for read-mostly repos; ZFS clones share at block level with native snapshots — better for heavy writes, costs running ZFS; btrfs gives the Linux-native middle ground.
+    And pause composes with this: the per-session writable layer is exactly what gets snapshotted to block storage.
+  </aside>
+  <script>
+  (function () {
+    const D = {
+      overlay: 'OverlayFS: shared <b>lowerdir</b> + private <b>upperdir</b> per session. Ubiquitous, simple, file-granular copy_up.',
+      zfs: 'ZFS: snapshot the warm dataset, hand each session a <b>writable clone</b>. Block-level sharing, native replication. Operate ZFS.',
+      btrfs: 'btrfs: read-write <b>subvolume snapshots</b>. Fast metadata ops, shared extents until written. Linux-native.'
+    };
+    const sec = document.getElementById('cw-edit');
+    sec.querySelectorAll('[data-fs]').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      sec.querySelectorAll('[data-fs]').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      let d = sec.querySelector('.fsdetail');
+      if (!d) { d = document.createElement('p'); d.className = 'fsdetail center'; d.style.cssText = 'font-size:19pt;margin:14px 0 0;min-height:34px'; sec.appendChild(d); }
+      d.innerHTML = D[b.dataset.fs];
+    }));
+  })();
+  </script>
+</section>
+
+
+<!-- ===== part: 50-primitives.html ===== -->
+<!-- ============================================================
+     50 / Primitives — sandbox APIs compared
+     ids: pm-divider, pm-fit, pm-bill
+     ============================================================ -->
+
+<section id="pm-divider" class="divider">
+  <style>
+    #pm-divider .sub { font-family: var(--head); font-size: 28pt; color: var(--muted); margin: 0; max-width: 880px; line-height: 1.25; }
+    #pm-divider .apis { position: absolute; right: 90px; top: 50%; transform: translateY(-50%); width: 460px; display: flex; flex-direction: column; gap: 14px; }
+    #pm-divider .api { font-family: var(--mono); font-size: 17pt; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 20px; color: var(--teal); }
+    #pm-divider .api:nth-child(2) { margin-left: 40px; } #pm-divider .api:nth-child(3) { margin-left: 80px; }
+  </style>
+  <div>
+    <p class="num">05 / Primitives</p>
+    <h1>You don't have<br>to build this.</h1>
+    <p class="sub">Sandbox APIs rent you pausable VMs by the second.</p>
+  </div>
+  <div class="apis" aria-hidden="true"><div class="api">Sandbox.create()</div><div class="api">sandbox.pause()</div><div class="api">sandbox.connect() ⚡</div></div>
+  <aside class="notes">
+    Stop five: you don't have to build Firecracker orchestration yourself. A whole market of sandbox primitives now rents exactly this shape — create a VM from a template, pause it, resume it — metered by the second.
+    Next: which ones actually preserve RAM, and what parking costs on each.
+  </aside>
+</section>
+
+<section id="pm-fit" class="stepper" data-steps="3">
+  <style>
+    #pm-fit .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 22px; }
+    #pm-fit .p { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; cursor: pointer; transition: all .35s var(--ease); opacity: .45; }
+    #pm-fit .p.on { opacity: 1; }
+    #pm-fit .p b { font-family: var(--head); font-size: 22pt; display: block; margin: 0; }
+    #pm-fit .p span { font-family: var(--mono); font-size: 14pt; color: var(--muted); }
+    #pm-fit .p .fit { display: inline-block; font-family: var(--mono); font-size: 13pt; border-radius: 8px; padding: 2px 10px; margin-top: 8px; border: 1px solid var(--line); color: var(--muted); }
+    #pm-fit.s1 .p.ram { border-color: var(--green); box-shadow: 0 0 22px rgba(127,227,164,.25); }
+    #pm-fit.s1 .p.ram .fit { color: #06130c; background: var(--green); border-color: var(--green); }
+    #pm-fit.s2 .p.snap { border-color: var(--violet); }
+    #pm-fit.s2 .p.snap .fit { color: var(--violet); border-color: var(--violet); }
+    #pm-fit .p.sel { border-color: var(--teal) !important; box-shadow: 0 0 0 4px rgba(63,220,214,.15), 0 0 24px rgba(63,220,214,.3) !important; }
+    #pm-fit #pmDetail { margin-top: 14px; min-height: 74px; }
+    #pm-fit #pmDetail p { font-size: 19pt; margin: 0; }
+    #pm-fit #pmOut { font-size: 19pt; margin: 10px 0 0; }
+    #pm-fit #pmOut:empty { display: none; }
+  </style>
+  <p class="kicker">click any platform</p>
+  <h2>Who preserves <span class="t-green">RAM</span>? Who <span class="t-violet">restarts</span>?</h2>
+  <div class="grid">
+    <div class="p ram" data-p="e2b" data-at="1"><b>E2B ★</b><span>Firecracker · pause()</span><br><span class="fit">RAM + fs · ~1s resume</span></div>
+    <div class="p ram" data-p="daytona" data-at="1"><b>Daytona ★</b><span>VM sandbox · pause</span><br><span class="fit">RAM + fs · disk-only parked</span></div>
+    <div class="p snap" data-p="fly" data-at="2"><b>Fly Machines</b><span>suspend via snapshots</span><br><span class="fit">resume in 100s of ms</span></div>
+    <div class="p snap" data-p="vercel" data-at="2"><b>Vercel Sandbox</b><span>stop() → snapshot</span><br><span class="fit">filesystem only</span></div>
+    <div class="p snap" data-p="cf" data-at="2"><b>Cloudflare</b><span>backup → R2</span><br><span class="fit">filesystem only</span></div>
+    <div class="p snap" data-p="modal" data-at="2"><b>Modal</b><span>snapshots → clones</span><br><span class="fit">restorable, 7-day TTL</span></div>
+  </div>
+  <div id="pmDetail" class="card teal"><p>Click a card for timeouts, caps and pricing. * = true pause/resume.</p><p id="pmOut"></p></div>
+  <div class="captions">
+    <p data-only="0">Six APIs, two shapes.</p>
+    <p data-only="1"><b>RAM-preserving:</b> E2B and Daytona pause the live VM — memory included.</p>
+    <p data-only="2"><b>Snapshot-restart:</b> the rest restore the filesystem into a fresh session.</p>
+    <p data-only="3">Railway: checkpoint/fork per environment — app-adjacent workers, not thousands of agent VMs.</p>
+  </div>
+  <aside class="notes">
+    Let the audience click cards; details appear below. Step 1 lights up the two RAM-preserving picks: E2B's pause saves filesystem plus memory by default with about-a-second resume, paused free; Daytona VM sandboxes preserve memory on pause, filesystem on stop, parked VMs bill disk only.
+    Step 2 covers snapshot-restart: Fly suspends via Firecracker snapshots in hundreds of milliseconds but discourages huge or mass suspends; Vercel stop auto-snapshots the filesystem with tiered timeouts; Cloudflare backs up to R2 with a 3-day default TTL; Modal snapshots become restorable clones with a 7-day TTL.
+    Step 3: Railway checkpoints and forks whole sandboxes per environment — fine for ephemeral workers, not the thousands-of-pausable-VMs shape.
+  </aside>
+  <script>
+  (function () {
+    const D = {
+      e2b: '<b>E2B</b> — pausable Firecracker microVMs. Timeout action <b>kill or pause + autoResume</b>; 1h Hobby / 24h Pro continuous run. Per-second while running, <b>paused free</b>. Concurrency to tens of thousands on Enterprise.',
+      daytona: '<b>Daytona</b> — containers by default, <b>VM sandboxes</b> for agents. VM auto-pause 60 min default. PAYG reserved vCPU/RAM/disk; <b>paused = disk only</b>, archived containers free.',
+      fly: '<b>Fly Machines</b> — Machines API, suspend via Firecracker snapshots, resume in <b>hundreds of ms</b>. Avoid &gt;2 GiB RAM or mass suspends. Running = CPU/RAM preset; suspended = storage only.',
+      vercel: '<b>Vercel Sandbox</b> — <b>stop() auto-snapshots the filesystem</b>; resume = new session from snapshot. 5 min default timeout, 45 min Hobby / 24 h Pro+. Billed active CPU + provisioned memory + creations + snapshot storage.',
+      cf: '<b>Cloudflare Sandbox</b> — container per Durable Object, <b>createBackup/restoreBackup to R2</b> (3-day TTL). 10 min idle sleep default. Billed every 10 ms; memory/disk provisioned.',
+      modal: '<b>Modal</b> — gVisor sandboxes, <b>memory/filesystem snapshots → clones</b> (7-day TTL); snapshotting ends the sandbox. Per-second at max(requested, actual). Huge concurrency, restart-shaped.'
+    };
+    const sec = document.getElementById('pm-fit');
+    sec.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      sec.querySelectorAll('[data-p]').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+      document.getElementById('pmOut').innerHTML = D[b.dataset.p];
+    }));
+  })();
+  </script>
+</section>
+
+<section id="pm-bill" class="stepper" data-steps="2">
+  <style>
+    #pm-bill .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 26px; }
+    #pm-bill .card { text-align: center; padding: 28px 24px; }
+    #pm-bill .card .e { font-size: 50pt; margin: 0; }
+    #pm-bill ul { list-style: none; margin: 14px 0 0; padding: 0; }
+    #pm-bill li { font-family: var(--mono); font-size: 16pt; margin-bottom: 8px; }
+  </style>
+  <p class="kicker">what parking costs</p>
+  <h2>Running burns. Parked <span class="t-green">sips</span>.</h2>
+  <div class="cols">
+    <div class="card coral" data-at="1"><p class="e">🔥</p><h3>While running</h3><ul><li>CPU + RAM, per second</li><li>+ creations, egress</li><li class="muted">every platform meters this</li></ul></div>
+    <div class="card green" data-at="2"><p class="e">❄️</p><h3>While parked</h3><ul><li>E2B paused: <b class="t-green">free</b></li><li>Daytona / Fly: <b class="t-green">disk only</b></li><li>Vercel / CF / Modal: <b class="t-green">snapshot storage</b></li></ul></div>
+  </div>
+  <aside class="notes">
+    Two clicks. While running, everyone meters CPU plus RAM per second, plus creations and egress — that is the same everywhere.
+    While parked, the bill collapses: E2B paused sandboxes are free, Daytona and Fly charge disk only, Vercel, Cloudflare and Modal charge snapshot or backup storage.
+    That collapse is the whole business case: the waiting money from section two goes nearly to zero.
+  </aside>
+</section>
+
+
+<!-- ===== part: 90-finale.html ===== -->
+<!-- ============================================================
+     90 / Finale — the whole machine, takeaways, close
+     ids: fn-full, fn-take, fn-close
+     ============================================================ -->
+
+<section id="fn-full" class="stepper" data-steps="5">
+  <style>
+    #fn-full .map { display: grid; grid-template-columns: 300px 1fr 300px; gap: 20px; margin-top: 20px; align-items: stretch; }
+    #fn-full .col { display: flex; flex-direction: column; gap: 12px; }
+    #fn-full .nd { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; text-align: center; opacity: .35; transition: all .4s var(--ease); cursor: pointer; }
+    #fn-full .nd.on { opacity: 1; }
+    #fn-full .nd b { display: block; font-family: var(--head); font-size: 19pt; margin: 0; }
+    #fn-full .nd span { font-family: var(--mono); font-size: 13pt; color: var(--muted); }
+    #fn-full .nd.s1.on { border-color: var(--blue); } #fn-full .nd.s2.on { border-color: var(--amber); }
+    #fn-full .nd.s3.on { border-color: var(--violet); } #fn-full .nd.s4.on { border-color: var(--teal); }
+    #fn-full .nd.sel { border-color: var(--teal) !important; box-shadow: 0 0 0 4px rgba(63,220,214,.15), 0 0 24px rgba(63,220,214,.3) !important; }
+    #fn-full .core { background: linear-gradient(180deg, #18222e, #10131b); border: 2px solid var(--line); border-radius: 20px; padding: 18px; text-align: center; transition: border-color .4s; }
+    #fn-full.s4 .core { border-color: var(--teal); }
+    #fn-full .core h3 { margin: 0; font-size: 24pt; color: var(--teal); }
+    #fn-full .core p { font-family: var(--mono); font-size: 14pt; color: var(--muted); margin: 4px 0 10px; }
+    #fn-full #fnDetail { margin-top: 14px; min-height: 72px; }
+    #fn-full #fnDetail p { font-size: 19pt; margin: 0; }
+    #fn-full #fnOut { font-size: 19pt; margin: 10px 0 0; }
+    #fn-full #fnOut:empty { display: none; }
+  </style>
+  <p class="kicker">the whole machine — click any part</p>
+  <h2>Five clicks, one system</h2>
+  <div class="map">
+    <div class="col">
+      <div class="nd s1" data-n="model" data-at="1"><b>🧠 model</b><span>plans, writes code</span></div>
+      <div class="nd s2" data-n="loop" data-at="2"><b>🔁 loop</b><span>act → observe → repair</span></div>
+      <div class="nd s2" data-n="mcp" data-at="2"><b>🔌 MCP</b><span>docs · gh · db</span></div>
+    </div>
+    <div class="core" data-at="1">
+      <h3>agent VM</h3><p>one pausable microVM per session</p>
+      <div><span class="hook" data-hot="2">exec</span> <span class="hook" data-hot="3">snapshot</span> <span class="hook" data-hot="4">virtiofs</span></div>
+    </div>
+    <div class="col">
+      <div class="nd s3" data-n="snap" data-at="3"><b>❄️ snapshots</b><span>RAM + disk → store</span></div>
+      <div class="nd s4" data-n="cow" data-at="4"><b>▦ warm repo</b><span>CoW views, ~0 bytes</span></div>
+      <div class="nd s5" data-n="bill" data-at="5"><b>⚡ meter</b><span>pay to run, park free</span></div>
+    </div>
+  </div>
+  <div id="fnDetail" class="card teal"><p>Click any box — each is one section of this talk, wired together.</p><p id="fnOut"></p></div>
+  <div class="captions">
+    <p data-only="0">Everything from tonight, on one slide.</p>
+    <p data-only="1">The model plans and writes code…</p>
+    <p data-only="2">…the loop executes it, tools plug in…</p>
+    <p data-only="3">…idle state freezes into snapshots…</p>
+    <p data-only="4">…repos are shared copy-on-write…</p>
+    <p data-only="5">…and the meter only runs <b>while computing</b>.</p>
+  </div>
+  <aside class="notes">
+    The payoff slide — advance all five steps, then invite clicks. Each box is one section of the talk: the model, the loop with MCP tools, snapshots, the warm CoW repo, the meter.
+    Say it as one sentence: the model plans, the loop runs code against a shared repo view, idle VMs freeze into cheap snapshots, and you pay compute only while the agent works.
+    Every box is clickable for Q&A detours back into any section.
+  </aside>
+  <script>
+  (function () {
+    const D = {
+      model: '🧠 <b>Model</b> (§1) — plans, writes programs in code mode. Knows bash, Python, pytest already. Token-efficient, composable.',
+      loop: '↻ <b>Loop</b> (§1) — plan → act → observe → repair until checks pass. Lint, build, tests inside the loop: no run, no trust.',
+      mcp: '◈ <b>MCP</b> (§1) — one plug shape for docs, GitHub, DBs, tickets. Local servers share the VM, so they get sandboxed too.',
+      snap: '❄️ <b>Snapshots</b> (§3) — RAM + disk frozen to storage, CPU/RAM released. Resume mmaps pages back on demand, ~1 second. Firecracker: &lt;125 ms boot, &lt;5 MiB overhead.',
+      cow: '▦ <b>Warm repo</b> (§4) — one checkout on the dev server, per-session OverlayFS/ZFS views. Reads shared, writes copy up. Page cache shared.',
+      bill: '⚡ <b>Meter</b> (§2+§5) — 2,000 always-on 4 GiB VMs ≈ $56k/mo, ~75% of it waiting money. Parked state costs disk-only or free. Pay compute-seconds, not open tabs.'
+    };
+    const sec = document.getElementById('fn-full');
+    sec.querySelectorAll('[data-n]').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      sec.querySelectorAll('[data-n]').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+      document.getElementById('fnOut').innerHTML = D[b.dataset.n];
+    }));
+  })();
+  </script>
+</section>
+
+<section id="fn-take" class="stepper" data-steps="3">
+  <style>
+    #fn-take .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 30px; }
+    #fn-take .card { min-height: 300px; }
+    #fn-take .card .big { font-family: var(--head); font-size: 56pt; font-weight: 700; line-height: 1; margin: 0; }
+    #fn-take .card h3 { font-size: 26pt; margin: 8px 0; }
+  </style>
+  <p class="kicker">take it home</p>
+  <h2>Three sentences</h2>
+  <div class="row">
+    <div class="card amber" data-at="1"><p class="big t-amber">run it</p><h3>Agents need computers</h3><p class="muted">Loop, code mode, verify — all execute.</p></div>
+    <div class="card violet" data-at="2"><p class="big t-violet">freeze it</p><h3>Idle is storable</h3><p class="muted">Snapshots + CoW kill the bill.</p></div>
+    <div class="card green" data-at="3"><p class="big t-green">rent it</p><h3>Primitives exist</h3><p class="muted">Pause, resume, pay per second.</p></div>
+  </div>
+  <aside class="notes">
+    Three sentences to carry out. Agents need computers: everything that makes them good — the loop, code mode, verification — is execution.
+    Idle is storable: snapshots turn waiting RAM into cheap storage, and copy-on-write means repos are barely copied at all.
+    And you can rent it: pausable sandbox primitives with per-second metering already exist — start there, not with a VM fleet.
+  </aside>
+</section>
+
+<section id="fn-close" class="divider">
+  <style>
+    #fn-close h1 { font-size: 64pt; }
+    #fn-close .links { display: flex; gap: 16px; margin-top: 30px; flex-wrap: wrap; }
+    #fn-close .links a { font-family: var(--mono); font-size: 17pt; color: var(--teal); background: rgba(63,220,214,.08); border: 1px solid rgba(63,220,214,.4); border-radius: 12px; padding: 10px 22px; text-decoration: none; }
+    #fn-close .src { margin-top: 26px; font-family: var(--mono); font-size: 14pt; color: var(--muted); max-width: 1000px; line-height: 1.6; }
+  </style>
+  <div>
+    <p class="kicker">thank you — questions</p>
+    <h1>Give every agent<br>a cloud to live in.</h1>
+    <div class="links"><a href="https://github.com/firecracker-microvm/firecracker">▸ firecracker</a><a href="https://www.e2b.dev/docs">▸ e2b docs</a><a href="https://www.daytona.io/docs/en/sandboxes/">▸ daytona docs</a></div>
+    <p class="src">sources: research/01–05 in this folder · pricing figures illustrative, check provider pages · slide deck: reveal.js, press S for notes</p>
+  </div>
+  <aside class="notes">
+    Close warmly and open the floor. The one-liner: give every agent a cloud to live in — a pausable VM, a shared view of the repo, and a meter that only runs while it computes.
+    Links go to Firecracker and the two RAM-preserving sandbox docs for anyone who wants to build this next week. Offer the research folder and Q&A detours via the previous slide's clickable map.
+  </aside>
+</section>
+
+
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+<script>
+Deck.prepare();
+Reveal.initialize({
+  width: 1600, height: 900, margin: 0.03, minScale: 0.2, maxScale: 2.5,
+  hash: true, controls: true, progress: true, center: false,
+  slideNumber: 'c/t', transition: 'fade', transitionSpeed: 'fast', backgroundTransition: 'none',
+  plugins: [RevealNotes, RevealHighlight],
+}).then(() => {
+  const cur = () => Reveal.getCurrentSlide();
+  Deck.apply(cur()); Deck._enter(cur());
+  Reveal.on('slidechanged', e => { Deck._leave(e.previousSlide); Deck.apply(e.currentSlide); Deck._enter(e.currentSlide); });
+  Reveal.on('fragmentshown', () => Deck.apply(cur()));
+  Reveal.on('fragmenthidden', () => Deck.apply(cur()));
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!-- ============================================================
+     30 / Pause & resume — snapshots
+     ids: ps-divider, ps-split, ps-cycle, ps-fc
+     ============================================================ -->
+
+<section id="ps-divider" class="divider">
+  <style>
+    #ps-divider .sub { font-family: var(--head); font-size: 28pt; color: var(--muted); margin: 0; max-width: 880px; line-height: 1.25; }
+    #ps-divider .zz { position: absolute; right: 150px; top: 50%; transform: translateY(-50%); font-family: var(--head); font-weight: 700; line-height: 1; }
+    #ps-divider .zz span { display: block; color: var(--violet); opacity: .9; }
+  </style>
+  <div>
+    <p class="num">03 / Pause &amp; resume</p>
+    <h1>Don't kill it.<br><span class="t-violet">Freeze it.</span></h1>
+    <p class="sub">Snapshots turn idle RAM into cheap storage.</p>
+  </div>
+  <div class="zz" aria-hidden="true"><span style="font-size:90pt">Z</span><span style="font-size:64pt;opacity:.6">Z</span><span style="font-size:44pt;opacity:.35">Z</span></div>
+  <aside class="notes">
+    Stop three: the first fix. Instead of killing idle VMs and losing everything, or paying to keep them warm, we freeze them: capture their state into snapshots on cheap storage, release the CPU and RAM, and thaw them back in about a second when the human returns.
+  </aside>
+</section>
+
+<section id="ps-split" class="stepper" data-steps="2">
+  <style>
+    #ps-split .split { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 26px; }
+    #ps-split .card { min-height: 330px; opacity: .4; transition: all .4s var(--ease); }
+    #ps-split .card.on { opacity: 1; }
+    #ps-split .card h3 { font-size: 30pt; }
+    #ps-split .card code { font-size: 16pt; }
+  </style>
+  <p class="kicker">state has two layers</p>
+  <h2>Freeze <span class="t-violet">both halves</span></h2>
+  <div class="split">
+    <div class="card violet" data-at="1"><h3>🧠 Execution state</h3><p class="muted">RAM + CPU + device state</p><p><code>memory file + state file</code></p><p class="muted">thawed on demand, page by page</p></div>
+    <div class="card teal" data-at="2"><h3>💾 Filesystem state</h3><p class="muted">writable disk / overlay</p><p><code>block snapshot → object store</code></p><p class="muted">only changed blocks travel</p></div>
+  </div>
+  <aside class="notes">
+    Two clicks. Execution state is RAM plus CPU and device state — Firecracker writes it as a memory file plus a state file, and on restore pages fault back in on demand.
+    Filesystem state is the writable disk or overlay — snapshotted to block storage, then tiered to object storage. Because the base image is shared, only changed blocks travel. Pause means capturing both, then paying storage-only while idle.
+  </aside>
+</section>
+
+<section id="ps-cycle" class="stepper" data-steps="4">
+  <style>
+    #ps-cycle .flow { display: grid; grid-template-columns: 1fr 70px 1fr 70px 1fr; gap: 0; margin-top: 30px; align-items: stretch; }
+    #ps-cycle .st { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px 16px; text-align: center; opacity: .35; transition: all .4s var(--ease); }
+    #ps-cycle .st.on { opacity: 1; transform: translateY(-6px); }
+    #ps-cycle .st .e { font-size: 46pt; margin: 0; }
+    #ps-cycle .st b { display: block; font-family: var(--head); font-size: 22pt; margin: 4px 0; }
+    #ps-cycle .st span { font-family: var(--mono); font-size: 14pt; color: var(--muted); }
+    #ps-cycle .st.run.on { border-color: var(--green); } #ps-cycle .st.frz.on { border-color: var(--violet); } #ps-cycle .st.thaw.on { border-color: var(--teal); }
+    #ps-cycle .arr { display: grid; place-items: center; font-size: 34pt; color: var(--muted); opacity: .35; transition: all .4s; }
+    #ps-cycle .arr.on { opacity: 1; color: var(--teal); }
+    #ps-cycle button.btn { margin-top: 22px; }
+  </style>
+  <p class="kicker">the lifecycle — click pause yourself</p>
+  <h2>Sleep in ms, wake in ~1s</h2>
+  <div class="flow">
+    <div class="st run" data-at="1"><p class="e">🟢</p><b>Running</b><span>CPU + RAM billed</span></div>
+    <div class="arr" data-at="2">→</div>
+    <div class="st frz" data-at="2"><p class="e">❄️</p><b>Paused</b><span>snapshot → storage</span></div>
+    <div class="arr" data-at="4">→</div>
+    <div class="st thaw" data-at="4"><p class="e">⚡</p><b>Resumed</b><span>mmap + fault-in</span></div>
+  </div>
+  <div class="center"><button class="btn" id="psPauseBtn" data-at="2">❄ pause this VM</button> <button class="btn" id="psResumeBtn" data-at="4">⚡ resume it</button></div>
+  <div class="captions">
+    <p data-only="0">Two thousand VMs idle? Don't pay for them.</p>
+    <p data-only="1">While the human thinks, the VM burns dollars.</p>
+    <p data-only="2"><b>Pause:</b> memory + disk → snapshots. CPU/RAM released.</p>
+    <p data-only="3">Parked: storage-only. Cents, not dollars.</p>
+    <p data-only="4"><b>Resume:</b> pages fault back on demand. ~1 second.</p>
+  </div>
+  <aside class="notes">
+    The lifecycle in four clicks. Running bills CPU and RAM. Pause writes the memory file, state file and disk delta to storage and frees the host — try the pause button, the card freezes.
+    Parked state costs storage pennies. Resume mmaps the memory file and faults pages in on demand — try resume, it wakes in about a second. Caveat for the Q&A: vsock resets across restore, so network handles must be re-established.
+  </aside>
+  <script>
+  (function () {
+    const p = document.getElementById('psPauseBtn'), r = document.getElementById('psResumeBtn');
+    if (p) p.addEventListener('click', e => { e.stopPropagation(); p.classList.add('active'); p.textContent = '❄ frozen ✓'; setTimeout(() => Reveal.nextFragment(), 600); });
+    if (r) r.addEventListener('click', e => { e.stopPropagation(); r.classList.add('active'); r.textContent = '⚡ awake ✓'; setTimeout(() => Reveal.nextFragment(), 300); });
+  })();
+  </script>
+</section>
+
+<section id="ps-fc" class="stepper" data-steps="3">
+  <style>
+    #ps-fc .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 28px; }
+    #ps-fc .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 26px 22px; text-align: center; opacity: .35; transition: all .4s var(--ease); }
+    #ps-fc .stat.on { opacity: 1; }
+    #ps-fc .stat b { display: block; font-family: var(--head); font-size: 52pt; line-height: 1; margin: 0; }
+    #ps-fc .stat span { font-family: var(--mono); font-size: 15pt; color: var(--muted); }
+  </style>
+  <p class="kicker">why microVMs — Firecracker numbers</p>
+  <h2>Built for <span class="t-teal">thousands</span></h2>
+  <div class="stats">
+    <div class="stat" data-at="1"><b class="t-green">&lt;125ms</b><span>boot a new microVM</span></div>
+    <div class="stat" data-at="2"><b class="t-teal">&lt;5MiB</b><span>VMM overhead each</span></div>
+    <div class="stat" data-at="3"><b class="t-violet">~1s</b><span>snapshot resume</span></div>
+  </div>
+  <div class="captions">
+    <p data-only="0">Firecracker was built for exactly this density.</p>
+    <p data-only="1">A fresh microVM boots in <b>under 125 milliseconds</b>.</p>
+    <p data-only="2">Each one costs <b>under 5 MiB</b> of host overhead.</p>
+    <p data-only="3">Resume faults pages in on demand — <b>about a second</b>, even for thousands parked.</p>
+  </div>
+  <aside class="notes">
+    Why microVMs and not plain containers or full VMs. Firecracker's advertised numbers: under 125 milliseconds to boot, under 5 megabytes of VMM overhead per VM, snapshot restore around a second via mmap plus userfaultfd on-demand paging.
+    Alternatives exist — Kata template cloning for density, gVisor where KVM is unavailable, CRIU for process-level checkpoint — but for thousands of pausable agent VMs, Firecracker-style snapshots are the reference design. Keep hot snapshots on local NVMe, tier cold ones to object storage.
+  </aside>
+</section>

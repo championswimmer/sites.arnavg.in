@@ -1,0 +1,191 @@
+<!-- ============================================================
+     10 / What agents do — loop, code mode, MCP, verify
+     ids: lp-divider, lp-loop, lp-code, lp-mcp, lp-verify
+     ============================================================ -->
+
+<section id="lp-divider" class="divider">
+  <style>
+    #lp-divider .sub { font-family: var(--head); font-size: 28pt; color: var(--muted); margin: 0; max-width: 860px; line-height: 1.25; }
+  </style>
+  <p class="num">01 / What agents do</p>
+  <h1>Not a chatbot.<br>A <span class="t-amber">loop</span> with a computer.</h1>
+  <p class="sub">Plan → act → observe → repair, until the tests pass.</p>
+  <aside class="notes">
+    Stop one. Everyone pictures the chat. The real agent is a loop wrapped around the model, and that loop lives on a computer with your repo, a shell, and tools.
+    The next four slides walk that loop, then code mode, then MCP tools, then why the agent must verify by running things.
+  </aside>
+</section>
+
+<section id="lp-loop" class="stepper" data-steps="5">
+  <style>
+    #lp-loop .vmbox { margin: 24px 0 0; border: 2px dashed rgba(63,220,214,.5); border-radius: 22px; padding: 22px 26px 18px; position: relative; }
+    #lp-loop .vmbox > .tag { position: absolute; top: -24px; left: 50%; transform: translateX(-50%); font-family: var(--mono); font-size: 16pt; color: #041413; background: var(--teal); border-radius: 999px; padding: 4px 20px; white-space: nowrap; }
+    #lp-loop .flow { display: grid; grid-template-columns: 1fr 44px 1fr 44px 1fr 44px 1fr 44px 1fr; align-items: stretch; margin-top: 14px; }
+    #lp-loop .node { text-align: center; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 6px; transition: all .4s var(--ease); opacity: .4; }
+    #lp-loop .node b { display: block; font-family: var(--head); font-size: 24pt; margin: 0 0 2px; }
+    #lp-loop .node span { font-family: var(--mono); font-size: 14pt; color: var(--muted); }
+    #lp-loop .node.on { opacity: 1; transform: translateY(-6px); }
+    #lp-loop .n1.on { border-color: var(--blue); box-shadow: 0 0 22px rgba(116,185,255,.3); }
+    #lp-loop .n2.on { border-color: var(--amber); box-shadow: 0 0 22px rgba(255,180,84,.3); }
+    #lp-loop .n3.on { border-color: var(--teal); box-shadow: 0 0 22px rgba(63,220,214,.3); }
+    #lp-loop .n4.on { border-color: var(--violet); box-shadow: 0 0 22px rgba(185,162,255,.3); }
+    #lp-loop .n5.on { border-color: var(--green); box-shadow: 0 0 22px rgba(127,227,164,.3); }
+    #lp-loop .arr { display: grid; place-items: center; font-size: 28pt; color: var(--muted); opacity: .35; transition: all .4s; }
+    #lp-loop .arr.on { opacity: 1; color: var(--teal); }
+    #lp-loop .back { text-align: center; font-family: var(--mono); font-size: 16pt; color: var(--violet); margin: 12px 0 0; opacity: .35; transition: opacity .4s; }
+    #lp-loop .back.on { opacity: 1; }
+  </style>
+  <p class="kicker">one agent session</p>
+  <h2>Click through the loop</h2>
+  <div class="vmbox">
+    <span class="tag">everything runs inside one VM</span>
+    <div class="flow">
+      <div class="node n1" data-at="1"><b>Plan</b><span>inspect</span></div><div class="arr" data-at="2">→</div>
+      <div class="node n2" data-at="2"><b>Act</b><span>edit·run·call</span></div><div class="arr" data-at="3">→</div>
+      <div class="node n3" data-at="3"><b>Observe</b><span>logs·exits</span></div><div class="arr" data-at="4">→</div>
+      <div class="node n4" data-at="4"><b>Repair</b><span>re-plan</span></div><div class="arr" data-at="5">→</div>
+      <div class="node n5" data-at="5"><b>Handoff</b><span>PR·patch</span></div>
+    </div>
+    <p class="back" data-at="4">↩ repair loops back to act — until checks pass</p>
+  </div>
+  <div class="captions">
+    <p data-only="0">A session is infrastructure, not a chat log.</p>
+    <p data-only="1"><b>Plan:</b> model reads code, picks an approach.</p>
+    <p data-only="2"><b>Act:</b> edits files, runs commands, calls tools.</p>
+    <p data-only="3"><b>Observe:</b> stdout, exit codes, diffs come back.</p>
+    <p data-only="4"><b>Repair:</b> failures update the plan. Loop.</p>
+    <p data-only="5"><b>Handoff:</b> a PR — only when checks pass.</p>
+  </div>
+  <aside class="notes">
+    Walk the five clicks slowly. Plan: the model decides what to look at. Act: it edits files, runs commands, calls tools — all inside one VM that holds the repo.
+    Observe: the harness returns outputs and exit codes. Repair: the model updates its plan and loops. Handoff only happens when acceptance checks pass.
+    The punchline to land: every one of those verbs needs a real machine.
+  </aside>
+</section>
+
+<section id="lp-code" class="stepper" data-steps="4">
+  <style>
+    #lp-code .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 24px; align-items: stretch; }
+    #lp-code .term .body p { transition: opacity .4s; }
+    #lp-code .out { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 22px; font-family: var(--mono); font-size: 17pt; line-height: 1.55; }
+    #lp-code .out div { opacity: .28; transition: all .4s var(--ease); }
+    #lp-code .out div.on { opacity: 1; }
+    #lp-code .out .ok { color: var(--green); } #lp-code .out .run { color: var(--amber); }
+    #lp-code .big { font-family: var(--head); font-size: 110pt; font-weight: 700; line-height: 1; margin: 0; }
+  </style>
+  <p class="kicker">code mode</p>
+  <h2>The model writes <span class="t-amber">programs</span>, not just answers</h2>
+  <div class="wrap">
+    <div class="term">
+      <div class="bar"><i></i><i></i><i></i><b>agent — run.sh</b></div>
+      <div class="body">
+        <p data-at="1">$ grep -r "TODO(auth)" src | head</p>
+        <p data-at="2">$ python probe.py — try 3 fixes</p>
+        <p data-at="3">$ pytest tests/auth -x -q</p>
+        <p data-at="4" class="t-green">$ git diff --stat → PR</p>
+      </div>
+    </div>
+    <div class="out">
+      <div data-at="1" class="run">▸ searching 214 files… 6 hits</div>
+      <div data-at="2" class="run">▸ fix #2 passes probe (1.8s)</div>
+      <div data-at="3" class="ok">▸ 41 passed, 0 failed ✓</div>
+      <div data-at="4" class="ok">▸ done: 3 files, +88 −12</div>
+    </div>
+  </div>
+  <div class="captions">
+    <p data-only="0">Code is the agent's action language.</p>
+    <p data-only="1">One script replaces <b>dozens of tool calls</b>.</p>
+    <p data-only="2">It leans on what models <b>already know</b>: bash, Python, pytest.</p>
+    <p data-only="3"><b>State persists</b> across iterations: files, servers, REPL.</p>
+    <p data-only="4">Result: a <b>verified diff</b>, not a suggestion.</p>
+  </div>
+  <aside class="notes">
+    Code mode means the model may write and execute code instead of only chatting. Click through the four commands.
+    Why it wins: code is compact — one script with loops and retries replaces dozens of tool calls. It reuses model priors — bash, Python, Playwright are already known.
+    And state persists — the shell keeps variables, files and servers across iterations. Land on the verified diff: the output is proven by execution, not asserted.
+  </aside>
+</section>
+
+<section id="lp-mcp" class="stepper" data-steps="3">
+  <style>
+    #lp-mcp .stage { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; margin-top: 26px; align-items: stretch; }
+    #lp-mcp .col { display: flex; flex-direction: column; gap: 14px; }
+    #lp-mcp .box { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 20px; text-align: center; cursor: pointer; transition: all .3s var(--ease); }
+    #lp-mcp .box b { display: block; font-family: var(--head); font-size: 21pt; margin: 0; }
+    #lp-mcp .box span { font-family: var(--mono); font-size: 15pt; color: var(--muted); }
+    #lp-mcp .box.sel { border-color: var(--teal); box-shadow: 0 0 0 4px rgba(63,220,214,.15), 0 0 24px rgba(63,220,214,.3); }
+    #lp-mcp .vm { background: linear-gradient(180deg, #14202a, #10131b); border: 2px solid var(--teal); border-radius: 20px; padding: 20px; text-align: center; }
+    #lp-mcp .vm h3 { margin: 0 0 4px; font-size: 26pt; color: var(--teal); }
+    #lp-mcp .vm p { font-family: var(--mono); font-size: 15pt; color: var(--muted); margin: 0 0 12px; }
+    #lp-mcp .vm .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    #lp-mcp #mcpDetail { margin-top: 18px; min-height: 76px; }
+    #lp-mcp #mcpDetail p { font-size: 21pt; margin: 0; }
+    #lp-mcp #mcpDetail p[data-only]:not(.on) { display: none; }
+    #lp-mcp #mcpDetail p[data-only].on { display: block; }
+    #lp-mcp #mcpOut { font-size: 21pt; margin: 10px 0 0; }
+    #lp-mcp #mcpOut:empty { display: none; }
+  </style>
+  <p class="kicker">MCP servers — click them</p>
+  <h2>Tools are <em>processes</em> near the VM</h2>
+  <div class="stage">
+    <div class="col">
+      <div class="box" data-mcp="docs" data-at="1"><b>📚 docs</b><span>local · repo-aware</span></div>
+      <div class="box" data-mcp="github" data-at="1"><b>◈ github</b><span>remote · HTTP</span></div>
+    </div>
+    <div class="vm" data-at="1">
+      <h3>agent VM</h3>
+      <p>repo · shell · runtimes</p>
+      <div class="row"><span class="hook" data-hot="2">exec</span><span class="hook" data-hot="2">edit</span><span class="hook" data-hot="3">mcp.call</span></div>
+    </div>
+    <div class="col">
+      <div class="box" data-mcp="db" data-at="1"><b>▤ db</b><span>local · sandboxed</span></div>
+      <div class="box" data-mcp="tickets" data-at="1"><b>✈ tickets</b><span>remote · HTTP</span></div>
+    </div>
+  </div>
+  <div id="mcpDetail" class="card teal"><p data-only="0">Click any tool box to see what it gives the agent.</p><p data-only="1">MCP = one standard plug shape for all tools.</p><p data-only="2">Local servers share the repo, fs and network — <b>so they need sandboxing too</b>.</p><p data-only="3">Remote servers arrive over HTTP with scoped credentials.</p><p id="mcpOut"></p></div>
+  <aside class="notes">
+    MCP servers are tool adapters — docs, GitHub, databases, ticketing — exposed through one standard interface.
+    Invite the audience to click each box; the detail card explains it. Local servers run in or next to the VM and share its context, which is exactly why they must be sandboxed too.
+    Steps: 1 shows the plug shape, 2 highlights local exec/edit, 3 highlights remote calls.
+  </aside>
+  <script>
+  (function () {
+    const D = { docs: '📚 <b>docs server</b> — greps the repo + internal wikis. Answers cite file:line, never hallucinated APIs.', github: '<b>github server</b> — remote over HTTP. Opens PRs, reads CI status, posts reviews with a scoped token.', db: '<b>db server</b> — local, sandboxed. Runs read queries against a scrubbed seed DB inside the VM.', tickets: '<b>tickets server</b> — remote over HTTP. Files issues, links them to the diff, updates status.' };
+    const sec = document.getElementById('lp-mcp');
+    sec.querySelectorAll('[data-mcp]').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      sec.querySelectorAll('[data-mcp]').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+      document.getElementById('mcpOut').innerHTML = D[b.dataset.mcp];
+    }));
+  })();
+  </script>
+</section>
+
+<section id="lp-verify" class="stepper" data-steps="3">
+  <style>
+    #lp-verify .pipe { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 22px; margin-top: 28px; }
+    #lp-verify .card { text-align: center; opacity: .4; transition: all .4s var(--ease); }
+    #lp-verify .card.on { opacity: 1; transform: translateY(-6px); }
+    #lp-verify .card .e { font-size: 44pt; margin: 0; }
+    #lp-verify .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 22px; }
+    #lp-verify .bad { border: 1px solid var(--coral); border-radius: 14px; padding: 14px 20px; }
+    #lp-verify .good { border: 1px solid var(--green); border-radius: 14px; padding: 14px 20px; }
+  </style>
+  <p class="kicker">why the machine matters</p>
+  <h2>No run, no trust</h2>
+  <div class="pipe">
+    <div class="card amber" data-at="1"><p class="e">🔍</p><h3>lint + types</h3><p class="muted">static errors, fast</p></div>
+    <div class="card teal" data-at="2"><p class="e">🔨</p><h3>build</h3><p class="muted">integration breaks</p></div>
+    <div class="card green" data-at="3"><p class="e">🧪</p><h3>tests + browser</h3><p class="muted">runtime truth</p></div>
+  </div>
+  <div class="vs">
+    <div class="bad" data-at="1"><p style="margin:0">❌ <span class="t-coral">plausible diff</span> <span class="muted">— looks right, rots</span></p></div>
+    <div class="good" data-at="3"><p style="margin:0">✓ <span class="t-green">verified diff</span> <span class="muted">— executed, green</span></p></div>
+  </div>
+  <aside class="notes">
+    Without in-loop verification, agents optimise for plausible-looking diffs. Click through the three gates: lint and typecheck catch static errors in seconds,
+    the build catches integration breakage, tests and browser checks catch runtime failures. Each gate stops error compounding over long runs.
+    The contrast at the bottom is the sentence to say out loud: no run, no trust.
+  </aside>
+</section>
