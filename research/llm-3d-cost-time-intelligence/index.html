@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Intelligence vs Cost vs Time in 3D</title>
 <style>
-:root{--bg:#fafaf7;--panel:#fff;--fg:#1a1a18;--muted:#6b6b66;--line:#d9d8d2;--grid:#e6e5df;--accent:#16a34a;--green-fill:rgba(34,197,94,.16);--green-edge:rgba(22,163,74,.85)}
-@media (prefers-color-scheme:dark){:root{--bg:#121311;--panel:#1b1c1a;--fg:#ecece6;--muted:#9a9a92;--line:#34352f;--grid:#2a2b27;--accent:#4ade80;--green-fill:rgba(74,222,128,.14);--green-edge:rgba(74,222,128,.85)}}
+:root{--bg:#fafaf7;--panel:#fff;--fg:#1a1a18;--muted:#6b6b66;--line:#d9d8d2;--grid:#e6e5df;--accent:#16a34a;--plane:124,58,237;--green-fill:rgba(34,197,94,.16);--green-edge:rgba(22,163,74,.85)}
+@media (prefers-color-scheme:dark){:root{--bg:#121311;--panel:#1b1c1a;--fg:#ecece6;--muted:#9a9a92;--line:#34352f;--grid:#2a2b27;--accent:#4ade80;--plane:167,139,250;--green-fill:rgba(74,222,128,.14);--green-edge:rgba(74,222,128,.85)}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
 .wrap{max-width:1100px;margin:0 auto;padding:24px 16px 48px}
@@ -54,6 +54,7 @@ tr.in td{background:var(--green-fill)}
   <button id="auto" class="on">Auto-rotate</button>
   <button id="lab" class="on">Labels</button>
   <button id="drops" class="on">Drop lines</button>
+  <button id="pln">Pareto plane (3D)</button>
   <button id="par" title="Shown in the 2D views">Pareto line (2D views)</button>
   <button data-view="iso">Isometric</button>
   <button data-view="ci">Cost × Intelligence</button>
@@ -72,6 +73,7 @@ tr.in td{background:var(--green-fill)}
   <span id="count"></span>
   <span>◯ ring = Pareto-optimal in all 3 dimensions</span>
   <span style="color:var(--accent)">■ green = inside the octant</span>
+  <span style="color:rgb(var(--plane))">■ purple = Pareto plane</span>
 </div>
 <div class="legend" id="legend"></div>
 
@@ -125,11 +127,36 @@ function nx(c){return (Math.log(c)-lc0)/(lc1-lc0)*2-1}
 function ny(i){return (i-IMIN)/(IMAX-IMIN)*2-1}
 function nz(t){return (t-TMIN)/(TMAX-TMIN)*2-1}
 
+// Pareto plane: outer convex surface over the 3D-Pareto models, closed with
+// projections onto the worst bound of each axis; keep only facets facing the good corner.
+var TRIS=(function(){
+  var g=[];
+  DATA.filter(function(m){return m.pareto}).forEach(function(m){
+    var p=[-nx(m.cost),ny(m.iq),-nz(m.time)];
+    g.push(p,[-1,p[1],p[2]],[p[0],-1,p[2]],[p[0],p[1],-1]);
+  });
+  var out=[],n=g.length,e=1e-9;
+  function sub(a,b){return[a[0]-b[0],a[1]-b[1],a[2]-b[2]]}
+  for(var i=0;i<n;i++)for(var j=i+1;j<n;j++)for(var k=j+1;k<n;k++){
+    var u=sub(g[j],g[i]),v=sub(g[k],g[i]);
+    var N=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+    var len=Math.hypot(N[0],N[1],N[2]);if(len<1e-9)continue;
+    N=N.map(function(c){return c/len});
+    var pos=0,neg=0;
+    for(var l=0;l<n;l++){var w=sub(g[l],g[i]),d=w[0]*N[0]+w[1]*N[1]+w[2]*N[2];if(d>e)pos++;else if(d<-e)neg++}
+    if(pos&&neg)continue;
+    if(pos)N=N.map(function(c){return -c});
+    if(N[0]<-e||N[1]<-e||N[2]<-e)continue;
+    out.push([g[i],g[j],g[k]].map(function(q){return[-q[0],q[1],-q[2]]}));
+  }
+  return out;
+})();
+
 var cv=document.getElementById("c"),ctx=cv.getContext("2d"),tip=document.getElementById("tip");
 var yaw=-0.55,pitch=0.3,zoom=1,auto=true,showLab=true,showDrops=true,hover=null,dragging=false,dirty=true;
 var W=0,H=0,dpr=1,proj=[];
 var thr={iq:45,cost:2,speed:100};
-var target=null,flat=null,persp=1,showPar=false;
+var target=null,flat=null,persp=1,showPar=false,showPln=false;
 
 function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
 
@@ -199,6 +226,13 @@ function draw(){
     line(q.p,q.f,q.in?ge:ln,1,[3,3]);
     ctx.beginPath();ctx.arc(q.f.x,q.f.y,2,0,6.3);ctx.fillStyle=q.in?ge:ln;ctx.fill();
   });
+  if(showPln&&!fl){
+    var pc=css("--plane");
+    TRIS.map(function(t){var q=t.map(function(v){return P(v[0],v[1],v[2])});return{q:q,d:(q[0].d+q[1].d+q[2].d)/3}})
+      .sort(function(a,b){return b.d-a.d}).forEach(function(t){
+        ctx.beginPath();ctx.moveTo(t.q[0].x,t.q[0].y);ctx.lineTo(t.q[1].x,t.q[1].y);ctx.lineTo(t.q[2].x,t.q[2].y);ctx.closePath();
+        ctx.fillStyle="rgba("+pc+",.16)";ctx.fill();ctx.lineWidth=.8;ctx.strokeStyle="rgba("+pc+",.45)";ctx.stroke()});
+  }
   if(showPar&&fl){
     var G={ci:function(q){return[-nx(q.m.cost),ny(q.m.iq)]},ti:function(q){return[-nz(q.m.time),ny(q.m.iq)]},ct:function(q){return[-nx(q.m.cost),-nz(q.m.time)]}}[fl];
     var pts=proj.map(function(q){var g=G(q);return{q:q,x:g[0],y:g[1]}});
@@ -268,7 +302,7 @@ si.oninput=function(){thr.iq=+si.value;updateUI()};
 sc.oninput=function(){thr.cost=costFromSlider(+sc.value);updateUI()};
 ss.oninput=function(){thr.speed=+ss.value;updateUI()};
 function tog(id,fn){var b=document.getElementById(id);b.onclick=function(){b.classList.toggle("on");fn(b.classList.contains("on"));dirty=true}}
-tog("auto",function(v){auto=v;if(v)flat=null});tog("lab",function(v){showLab=v});tog("drops",function(v){showDrops=v});tog("par",function(v){showPar=v});
+tog("auto",function(v){auto=v;if(v)flat=null});tog("lab",function(v){showLab=v});tog("drops",function(v){showDrops=v});tog("par",function(v){showPar=v});tog("pln",function(v){showPln=v});
 document.getElementById("zin").onclick=function(){zoom=Math.min(3,zoom*1.2);dirty=true};
 document.getElementById("zout").onclick=function(){zoom=Math.max(.5,zoom/1.2);dirty=true};
 var VIEWS={iso:[-0.55,0.3],ci:[0,0],ti:[-Math.PI/2,0],ct:[0,-Math.PI/2]};
