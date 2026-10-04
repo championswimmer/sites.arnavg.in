@@ -53,9 +53,9 @@ tr.in td{background:var(--green-fill)}
 <div class="btns">
   <button id="auto" class="on">Auto-rotate</button>
   <button id="lab" class="on">Labels</button>
-  <button id="drops" class="on">Drop lines</button>
-  <button id="pln">Pareto plane (3D)</button>
-  <button id="par" title="Shown in the 2D views">Pareto line (2D views)</button>
+  <button id="drops">Drop lines</button>
+  <button id="pln" class="on">Pareto plane (3D)</button>
+  <button id="par" class="on" title="Shown in the 2D views">Pareto line (2D views)</button>
   <button data-view="iso">Isometric</button>
   <button data-view="ci">Cost × Intelligence</button>
   <button data-view="ti">Time × Intelligence</button>
@@ -97,45 +97,22 @@ tr.in td{background:var(--green-fill)}
 </div>
 </div>
 
+<script src="config.js"></script>
 <script>
-(function(){
-// name, provider, intelligence (AA), cost USD/task (AA), tok/s: [AA chart, OpenRouter p50, OpenRouter p90]. OpenRouter values are 30-min stats, request-weighted avg across providers, 4 Oct 2026; Step 5 Preview is not on OpenRouter (null) and falls back to the AA value
-var DATA=[
-["Claude Opus 5.5","Anthropic",57.6,6.0,92,68.7,97.9],
-["Claude Sonnet 5.5","Anthropic",56.0,7.7,132,82.1,126.1],
-["Claude Fable 5.1","Anthropic",53.3,7.7,66,52.5,74.9],
-["GPT-6 Astra","OpenAI",52.5,3.27,60.5,37.8,60.0],
-["GPT-6.1 Sol","OpenAI",51.8,0.73,52,39.7,56.1],
-["GPT-6 Sol","OpenAI",47.6,1.05,106.6,50.8,97.6],
-["GPT-6 Luna","OpenAI",38.0,0.068,140.7,76.7,125.3],
-["Muse Spark 1.3","Meta",48.0,1.61,134.5,66.0,109.0],
-["Muse Glimmer","Meta",17.5,0.057,124.5,74.2,100.5],
-["MiMo-V2.6-Pro","Xiaomi",46.4,0.133,40,30.1,53.6],
-["Qwen3.8 Max","Alibaba",45.4,5.4,37,39.0,50.0],
-["Qwen3.8 27B","Alibaba",33.7,1.0,45.7,60.6,89.2],
-["Kimi K3","Kimi",43.6,2.0,40,44.8,74.8],
-["GLM-5.3","Z AI",44.7,2.0,71.5,98.5,159.2],
-["GLM-5.3-Flash","Z AI",41.9,0.253,53,73.7,135.9],
-["Grok 4.7","SpaceXAI",46.4,3.74,77,80.0,110.0],
-["Step 5 Preview","StepFun",43.8,0.718,85.7,null,null],
-["Gemini 3.8 Flash","Google",40.9,1.25,239,104.7,181.3],
-["DeepSeek V4.1 Flash","DeepSeek",39.4,0.266,213,121.8,209.9],
-["MiniMax-M3","MiniMax",29.2,0.51,84.5,63.4,106.3],
-["Nemotron 3 Ultra","NVIDIA",23.0,0.597,186,121.8,173.5],
-["Mistral Medium 3.5","Mistral",14.3,0.50,164.6,89.5,163.0]
-].map(function(r){return{name:r[0],prov:r[1],iq:r[2],cost:r[3],sp:{aa:r[4],p50:r[5],p90:r[6]}}});
-var SRC={aa:"AA chart",p50:"OpenRouter p50",p90:"OpenRouter p90"};
-var MODES={aa:{tmax:30,speed:100},p50:{tmax:35,speed:60},p90:{tmax:25,speed:100}};
-var mode="p90";
+fetch("data.json").then(function(r){return r.json()}).then(function(J){
+var CFG=window.LLM3D_CONFIG;
+var DATA=J.models.map(function(r){return{name:r.name,prov:r.provider,iq:r.intelligence,cost:r.cost,released:r.released,sp:r.speed}});
+var SRC=CFG.sources;
+var MODES=CFG.modes;
+var mode=CFG.defaultMode;
 
-var COL={Anthropic:"#c4704f",OpenAI:"#6b7280",Meta:"#2f7cf6",Xiaomi:"#f97316",Alibaba:"#e8590c",Kimi:"#3b5bdb",
-"Z AI":"#0ea5e9",SpaceXAI:"#8b5cf6",StepFun:"#14b8a6",Google:"#22a35a",DeepSeek:"#1e3a8a",MiniMax:"#e11d6a",NVIDIA:"#84cc16",Mistral:"#f59e0b"};
+var COL=CFG.colors;
 
 // pareto in 3D: higher iq, lower cost, lower time
 function computePareto(){DATA.forEach(function(a){a.pareto=!DATA.some(function(b){return b!==a&&b.iq>=a.iq&&b.cost<=a.cost&&b.time<=a.time&&(b.iq>a.iq||b.cost<a.cost||b.time<a.time)})})}
 
 // axis ranges
-var CMIN=0.04,CMAX=12,IMIN=10,IMAX=62,TMIN=0,TMAX=25;
+var CMIN=CFG.axes.cmin,CMAX=CFG.axes.cmax,IMIN=CFG.axes.imin,IMAX=CFG.axes.imax,TMIN=CFG.axes.tmin,TMAX=CFG.axes.tmax;
 var lc0=Math.log(CMIN),lc1=Math.log(CMAX);
 function nx(c){return (Math.log(c)-lc0)/(lc1-lc0)*2-1}
 function ny(i){return (i-IMIN)/(IMAX-IMIN)*2-1}
@@ -212,10 +189,10 @@ function clipPoly(poly,ax,b,le){
 }
 
 var cv=document.getElementById("c"),ctx=cv.getContext("2d"),tip=document.getElementById("tip");
-var yaw=-0.55,pitch=0.3,zoom=1,auto=true,showLab=true,showDrops=true,hover=null,dragging=false,dirty=true;
+var yaw=-0.55,pitch=0.3,zoom=1,auto=true,showLab=true,showDrops=false,hover=null,dragging=false,dirty=true;
 var W=0,H=0,dpr=1,proj=[];
-var thr={iq:45,cost:2,speed:100};
-var target=null,flat=null,persp=1,showPar=false,showPln=false,pmode="env",ND={},QUADS=[];
+var thr={iq:CFG.thresholds.iq,cost:CFG.thresholds.cost,speed:CFG.thresholds.speed};
+var target=null,flat=null,persp=1,showPar=true,showPln=true,pmode="env",ND={},QUADS=[];
 
 function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
 
@@ -407,7 +384,7 @@ document.querySelectorAll("[data-view]").forEach(function(b){b.onclick=function(
 
 // interaction
 var last=null;
-cv.addEventListener("pointerdown",function(e){dragging=true;last=[e.clientX,e.clientY];cv.classList.add("drag");cv.setPointerCapture(e.pointerId);target=null});
+cv.addEventListener("pointerdown",function(e){dragging=true;auto=false;document.getElementById("auto").classList.remove("on");last=[e.clientX,e.clientY];cv.classList.add("drag");cv.setPointerCapture(e.pointerId);target=null});
 cv.addEventListener("pointerup",function(){dragging=false;cv.classList.remove("drag")});
 cv.addEventListener("pointermove",function(e){
   var r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
@@ -416,7 +393,7 @@ cv.addEventListener("pointermove",function(e){
   for(var i=proj.length-1;i>=0;i--){var q=proj[i],d=Math.hypot(q.p.x-mx,q.p.y-my);if(d<q.r+5&&d<bd){bd=d;h=q.m}}
   if(h!==hover){hover=h;dirty=true}
   if(h){
-    tip.innerHTML="<b>"+h.name+"</b>"+h.prov+"<br>Intelligence: "+h.iq.toFixed(1)+"<br>Cost/task: "+fmtCost(h.cost)+"<br>Speed: "+h.speed.toFixed(0)+" tok/s"+" ("+SRC[h.src]+(h.src!==mode?" — not on OpenRouter, AA value used":"")+")"+" ("+h.time.toFixed(1)+" s/1K)"+(inOct(h)?'<br><span style="color:var(--accent)">Inside green octant</span>':"")+(h.pareto?"<br>Pareto-optimal":"");
+    tip.innerHTML="<b>"+h.name+"</b>"+h.prov+"<br>Intelligence: "+h.iq.toFixed(1)+"<br>Cost/task: "+fmtCost(h.cost)+"<br>Released: "+h.released+"<br>Speed: "+h.speed.toFixed(0)+" tok/s"+" ("+SRC[h.src]+(h.src!==mode?" — not on OpenRouter, AA value used":"")+")"+" ("+h.time.toFixed(1)+" s/1K)"+(inOct(h)?'<br><span style="color:var(--accent)">Inside green octant</span>':"")+(h.pareto?"<br>Pareto-optimal":"");
     tip.style.display="block";
     var tx=mx+14,ty=my+14;if(tx>W-190)tx=mx-190;if(ty>H-130)ty=my-120;
     tip.style.left=tx+"px";tip.style.top=ty+"px";
@@ -446,8 +423,8 @@ document.querySelectorAll("#pmodes [data-pm]").forEach(function(b){b.onclick=fun
   document.querySelectorAll("#pmodes [data-pm]").forEach(function(x){x.classList.toggle("on",x===b)});dirty=true};
   b.classList.toggle("on",b.dataset.pm===pmode)});
 document.querySelectorAll("#srcbtns [data-src]").forEach(function(b){b.onclick=function(){applyMode(b.dataset.src)}});
-applyMode("p90");resize();loop();
-})();
+applyMode(CFG.defaultMode);resize();loop();
+});
 </script>
 </body>
 </html>
