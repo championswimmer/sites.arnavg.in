@@ -50,7 +50,7 @@ jobs:
             git log --since='24 hours ago' --diff-filter=A --name-only --format='' -- research learning plans
             git diff-tree --no-commit-id --name-only -r --diff-filter=A HEAD -- research learning plans
           } \
-            | awk 'NF && /\.html$/ { print }' \
+            | awk 'NF && /(^|\/)index\.html$/ { print }' \
             | while read -r f; do [ -f "$f" ] && echo "$f"; done \
             | sort -u > /tmp/ga_pages.txt
           if [ -s /tmp/ga_pages.txt ]; then
