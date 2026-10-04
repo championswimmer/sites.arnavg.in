@@ -128,7 +128,7 @@ var cv=document.getElementById("c"),ctx=cv.getContext("2d"),tip=document.getElem
 var yaw=-0.55,pitch=0.3,zoom=1,auto=true,showLab=true,showDrops=true,hover=null,dragging=false,dirty=true;
 var W=0,H=0,dpr=1,proj=[];
 var thr={iq:45,cost:2,speed:100};
-var target=null;
+var target=null,flat=null,persp=1;
 
 function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
 
@@ -139,7 +139,7 @@ function P(x,y,z){ // rotate then perspective
   var cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
   var x1=x*cy-z*sy,z1=x*sy+z*cy;
   var y1=y*cp-z1*sp,z2=y*sp+z1*cp;
-  var f=4.2,s=f/(f+z2*0.9);
+  var f=4.2,s=f/(f+z2*0.9*persp);
   var base=Math.min(W,H)*0.40*zoom;
   return{x:W/2+x1*s*base,y:H/2-y1*s*base,d:z2,s:s};
 }
@@ -171,21 +171,22 @@ function draw(){
   tt.forEach(function(t){line(P(L,L,nz(t)),P(L,R,nz(t)),gr,1)});
   // axes
   line(P(L,L,L),P(R,L,L),mu,1.5);line(P(L,L,L),P(L,R,L),mu,1.5);line(P(L,L,L),P(L,L,R),mu,1.5);
-  ct.forEach(function(c){text("$"+c,P(nx(c),L-0.07,L-0.07),mu,10)});
-  it.forEach(function(i){text(i,P(L-0.07,ny(i),L-0.07),mu,10,"right")});
-  tt.forEach(function(t){text(t,P(L-0.07,L-0.07,nz(t)),mu,10)});
-  text("Cost per task (USD, log) →",P(0.0,L-0.2,L-0.2),fg,12);
-  text("Intelligence Index →",P(L-0.22,0.0,L-0.14),fg,12,"right");
-  text("Time: s per 1K output tokens →",P(L-0.2,L-0.2,0.0),fg,12);
+  var fl=persp<0.05?flat:null;
+  if(fl!=="ti"){ct.forEach(function(c){text("$"+c,P(nx(c),L-0.07,L-0.07),mu,10)});text("Cost per task (USD, log) →",P(0.0,L-0.2,L-0.2),fg,12)}
+  if(fl!=="ct"){it.forEach(function(i){text(i,P(L-0.07,ny(i),L-0.07),mu,10,"right")});text("Intelligence Index →",P(L-0.22,0.0,L-0.14),fg,12,"right")}
+  if(fl!=="ci"){tt.forEach(function(t){text(t,P(L-0.07,L-0.07,nz(t)),mu,10)});text("Time: s per 1K output tokens →",P(L-0.2,L-0.2,0.0),fg,12)}
 
   // octant
   var o=octant(),v=box(L,o.x1,o.y0,R,L,o.z1);
   var faces=[[0,1,3,2],[4,5,7,6],[0,1,5,4],[2,3,7,6],[0,2,6,4],[1,3,7,5]];
   ctx.fillStyle=css("--green-fill");
-  faces.forEach(function(f){ctx.beginPath();f.forEach(function(k,j){j?ctx.lineTo(v[k].x,v[k].y):ctx.moveTo(v[k].x,v[k].y)});ctx.closePath();ctx.fill()});
+  if(fl){var xs=v.map(function(q){return q.x}),ys=v.map(function(q){return q.y});
+    var bx=Math.min.apply(0,xs),by=Math.min.apply(0,ys);
+    ctx.fillRect(bx,by,Math.max.apply(0,xs)-bx,Math.max.apply(0,ys)-by)}
+  else faces.forEach(function(f){ctx.beginPath();f.forEach(function(k,j){j?ctx.lineTo(v[k].x,v[k].y):ctx.moveTo(v[k].x,v[k].y)});ctx.closePath();ctx.fill()});
   var edges=[[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,7]];
   var ge=css("--green-edge");
-  edges.forEach(function(e){line(v[e[0]],v[e[1]],ge,1.2)});
+  if(fl){ctx.strokeStyle=ge;ctx.lineWidth=1.2;ctx.strokeRect(bx,by,Math.max.apply(0,xs)-bx,Math.max.apply(0,ys)-by)}else edges.forEach(function(e){line(v[e[0]],v[e[1]],ge,1.2)});
   text("Best octant",P((L+o.x1)/2,R,(L+o.z1)/2),ge,12);
 
   // points
@@ -193,7 +194,7 @@ function draw(){
     var x=nx(m.cost),y=ny(m.iq),z=nz(m.time);
     return{m:m,p:P(x,y,z),f:P(x,L,z),in:inOct(m)};
   }).sort(function(a,b){return b.p.d-a.p.d});
-  if(showDrops)proj.forEach(function(q){
+  if(showDrops&&!fl)proj.forEach(function(q){
     line(q.p,q.f,q.in?ge:ln,1,[3,3]);
     ctx.beginPath();ctx.arc(q.f.x,q.f.y,2,0,6.3);ctx.fillStyle=q.in?ge:ln;ctx.fill();
   });
@@ -253,12 +254,12 @@ si.oninput=function(){thr.iq=+si.value;updateUI()};
 sc.oninput=function(){thr.cost=costFromSlider(+sc.value);updateUI()};
 ss.oninput=function(){thr.speed=+ss.value;updateUI()};
 function tog(id,fn){var b=document.getElementById(id);b.onclick=function(){b.classList.toggle("on");fn(b.classList.contains("on"));dirty=true}}
-tog("auto",function(v){auto=v});tog("lab",function(v){showLab=v});tog("drops",function(v){showDrops=v});
+tog("auto",function(v){auto=v;if(v)flat=null});tog("lab",function(v){showLab=v});tog("drops",function(v){showDrops=v});
 document.getElementById("zin").onclick=function(){zoom=Math.min(3,zoom*1.2);dirty=true};
 document.getElementById("zout").onclick=function(){zoom=Math.max(.5,zoom/1.2);dirty=true};
-var VIEWS={iso:[-0.55,0.3],ci:[0,0],ti:[-Math.PI/2,0],ct:[0,Math.PI/2-0.001]};
+var VIEWS={iso:[-0.55,0.3],ci:[0,0],ti:[-Math.PI/2,0],ct:[0,-Math.PI/2]};
 document.querySelectorAll("[data-view]").forEach(function(b){b.onclick=function(){
-  var v=VIEWS[b.dataset.view];target=v.slice();auto=false;document.getElementById("auto").classList.remove("on");dirty=true}});
+  var v=VIEWS[b.dataset.view];target=v.slice();flat=b.dataset.view==='iso'?null:b.dataset.view;auto=false;document.getElementById("auto").classList.remove("on");dirty=true}});
 
 // interaction
 var last=null;
@@ -266,7 +267,7 @@ cv.addEventListener("pointerdown",function(e){dragging=true;last=[e.clientX,e.cl
 cv.addEventListener("pointerup",function(){dragging=false;cv.classList.remove("drag")});
 cv.addEventListener("pointermove",function(e){
   var r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
-  if(dragging){yaw+=(e.clientX-last[0])*0.008;pitch=Math.max(-1.5,Math.min(1.5,pitch+(e.clientY-last[1])*0.008));last=[e.clientX,e.clientY];dirty=true;tip.style.display="none";return}
+  if(dragging){flat=null;yaw+=(e.clientX-last[0])*0.008;pitch=Math.max(-1.5,Math.min(1.5,pitch+(e.clientY-last[1])*0.008));last=[e.clientX,e.clientY];dirty=true;tip.style.display="none";return}
   var h=null,bd=1e9;
   for(var i=proj.length-1;i>=0;i--){var q=proj[i],d=Math.hypot(q.p.x-mx,q.p.y-my);if(d<q.r+5&&d<bd){bd=d;h=q.m}}
   if(h!==hover){hover=h;dirty=true}
@@ -282,6 +283,7 @@ cv.addEventListener("wheel",function(e){e.preventDefault();zoom=Math.max(.5,Math
 
 function loop(){
   if(auto&&!dragging&&!hover){yaw+=0.004;dirty=true}
+  var pt=flat?0:1;if(Math.abs(pt-persp)>0.002){persp+=(pt-persp)*0.12;dirty=true}else if(persp!==pt){persp=pt;dirty=true}
   if(target){yaw+=(target[0]-yaw)*0.12;pitch+=(target[1]-pitch)*0.12;dirty=true;
     if(Math.abs(target[0]-yaw)<.002&&Math.abs(target[1]-pitch)<.002){yaw=target[0];pitch=target[1];target=null}}
   if(dirty)draw();
