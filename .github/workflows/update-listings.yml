@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 1
       - name: Compute GA lookup window start
         run: |
           printf 'GA_LOOKBACK_SINCE=%s\n' "$(python3 -c 'from datetime import datetime, timedelta, timezone; print((datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ"))')" >> "$GITHUB_ENV"
@@ -43,7 +43,7 @@ jobs:
       - name: Guard - exit early unless research/, learning/ or plans/ changed
         id: guard
         run: |
-          CHANGED=$(git diff --name-only HEAD~1 HEAD -- research learning plans 2>/dev/null || true)
+          CHANGED=$(git diff-tree --no-commit-id --name-only -r HEAD -- research learning plans 2>/dev/null || true)
           if [ -z "$CHANGED" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "No changes under research/, learning/ or plans/. Skipping."
@@ -56,7 +56,7 @@ jobs:
         if: steps.guard.outputs.changed == 'true'
         run: |
           {
-            git log --since="$GA_LOOKBACK_SINCE" --diff-filter=A --name-only --format='' -- research learning plans
+            git log --since="$GA_LOOKBACK_SINCE" --diff-filter=A --name-only --pretty=format:'' -- research learning plans
             git diff-tree --no-commit-id --name-only -r --diff-filter=A HEAD -- research learning plans
           } \
             | awk 'NF && /(^|\/)index\.html$/ { print }' \
