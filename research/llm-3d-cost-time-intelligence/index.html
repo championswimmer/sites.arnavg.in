@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intelligence vs Cost vs Time in 3D</title>
+<style>
+:root{--bg:#fafaf7;--panel:#fff;--fg:#1a1a18;--muted:#6b6b66;--line:#d9d8d2;--grid:#e6e5df;--accent:#16a34a;--green-fill:rgba(34,197,94,.16);--green-edge:rgba(22,163,74,.85)}
+@media (prefers-color-scheme:dark){:root{--bg:#121311;--panel:#1b1c1a;--fg:#ecece6;--muted:#9a9a92;--line:#34352f;--grid:#2a2b27;--accent:#4ade80;--green-fill:rgba(74,222,128,.14);--green-edge:rgba(74,222,128,.85)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 48px}
+h1{font:600 28px/1.2 Georgia,serif;margin:0 0 6px}
+.sub{color:var(--muted);margin:0 0 18px;max-width:75ch}
+.stage{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+canvas{display:block;width:100%;height:min(70vh,640px);min-height:380px;touch-action:none;cursor:grab}
+canvas.drag{cursor:grabbing}
+.tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.18);display:none;white-space:nowrap}
+.tip b{display:block;margin-bottom:2px}
+.hint{position:absolute;left:12px;bottom:10px;font-size:12px;color:var(--muted)}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 22px;margin:16px 0}
+.controls label{display:block;font-size:13px;color:var(--muted)}
+.controls label span{color:var(--fg);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 8px}
+button{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.on{border-color:var(--accent);color:var(--accent)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;margin:10px 0}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+.key{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 18px;margin-bottom:6px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:500;cursor:pointer}
+tr.in td{background:var(--green-fill)}
+.tablewrap{overflow-x:auto}
+.note{font-size:13px;color:var(--muted);margin-top:18px;max-width:85ch}
+.note p{margin:6px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Intelligence vs Cost vs Time</h1>
+<p class="sub">A 3D take on Artificial Analysis' two 2D charts. Every model is placed by Intelligence Index, cost per task and response time. The green octant is the corner where cost is lowest, time is lowest and intelligence is highest. Drag to rotate, scroll to zoom, hover for details.</p>
+
+<div class="stage">
+  <canvas id="c"></canvas>
+  <div class="tip" id="tip"></div>
+  <div class="hint">drag: rotate · scroll / pinch buttons: zoom</div>
+</div>
+
+<div class="btns">
+  <button id="auto" class="on">Auto-rotate</button>
+  <button id="lab" class="on">Labels</button>
+  <button id="drops" class="on">Drop lines</button>
+  <button data-view="iso">Isometric</button>
+  <button data-view="ci">Cost × Intelligence</button>
+  <button data-view="ti">Time × Intelligence</button>
+  <button data-view="ct">Cost × Time</button>
+  <button id="zin">Zoom +</button>
+  <button id="zout">Zoom −</button>
+</div>
+
+<div class="controls">
+  <label>Min intelligence index: <span id="vi"></span><input id="si" type="range" min="20" max="58" step="0.5" value="45"></label>
+  <label>Max cost per task: <span id="vc"></span><input id="sc" type="range" min="0" max="100" step="1"></label>
+  <label>Min output speed: <span id="vs"></span><input id="ss" type="range" min="30" max="240" step="5" value="100"></label>
+</div>
+<div class="key">
+  <span id="count"></span>
+  <span>◯ ring = Pareto-optimal in all 3 dimensions</span>
+  <span style="color:var(--accent)">■ green = inside the octant</span>
+</div>
+<div class="legend" id="legend"></div>
+
+<div class="tablewrap"><table id="tbl"><thead><tr>
+<th data-k="name">Model</th><th data-k="iq">Intelligence</th><th data-k="cost">Cost / task</th><th data-k="speed">Output tok/s</th><th data-k="time">s per 1K tokens</th></tr></thead><tbody></tbody></table></div>
+
+<div class="note">
+<p><b>How the axes are defined.</b> Intelligence = Artificial Analysis Intelligence Index (composite). Cost = weighted average USD per Intelligence Index task (log scale, as in AA's chart). Time = seconds to generate 1,000 output tokens, i.e. 1000 ÷ output tokens per second, so lower is better and it points the same way as cost.</p>
+<p><b>Caveat.</b> Values were read off the two Artificial Analysis charts (Intelligence vs Output Speed, Intelligence vs Cost per task), so they are approximate, probably within a point of index and a few percent of cost or speed. Only models that appear in both charts are plotted. Time is a speed-based proxy, not end-to-end task time, which would also depend on how many tokens each model spends per task. Default octant thresholds are my choice and are adjustable above.</p>
+</div>
+</div>
+
+<script>
+(function(){
+// name, provider, intelligence, cost USD/task, output tok/s
+var DATA=[
+["Claude Opus 5.5","Anthropic",57.6,6.0,92],
+["Claude Sonnet 5.5","Anthropic",56.0,7.7,132],
+["Claude Fable 5.1","Anthropic",53.3,7.7,66],
+["GPT-6 Astra","OpenAI",52.5,3.27,60.5],
+["GPT-6.1 Sol","OpenAI",51.8,0.73,52],
+["GPT-6 Sol","OpenAI",47.6,1.05,106.6],
+["GPT-6 Luna","OpenAI",38.0,0.068,140.7],
+["Muse Spark 1.3","Meta",48.0,1.61,134.5],
+["Muse Glimmer","Meta",17.5,0.057,124.5],
+["MiMo-V2.6-Pro","Xiaomi",46.4,0.133,40],
+["Qwen3.8 Max","Alibaba",45.4,5.4,37],
+["Qwen3.8 27B","Alibaba",33.7,1.0,45.7],
+["Kimi K3","Kimi",43.6,2.0,40],
+["GLM-5.3","Z AI",44.7,2.0,71.5],
+["GLM-5.3-Flash","Z AI",41.9,0.253,53],
+["Grok 4.7","SpaceXAI",46.4,3.74,77],
+["Step 5 Preview","StepFun",43.8,0.718,85.7],
+["Gemini 3.8 Flash","Google",40.9,1.25,239],
+["DeepSeek V4.1 Flash","DeepSeek",39.4,0.266,213],
+["MiniMax-M3","MiniMax",29.2,0.51,84.5],
+["Nemotron 3 Ultra","NVIDIA",23.0,0.597,186],
+["Mistral Medium 3.5","Mistral",14.3,0.50,164.6]
+].map(function(r){return{name:r[0],prov:r[1],iq:r[2],cost:r[3],speed:r[4],time:1000/r[4]}});
+
+var COL={Anthropic:"#c4704f",OpenAI:"#6b7280",Meta:"#2f7cf6",Xiaomi:"#f97316",Alibaba:"#e8590c",Kimi:"#3b5bdb",
+"Z AI":"#0ea5e9",SpaceXAI:"#8b5cf6",StepFun:"#14b8a6",Google:"#22a35a",DeepSeek:"#1e3a8a",MiniMax:"#e11d6a",NVIDIA:"#84cc16",Mistral:"#f59e0b"};
+
+// pareto in 3D: higher iq, lower cost, lower time
+DATA.forEach(function(a){a.pareto=!DATA.some(function(b){return b!==a&&b.iq>=a.iq&&b.cost<=a.cost&&b.time<=a.time&&(b.iq>a.iq||b.cost<a.cost||b.time<a.time)})});
+
+// axis ranges
+var CMIN=0.04,CMAX=12,IMIN=10,IMAX=62,TMIN=0,TMAX=30;
+var lc0=Math.log(CMIN),lc1=Math.log(CMAX);
+function nx(c){return (Math.log(c)-lc0)/(lc1-lc0)*2-1}
+function ny(i){return (i-IMIN)/(IMAX-IMIN)*2-1}
+function nz(t){return (t-TMIN)/(TMAX-TMIN)*2-1}
+
+var cv=document.getElementById("c"),ctx=cv.getContext("2d"),tip=document.getElementById("tip");
+var yaw=-0.75,pitch=0.38,zoom=1,auto=true,showLab=true,showDrops=true,hover=null,dragging=false,dirty=true;
+var W=0,H=0,dpr=1,proj=[];
+var thr={iq:45,cost:2,speed:100};
+var target=null;
+
+function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+
+function resize(){dpr=window.devicePixelRatio||1;var r=cv.getBoundingClientRect();W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;dirty=true}
+window.addEventListener("resize",resize);
+
+function P(x,y,z){ // rotate then perspective
+  var cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+  var x1=x*cy-z*sy,z1=x*sy+z*cy;
+  var y1=y*cp-z1*sp,z2=y*sp+z1*cp;
+  var f=4.2,s=f/(f+z2*0.9);
+  var base=Math.min(W,H)*0.30*zoom;
+  return{x:W/2+x1*s*base,y:H/2-y1*s*base,d:z2,s:s};
+}
+function line(a,b,col,w,dash){ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=col;ctx.lineWidth=w||1;ctx.setLineDash(dash||[]);ctx.stroke();ctx.setLineDash([])}
+function text(t,p,col,size,align){ctx.fillStyle=col;ctx.font=(size||11)+"px system-ui,sans-serif";ctx.textAlign=align||"center";ctx.textBaseline="middle";ctx.fillText(t,p.x,p.y)}
+
+function octant(){
+  var tmax=1000/thr.speed;
+  return{x1:nx(thr.cost),y0:ny(thr.iq),z1:nz(tmax)};
+}
+function inOct(m){return m.iq>=thr.iq&&m.cost<=thr.cost&&m.speed>=thr.speed}
+
+function box(x0,x1,y0,y1,z0,z1){
+  var v=[];for(var i=0;i<8;i++)v.push(P(i&1?x1:x0,i&2?y1:y0,i&4?z1:z0));
+  return v;
+}
+
+function draw(){
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+  var fg=css("--fg"),mu=css("--muted"),gr=css("--grid"),ln=css("--line");
+  var L=-1,R=1;
+  // floor grid
+  var ct=[0.05,0.1,0.2,0.5,1,2,5,10],it=[10,20,30,40,50,60],tt=[0,5,10,15,20,25,30];
+  ct.forEach(function(c){line(P(nx(c),L,L),P(nx(c),L,R),gr,1)});
+  tt.forEach(function(t){line(P(L,L,nz(t)),P(R,L,nz(t)),gr,1)});
+  // back walls grids (iq lines)
+  it.forEach(function(i){line(P(L,ny(i),L),P(R,ny(i),L),gr,1);line(P(L,ny(i),L),P(L,ny(i),R),gr,1)});
+  ct.forEach(function(c){line(P(nx(c),L,L),P(nx(c),R,L),gr,1)});
+  tt.forEach(function(t){line(P(L,L,nz(t)),P(L,R,nz(t)),gr,1)});
+  // axes
+  line(P(L,L,L),P(R,L,L),mu,1.5);line(P(L,L,L),P(L,R,L),mu,1.5);line(P(L,L,L),P(L,L,R),mu,1.5);
+  ct.forEach(function(c){text("$"+c,P(nx(c),L-0.07,L-0.07),mu,10)});
+  it.forEach(function(i){text(i,P(L-0.07,ny(i),L-0.07),mu,10,"right")});
+  tt.forEach(function(t){text(t,P(L-0.07,L-0.07,nz(t)),mu,10)});
+  text("Cost per task (USD, log) →",P(0.0,L-0.2,L-0.2),fg,12);
+  text("Intelligence Index →",P(L-0.22,0.0,L-0.14),fg,12,"right");
+  text("Time: s per 1K output tokens →",P(L-0.2,L-0.2,0.0),fg,12);
+
+  // octant
+  var o=octant(),v=box(L,o.x1,o.y0,R,L,o.z1);
+  var faces=[[0,1,3,2],[4,5,7,6],[0,1,5,4],[2,3,7,6],[0,2,6,4],[1,3,7,5]];
+  ctx.fillStyle=css("--green-fill");
+  faces.forEach(function(f){ctx.beginPath();f.forEach(function(k,j){j?ctx.lineTo(v[k].x,v[k].y):ctx.moveTo(v[k].x,v[k].y)});ctx.closePath();ctx.fill()});
+  var edges=[[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,7]];
+  var ge=css("--green-edge");
+  edges.forEach(function(e){line(v[e[0]],v[e[1]],ge,1.2)});
+  text("Best octant",P((L+o.x1)/2,R,(L+o.z1)/2),ge,12);
+
+  // points
+  proj=DATA.map(function(m){
+    var x=nx(m.cost),y=ny(m.iq),z=nz(m.time);
+    return{m:m,p:P(x,y,z),f:P(x,L,z),in:inOct(m)};
+  }).sort(function(a,b){return b.p.d-a.p.d});
+  if(showDrops)proj.forEach(function(q){
+    line(q.p,q.f,q.in?ge:ln,1,[3,3]);
+    ctx.beginPath();ctx.arc(q.f.x,q.f.y,2,0,6.3);ctx.fillStyle=q.in?ge:ln;ctx.fill();
+  });
+  proj.forEach(function(q){
+    var r=(q.m===hover?9:6.5)*Math.max(.7,q.p.s*Math.sqrt(zoom));
+    q.r=r;
+    ctx.beginPath();ctx.arc(q.p.x,q.p.y,r,0,6.3);
+    ctx.fillStyle=COL[q.m.prov]||"#888";ctx.fill();
+    ctx.lineWidth=q.in?3:1.2;ctx.strokeStyle=q.in?ge:css("--panel");ctx.stroke();
+    if(q.m.pareto){ctx.beginPath();ctx.arc(q.p.x,q.p.y,r+4,0,6.3);ctx.lineWidth=1.2;ctx.strokeStyle=fg;ctx.stroke()}
+    if(showLab||q.m===hover){
+      ctx.font=(q.m===hover?"600 12px":"11px")+" system-ui,sans-serif";
+      var tw=ctx.measureText(q.m.name).width;
+      ctx.textAlign="left";ctx.textBaseline="middle";
+      ctx.lineWidth=3;ctx.strokeStyle=css("--panel");ctx.strokeText(q.m.name,q.p.x+r+5,q.p.y);
+      ctx.fillStyle=q.in?ge:fg;ctx.fillText(q.m.name,q.p.x+r+5,q.p.y);
+    }
+  });
+  dirty=false;
+}
+
+function fmtCost(c){return c<0.1?"$"+c.toFixed(3):"$"+c.toFixed(2)}
+function updateUI(){
+  document.getElementById("vi").textContent=thr.iq.toFixed(1);
+  document.getElementById("vc").textContent=fmtCost(thr.cost);
+  document.getElementById("vs").textContent=thr.speed+" tok/s ("+(1000/thr.speed).toFixed(1)+" s/1K)";
+  var n=DATA.filter(inOct).length;
+  document.getElementById("count").textContent=n+" of "+DATA.length+" models inside the octant";
+  var rows=document.querySelectorAll("#tbl tbody tr");
+  rows.forEach(function(r){r.className=inOct(DATA[+r.dataset.i])?"in":""});
+  dirty=true;
+}
+// cost slider maps 0..100 to log range
+function costFromSlider(v){return Math.exp(Math.log(0.05)+(Math.log(12)-Math.log(0.05))*v/100)}
+function sliderFromCost(c){return Math.round((Math.log(c)-Math.log(0.05))/(Math.log(12)-Math.log(0.05))*100)}
+
+// build legend + table
+var provs={};DATA.forEach(function(m){provs[m.prov]=1});
+document.getElementById("legend").innerHTML=Object.keys(provs).map(function(p){return '<span><i style="background:'+COL[p]+'"></i>'+p+'</span>'}).join("");
+var sortK="iq",sortDir=-1;
+function buildTable(){
+  var idx=DATA.map(function(_,i){return i}).sort(function(a,b){
+    var x=DATA[a][sortK],y=DATA[b][sortK];
+    return typeof x==="string"?sortDir*x.localeCompare(y):sortDir*(x-y)*1;
+  });
+  document.querySelector("#tbl tbody").innerHTML=idx.map(function(i){var m=DATA[i];
+    return '<tr data-i="'+i+'"><td>'+m.name+(m.pareto?" ◯":"")+'</td><td>'+m.iq.toFixed(1)+'</td><td>'+fmtCost(m.cost)+'</td><td>'+m.speed.toFixed(0)+'</td><td>'+m.time.toFixed(1)+'</td></tr>'}).join("");
+  updateUI();
+}
+document.querySelectorAll("#tbl th").forEach(function(th){th.onclick=function(){var k=th.dataset.k;if(k===sortK)sortDir*=-1;else{sortK=k;sortDir=k==="name"?1:-1}buildTable()}});
+document.querySelector("#tbl tbody").addEventListener("mouseover",function(e){var tr=e.target.closest("tr");hover=tr?DATA[+tr.dataset.i]:null;dirty=true});
+
+// controls
+var si=document.getElementById("si"),sc=document.getElementById("sc"),ss=document.getElementById("ss");
+sc.value=sliderFromCost(thr.cost);
+si.oninput=function(){thr.iq=+si.value;updateUI()};
+sc.oninput=function(){thr.cost=costFromSlider(+sc.value);updateUI()};
+ss.oninput=function(){thr.speed=+ss.value;updateUI()};
+function tog(id,fn){var b=document.getElementById(id);b.onclick=function(){b.classList.toggle("on");fn(b.classList.contains("on"));dirty=true}}
+tog("auto",function(v){auto=v});tog("lab",function(v){showLab=v});tog("drops",function(v){showDrops=v});
+document.getElementById("zin").onclick=function(){zoom=Math.min(3,zoom*1.2);dirty=true};
+document.getElementById("zout").onclick=function(){zoom=Math.max(.5,zoom/1.2);dirty=true};
+var VIEWS={iso:[-0.75,0.38],ci:[0,0],ti:[-Math.PI/2,0],ct:[0,Math.PI/2-0.001]};
+document.querySelectorAll("[data-view]").forEach(function(b){b.onclick=function(){
+  var v=VIEWS[b.dataset.view];target=v.slice();auto=false;document.getElementById("auto").classList.remove("on");dirty=true}});
+
+// interaction
+var last=null;
+cv.addEventListener("pointerdown",function(e){dragging=true;last=[e.clientX,e.clientY];cv.classList.add("drag");cv.setPointerCapture(e.pointerId);target=null});
+cv.addEventListener("pointerup",function(){dragging=false;cv.classList.remove("drag")});
+cv.addEventListener("pointermove",function(e){
+  var r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+  if(dragging){yaw+=(e.clientX-last[0])*0.008;pitch=Math.max(-1.5,Math.min(1.5,pitch+(e.clientY-last[1])*0.008));last=[e.clientX,e.clientY];dirty=true;tip.style.display="none";return}
+  var h=null,bd=1e9;
+  for(var i=proj.length-1;i>=0;i--){var q=proj[i],d=Math.hypot(q.p.x-mx,q.p.y-my);if(d<q.r+5&&d<bd){bd=d;h=q.m}}
+  if(h!==hover){hover=h;dirty=true}
+  if(h){
+    tip.innerHTML="<b>"+h.name+"</b>"+h.prov+"<br>Intelligence: "+h.iq.toFixed(1)+"<br>Cost/task: "+fmtCost(h.cost)+"<br>Speed: "+h.speed.toFixed(0)+" tok/s ("+h.time.toFixed(1)+" s/1K)"+(inOct(h)?'<br><span style="color:var(--accent)">Inside green octant</span>':"")+(h.pareto?"<br>Pareto-optimal":"");
+    tip.style.display="block";
+    var tx=mx+14,ty=my+14;if(tx>W-190)tx=mx-190;if(ty>H-130)ty=my-120;
+    tip.style.left=tx+"px";tip.style.top=ty+"px";
+  }else tip.style.display="none";
+});
+cv.addEventListener("pointerleave",function(){hover=null;tip.style.display="none";dirty=true});
+cv.addEventListener("wheel",function(e){e.preventDefault();zoom=Math.max(.5,Math.min(3,zoom*(e.deltaY<0?1.08:1/1.08)));dirty=true},{passive:false});
+
+function loop(){
+  if(auto&&!dragging&&!hover){yaw+=0.004;dirty=true}
+  if(target){yaw+=(target[0]-yaw)*0.12;pitch+=(target[1]-pitch)*0.12;dirty=true;
+    if(Math.abs(target[0]-yaw)<.002&&Math.abs(target[1]-pitch)<.002){yaw=target[0];pitch=target[1];target=null}}
+  if(dirty)draw();
+  requestAnimationFrame(loop);
+}
+buildTable();resize();loop();
+})();
+</script>
+</body>
+</html>
