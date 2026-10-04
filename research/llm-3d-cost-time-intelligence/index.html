@@ -71,8 +71,7 @@ tr.in td{background:var(--green-fill)}
 </div>
 <div class="btns" id="pmodes"><span style="align-self:center;font-size:13px;color:var(--muted)">Pareto type:</span>
   <button data-pm="env" title="Outer convex envelope: never dips inward">Global envelope</button>
-  <button data-pm="nd" title="Every non-dominated model (local maxima), joined directly or as a staircase surface">Local maxima (non-dominated)</button>
-  <button data-pm="both">Both</button>
+  <button data-pm="nd" title="Every non-dominated model joined directly; may dip inward between models">Local maxima (non-dominated)</button>
 </div>
 <div class="controls">
   <label>Min intelligence index: <span id="vi"></span><input id="si" type="range" min="20" max="58" step="0.5" value="45"></label>
@@ -83,8 +82,7 @@ tr.in td{background:var(--green-fill)}
   <span id="count"></span>
   <span>◯ ring = Pareto-optimal in all 3 dimensions</span>
   <span style="color:var(--accent)">■ green = inside the octant</span>
-  <span style="color:rgb(var(--plane))">■ purple = envelope plane / dotted line</span>
-  <span style="color:rgb(var(--plane2))">■ teal = local-maxima staircase / solid line</span>
+  <span style="color:rgb(var(--plane))">■ purple = Pareto plane / dotted line</span>
   <span style="color:var(--cut)">━ amber = where the plane cuts the octant</span>
 </div>
 <div class="legend" id="legend"></div>
@@ -171,25 +169,35 @@ function buildTris(){
   return out;
 }
 
-// Local-maxima ("staircase") surface: boundary of the region dominated by the Pareto models.
+// Local-maxima surface: join every non-dominated model directly. Delaunay triangulation over (cost, time)
+// with intelligence as height, plus skirt points that carry each model's height out to the worst bounds.
 function buildNd(){
-  var g=[];ND={};
-  DATA.forEach(function(m){if(m.pareto){ND[m.name]=1;g.push([-nx(m.cost),ny(m.iq),-nz(m.time)])}});
-  QUADS=[];
-  function cuts(vals,lo,hi){var a=[lo,hi];vals.forEach(function(v){if(v>lo+1e-9&&v<hi-1e-9)a.push(v)});a.sort(function(x,y){return x-y});return a.filter(function(v,i){return !i||v-a[i-1]>1e-9})}
-  g.forEach(function(p,pi){
-    for(var a=0;a<3;a++){
-      var b=(a+1)%3,c=(a+2)%3;
-      var cb=cuts(g.map(function(q){return q[b]}),-1,p[b]),cc=cuts(g.map(function(q){return q[c]}),-1,p[c]);
-      for(var i=0;i<cb.length-1;i++)for(var j=0;j<cc.length-1;j++){
-        var mb=(cb[i]+cb[i+1])/2,mc=(cc[j]+cc[j+1])/2;
-        var covered=g.some(function(q,qi){return qi!==pi&&q[a]>p[a]+1e-9&&q[b]>=mb&&q[c]>=mc});
-        if(covered)continue;
-        var corners=[[cb[i],cc[j]],[cb[i+1],cc[j]],[cb[i+1],cc[j+1]],[cb[i],cc[j+1]]].map(function(k){var v=[0,0,0];v[a]=p[a];v[b]=k[0];v[c]=k[1];return[-v[0],v[1],-v[2]]});
-        QUADS.push(corners);
-      }
-    }
-  });
+  var pts=[];ND={};
+  DATA.forEach(function(m){if(m.pareto){ND[m.name]=1;var p=[-nx(m.cost),ny(m.iq),-nz(m.time)];
+    pts.push(p,[-1,p[1],p[2]],[p[0],p[1],-1],[-1,p[1],-1])}});
+  // one point per (x,z) position, keeping the highest intelligence
+  var best={};pts.forEach(function(p){var k=p[0].toFixed(6)+","+p[2].toFixed(6);if(!best[k]||best[k][1]<p[1])best[k]=p});
+  pts=Object.keys(best).map(function(k){return best[k]});
+  var big=1e3,sv=[[-big,0,-big],[big,0,-big],[0,0,big]],all=pts.concat(sv),tris=[[all.length-3,all.length-2,all.length-1]];
+  function circ(t,q){
+    var a=all[t[0]],b=all[t[1]],c=all[t[2]];
+    var ax=a[0]-q[0],az=a[2]-q[2],bx=b[0]-q[0],bz=b[2]-q[2],cx=c[0]-q[0],cz=c[2]-q[2];
+    var det=(ax*ax+az*az)*(bx*cz-cx*bz)-(bx*bx+bz*bz)*(ax*cz-cx*az)+(cx*cx+cz*cz)*(ax*bz-bx*az);
+    var o=(b[0]-a[0])*(c[2]-a[2])-(b[2]-a[2])*(c[0]-a[0]);
+    return o>0?det>1e-12:det<-1e-12;
+  }
+  for(var i=0;i<pts.length;i++){
+    var bad=[],keep=[];
+    tris.forEach(function(t){(circ(t,pts[i])?bad:keep).push(t)});
+    var edges=[];
+    bad.forEach(function(t){[[t[0],t[1]],[t[1],t[2]],[t[2],t[0]]].forEach(function(e){
+      var dup=-1;edges.forEach(function(f,fi){if((f[0]===e[1]&&f[1]===e[0])||(f[0]===e[0]&&f[1]===e[1]))dup=fi});
+      if(dup>=0)edges.splice(dup,1);else edges.push(e)})});
+    tris=keep.concat(edges.map(function(e){return[e[0],e[1],i]}));
+  }
+  var n=pts.length;
+  QUADS=tris.filter(function(t){return t[0]<n&&t[1]<n&&t[2]<n}).map(function(t){
+    return t.map(function(k){var q=all[k];return[-q[0],q[1],-q[2]]})});
 }
 
 function clipPoly(poly,ax,b,le){
@@ -278,7 +286,7 @@ function draw(){
     return{m:m,p:P(x,y,z),f:P(x,L,z),in:fl?inFlat(m,fl):inOct(m)};
   }).sort(function(a,b){return b.p.d-a.p.d});
   var focus=null; // when a Pareto view is on, only these models stay at full strength
-  if(showPln&&!fl)focus=pmode==="env"?ON:pmode==="nd"?ND:Object.assign({},ON,ND)
+  if(showPln&&!fl)focus=pmode==="env"?ON:ND
   function dimmed(q){return focus&&!focus[q.m.name]&&q.m!==hover}
   if(showDrops&&!fl)proj.forEach(function(q){
     ctx.globalAlpha=dimmed(q)?.2:1;
@@ -288,8 +296,7 @@ function draw(){
   });
   if(showPln&&!fl){
     var surfaces=[];
-    if(pmode!=="nd")surfaces.push({polys:TRIS,rgb:css("--plane")});
-    if(pmode!=="env")surfaces.push({polys:QUADS,rgb:css("--plane2")});
+    surfaces.push({polys:pmode==="env"?TRIS:QUADS,rgb:css("--plane")});
     var bnd=[[0,o.x1,true],[1,o.y0,false],[2,o.z1,true]],cuts=[];
     function polyPath(q){ctx.beginPath();q.forEach(function(p,i){i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)});ctx.closePath()}
     function proj3(poly){var q=poly.map(function(v){return P(v[0],v[1],v[2])});return{q:q,d:q.reduce(function(s,p){return s+p.d},0)/q.length}}
@@ -326,17 +333,10 @@ function draw(){
       while(h.length>=2){var a=h[h.length-2],b=h[h.length-1];
         if((b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x)>=0)h.pop();else break}
       h.push(p)});
-    focus={};
-    if(pmode!=="nd")h.forEach(function(p){focus[p.q.m.name]=1});
-    if(pmode!=="env")pts.forEach(function(p){focus[p.q.m.name]=1});
-    if(pmode!=="env"){ // local maxima: join every non-dominated model directly
-      ctx.beginPath();pts.forEach(function(p,i){i?ctx.lineTo(p.q.p.x,p.q.p.y):ctx.moveTo(p.q.p.x,p.q.p.y)});
-      ctx.lineWidth=1.8;ctx.strokeStyle="rgb("+css("--plane2")+")";ctx.stroke();
-    }
-    if(pmode!=="nd"){
-      ctx.beginPath();h.forEach(function(p,i){i?ctx.lineTo(p.q.p.x,p.q.p.y):ctx.moveTo(p.q.p.x,p.q.p.y)});
-      ctx.setLineDash([2,5]);ctx.lineWidth=2;ctx.lineCap="round";ctx.strokeStyle=fg;ctx.stroke();ctx.setLineDash([]);ctx.lineCap="butt";
-    }
+    var lp=pmode==="env"?h:pts;
+    focus={};lp.forEach(function(p){focus[p.q.m.name]=1});
+    ctx.beginPath();lp.forEach(function(p,i){i?ctx.lineTo(p.q.p.x,p.q.p.y):ctx.moveTo(p.q.p.x,p.q.p.y)});
+    ctx.setLineDash([2,5]);ctx.lineWidth=2;ctx.lineCap="round";ctx.strokeStyle=fg;ctx.stroke();ctx.setLineDash([]);ctx.lineCap="butt";
   }
   proj.forEach(function(q){
     var r=(q.m===hover?9:6.5)*Math.max(.7,q.p.s*Math.sqrt(zoom));
