@@ -26,7 +26,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 2
+      - name: Fetch last 24 hours of history for GA page lookup
+        run: |
+          git fetch --update-shallow \
+            --shallow-since="$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)" \
+            origin "${GITHUB_REF_NAME}"
       # Defense-in-depth: `paths:` above already prevents the workflow from
       # starting on unrelated pushes (zero minutes). This guard fails fast
       # inside the job for edge cases (manual re-runs, mixed-file pushes
