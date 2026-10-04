@@ -44,6 +44,7 @@ th:first-child,td:first-child{text-align:left}
 th{color:var(--muted);font-weight:500;cursor:pointer}
 tr.in td{background:var(--green-fill)}
 .tablewrap{overflow-x:auto}
+button.pin{padding:0 7px;font-size:13px;line-height:20px}
 .note{font-size:13px;color:var(--muted);margin-top:18px;max-width:85ch}
 .note p{margin:6px 0}
 </style>
@@ -107,7 +108,7 @@ tr.in td{background:var(--green-fill)}
 <div class="legend" id="legend"></div>
 
 <div class="tablewrap"><table id="tbl"><thead><tr>
-<th data-k="name">Model</th><th data-k="iq">Intelligence</th><th data-k="cost" id="thcost">Cost / task</th><th data-k="speed" id="thspeed">tok/s</th><th data-k="time" id="thtime">s per 1K tokens</th></tr></thead><tbody></tbody></table></div>
+<th></th><th data-k="name">Model</th><th data-k="iq">Intelligence</th><th data-k="cost" id="thcost">Cost / task</th><th data-k="speed" id="thspeed">tok/s</th><th data-k="time" id="thtime">s per 1K tokens</th></tr></thead><tbody></tbody></table></div>
 
 <div class="note">
 <p><b>How the axes are defined.</b> Intelligence = Artificial Analysis Intelligence Index (composite). Cost and time each have two selectable metrics, all of which point the same way (lower is better).</p>
@@ -122,7 +123,7 @@ tr.in td{background:var(--green-fill)}
 fetch("data.json").then(function(r){return r.json()}).then(function(J){
 var CFG=window.LLM3D_CONFIG;
 var ALL=J.models.map(function(r){return{name:r.name,prov:r.provider,iq:r.intelligence,costTask:r.cost,tpt:r.timePerTask,blend:(CFG.blendInputWeight*r.price.in+r.price.out)/(CFG.blendInputWeight+1),released:r.released,sp:r.speed}});
-var DATA=ALL;
+var DATA=ALL,pinned=null; // pinned: model whose values are used as the thresholds
 var SRC=CFG.sources;
 var MODES=CFG.modes;
 var mode=CFG.defaultMode,cmode=CFG.defaultCostMode,CM=CFG.costModes[cmode],TM=MODES[mode],CT=CM.ticks;
@@ -231,15 +232,17 @@ function P(x,y,z){ // rotate then perspective
 function line(a,b,col,w,dash){ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=col;ctx.lineWidth=w||1;ctx.setLineDash(dash||[]);ctx.stroke();ctx.setLineDash([])}
 function text(t,p,col,size,align){ctx.fillStyle=col;ctx.font=(size||11)+"px system-ui,sans-serif";ctx.textAlign=align||"center";ctx.textBaseline="middle";ctx.fillText(t,p.x,p.y)}
 
+function better(m){return m!==pinned} // the pinned model itself is not "better than" itself
 function tLim(){return TM.kind==="task"?thr.speed:1000/thr.speed} // time threshold, in axis units
 function octant(){
   return{x1:nx(thr.cost),y0:ny(thr.iq),z1:nz(tLim())};
 }
 function inFlat(m,v){
   var a=m.iq>=thr.iq,c=m.cost<=thr.cost,sp=m.time<=tLim()+1e-9;
+  if(!better(m))return false;
   return v==="ci"?a&&c:v==="ti"?a&&sp:c&&sp;
 }
-function inOct(m){return m.iq>=thr.iq&&m.cost<=thr.cost&&m.time<=tLim()+1e-9}
+function inOct(m){return better(m)&&m.iq>=thr.iq&&m.cost<=thr.cost&&m.time<=tLim()+1e-9}
 
 function box(x0,x1,y0,y1,z0,z1){
   var v=[];for(var i=0;i<8;i++)v.push(P(i&1?x1:x0,i&2?y1:y0,i&4?z1:z0));
@@ -365,9 +368,9 @@ function updateUI(){
   document.getElementById("vc").textContent=fmtCost(thr.cost);
   document.getElementById("vs").textContent=TM.kind==="task"?thr.speed+" s per task":thr.speed+" tok/s ("+(1000/thr.speed).toFixed(1)+" s/1K)";
   var n=DATA.filter(inOct).length;
-  document.getElementById("count").textContent=n+" of "+DATA.length+" models inside the octant";
+  document.getElementById("count").textContent=pinned?n+" model"+(n===1?"":"s")+" cheaper, faster and smarter than "+pinned.name:n+" of "+DATA.length+" models inside the octant";
   var rows=document.querySelectorAll("#tbl tbody tr");
-  rows.forEach(function(r){r.className=inOct(DATA[+r.dataset.i])?"in":""});
+  rows.forEach(function(r){var m=DATA[+r.dataset.i];r.className=inOct(m)?"in":"";r.querySelector(".pin").classList.toggle("on",m===pinned)});
   dirty=true;
 }
 // cost slider maps 0..100 to log range
@@ -384,18 +387,25 @@ function buildTable(){
     return typeof x==="string"?sortDir*x.localeCompare(y):sortDir*(x-y)*1;
   });
   document.querySelector("#tbl tbody").innerHTML=idx.map(function(i){var m=DATA[i];
-    return '<tr data-i="'+i+'"><td>'+m.name+(m.pareto?" ◯":"")+'</td><td>'+m.iq.toFixed(1)+'</td><td>'+fmtCost(m.cost)+'</td><td>'+m.speed.toFixed(0)+'</td><td>'+fmtTime(m.time)+'</td></tr>'}).join("");
+    return '<tr data-i="'+i+'"><td><button class="pin" title="Pin: set every threshold to this model, so green means cheaper, faster and smarter than it">◎</button></td><td>'+m.name+(m.pareto?" ◯":"")+'</td><td>'+m.iq.toFixed(1)+'</td><td>'+fmtCost(m.cost)+'</td><td>'+m.speed.toFixed(0)+'</td><td>'+fmtTime(m.time)+'</td></tr>'}).join("");
   updateUI();
 }
-document.querySelectorAll("#tbl th").forEach(function(th){th.onclick=function(){var k=th.dataset.k;if(k===sortK)sortDir*=-1;else{sortK=k;sortDir=k==="name"?1:-1}buildTable()}});
+document.querySelectorAll("#tbl th[data-k]").forEach(function(th){th.onclick=function(){var k=th.dataset.k;if(k===sortK)sortDir*=-1;else{sortK=k;sortDir=k==="name"?1:-1}buildTable()}});
+document.querySelector("#tbl tbody").addEventListener("click",function(e){
+  var b=e.target.closest(".pin");if(!b)return;
+  var m=DATA[+b.closest("tr").dataset.i];
+  pinned=pinned===m?null:m;
+  if(pinned)applyPin();
+  updateUI();
+});
 document.querySelector("#tbl tbody").addEventListener("mouseover",function(e){var tr=e.target.closest("tr");hover=tr?DATA[+tr.dataset.i]:null;dirty=true});
 
 // controls
 var si=document.getElementById("si"),sc=document.getElementById("sc"),ss=document.getElementById("ss");
 sc.value=sliderFromCost(thr.cost);
-si.oninput=function(){thr.iq=+si.value;updateUI()};
-sc.oninput=function(){thr.cost=costFromSlider(+sc.value);updateUI()};
-ss.oninput=function(){thr.speed=+ss.value;updateUI()};
+si.oninput=function(){pinned=null;thr.iq=+si.value;updateUI()};
+sc.oninput=function(){pinned=null;thr.cost=costFromSlider(+sc.value);updateUI()};
+ss.oninput=function(){pinned=null;thr.speed=+ss.value;updateUI()};
 function tog(id,fn){var b=document.getElementById(id);b.onclick=function(){b.classList.toggle("on");fn(b.classList.contains("on"));dirty=true}}
 tog("auto",function(v){auto=v;if(v)flat=null});tog("lab",function(v){showLab=v});tog("drops",function(v){showDrops=v});tog("par",function(v){showPar=v});tog("pln",function(v){showPln=v});
 document.getElementById("zin").onclick=function(){zoom=Math.min(3,zoom*1.2);dirty=true};
@@ -432,15 +442,21 @@ function loop(){
   if(dirty)draw();
   requestAnimationFrame(loop);
 }
+function applyPin(){
+  thr.iq=pinned.iq;thr.cost=pinned.cost;thr.speed=TM.kind==="task"?pinned.time:pinned.speed;
+  si.value=thr.iq;sc.value=sliderFromCost(thr.cost);ss.value=thr.speed;
+}
 function refresh(){
   ALL.forEach(function(d){
     var m=TM.kind==="task"?"aa":mode,v=d.sp[m];d.src=v==null?"aa":m;if(v==null)v=d.sp.aa;d.speed=v;
-    d.time=TM.kind==="task"?d.tpt:1000/v;
+    d.time=TM.kind==="task"?d.tpt:v==null?null:1000/v;
     d.cost=cmode==="task"?d.costTask:d.blend});
   // models with no value for the selected metric (AA has no per-task data for some older models) are left out
   var miss=ALL.filter(function(d){return d.released<=cutoff&&(d.cost==null||d.time==null)});
-  document.getElementById("hid").textContent=miss.length?miss.length+" hidden, no AA per-task data: "+miss.map(function(d){return d.name}).join(", "):"";
+  document.getElementById("hid").textContent=miss.length?miss.length+" hidden, missing data for this metric: "+miss.map(function(d){return d.name}).join(", "):"";
   DATA=ALL.filter(function(d){return d.released<=cutoff&&d.cost!=null&&d.time!=null});
+  if(pinned&&DATA.indexOf(pinned)<0)pinned=null;
+  if(pinned)applyPin();
   if(hover&&DATA.indexOf(hover)<0)hover=null;
   computePareto();TRIS=buildTris();buildNd();buildTable();updateUI();dirty=true;
 }
