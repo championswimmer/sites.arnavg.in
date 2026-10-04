@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
       # Defense-in-depth: `paths:` above already prevents the workflow from
       # starting on unrelated pushes (zero minutes). This guard fails fast
       # inside the job for edge cases (manual re-runs, mixed-file pushes
@@ -43,15 +43,20 @@ jobs:
             echo "Relevant changes:"
             echo "$CHANGED"
           fi
-      - name: Inject GA snippet into newly added pages
+      - name: Inject GA snippet into pages added in the last 24 hours or last commit
         if: steps.guard.outputs.changed == 'true'
         run: |
-          git diff --name-only --diff-filter=A HEAD~1 HEAD -- 'research/*.html' 'learning/*.html' 'plans/*.html' \
-            | while read -r f; do [ -f "$f" ] && echo "$f"; done > /tmp/new_pages.txt
-          if [ -s /tmp/new_pages.txt ]; then
-            tr '\n' '\0' < /tmp/new_pages.txt | xargs -0 python3 .github/scripts/inject-ga.py
+          {
+            git log --since='24 hours ago' --diff-filter=A --name-only --format='' -- research learning plans
+            git diff-tree --no-commit-id --name-only -r --diff-filter=A HEAD -- research learning plans
+          } \
+            | awk 'NF && /\.html$/ { print }' \
+            | while read -r f; do [ -f "$f" ] && echo "$f"; done \
+            | sort -u > /tmp/ga_pages.txt
+          if [ -s /tmp/ga_pages.txt ]; then
+            tr '\n' '\0' < /tmp/ga_pages.txt | xargs -0 python3 .github/scripts/inject-ga.py
           else
-            echo "No new HTML pages. Skipping GA injection."
+            echo "No candidate HTML pages from the last 24 hours or last commit. Skipping GA injection."
           fi
       - if: steps.guard.outputs.changed == 'true'
         run: python3 .github/scripts/update-listings.py
