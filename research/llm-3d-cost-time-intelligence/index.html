@@ -87,6 +87,10 @@ tr.in td{background:var(--green-fill)}
   <label>Max cost per task: <span id="vc"></span><input id="sc" type="range" min="0" max="100" step="1"></label>
   <label>Min output speed: <span id="vs"></span><input id="ss" type="range" min="30" max="240" step="5" value="100"></label>
 </div>
+<div class="controls">
+  <label>Timeline — models released by: <span id="vd"></span><input id="sd" type="range" min="0" max="0" step="1" value="0"></label>
+  <div class="btns" style="align-self:end"><button id="play">▶ Play timeline</button></div>
+</div>
 <div class="key">
   <span id="count"></span>
   <span>◯ ring = Pareto-optimal in all 3 dimensions</span>
@@ -110,7 +114,8 @@ tr.in td{background:var(--green-fill)}
 <script>
 fetch("data.json").then(function(r){return r.json()}).then(function(J){
 var CFG=window.LLM3D_CONFIG;
-var DATA=J.models.map(function(r){return{name:r.name,prov:r.provider,iq:r.intelligence,cost:r.cost,released:r.released,sp:r.speed}});
+var ALL=J.models.map(function(r){return{name:r.name,prov:r.provider,iq:r.intelligence,cost:r.cost,released:r.released,sp:r.speed}});
+var DATA=ALL;
 var SRC=CFG.sources;
 var MODES=CFG.modes;
 var mode=CFG.defaultMode;
@@ -419,11 +424,32 @@ function loop(){
   if(dirty)draw();
   requestAnimationFrame(loop);
 }
+function refresh(){
+  ALL.forEach(function(d){var v=d.sp[mode];d.src=v==null?"aa":mode;if(v==null)v=d.sp.aa;d.speed=v;d.time=1000/v});
+  DATA=ALL.filter(function(d){return d.released<=cutoff});
+  if(hover&&DATA.indexOf(hover)<0)hover=null;
+  computePareto();TRIS=buildTris();buildNd();buildTable();updateUI();dirty=true;
+}
+// timeline: only models released on or before the chosen day are plotted
+var days=[],cutoff="9999";
+ALL.forEach(function(d){if(days.indexOf(d.released)<0)days.push(d.released)});days.sort();
+var sd=document.getElementById("sd"),playT=null;
+sd.max=days.length-1;sd.value=days.length-1;cutoff=days[days.length-1];
+function setDay(i){cutoff=days[i];document.getElementById("vd").textContent=cutoff;refresh()}
+sd.oninput=function(){stopPlay();setDay(+sd.value)};
+function stopPlay(){if(playT){clearInterval(playT);playT=null;document.getElementById("play").textContent="▶ Play timeline"}}
+document.getElementById("play").onclick=function(){
+  if(playT){stopPlay();return}
+  document.getElementById("play").textContent="⏸ Pause";
+  if(+sd.value>=days.length-1)sd.value=0;
+  setDay(+sd.value);
+  playT=setInterval(function(){if(+sd.value>=days.length-1){stopPlay();return}sd.value=+sd.value+1;setDay(+sd.value)},700);
+};
+document.getElementById("vd").textContent=cutoff;
 function applyMode(m){
   mode=m;var cfg=MODES[m];
-  DATA.forEach(function(d){var v=d.sp[m];d.src=v==null?"aa":m;if(v==null)v=d.sp.aa;d.speed=v;d.time=1000/v});
   TMAX=cfg.tmax;thr.speed=cfg.speed;ss.value=cfg.speed;
-  computePareto();TRIS=buildTris();buildNd();
+  refresh();
   document.querySelectorAll("#srcbtns [data-src]").forEach(function(b){b.classList.toggle("on",b.dataset.src===m)});
   document.getElementById("thspeed").textContent=SRC[m]+" tok/s";
   buildTable();dirty=true;
