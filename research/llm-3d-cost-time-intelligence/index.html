@@ -67,7 +67,7 @@ tr.in td{background:var(--green-fill)}
 <div class="controls">
   <label>Min intelligence index: <span id="vi"></span><input id="si" type="range" min="20" max="58" step="0.5" value="45"></label>
   <label>Max cost per task: <span id="vc"></span><input id="sc" type="range" min="0" max="100" step="1"></label>
-  <label>Min output speed: <span id="vs"></span><input id="ss" type="range" min="30" max="240" step="5" value="100"></label>
+  <label>Min output speed (OpenRouter): <span id="vs"></span><input id="ss" type="range" min="30" max="240" step="5" value="60"></label>
 </div>
 <div class="key">
   <span id="count"></span>
@@ -79,41 +79,42 @@ tr.in td{background:var(--green-fill)}
 <div class="legend" id="legend"></div>
 
 <div class="tablewrap"><table id="tbl"><thead><tr>
-<th data-k="name">Model</th><th data-k="iq">Intelligence</th><th data-k="cost">Cost / task</th><th data-k="speed">Output tok/s</th><th data-k="time">s per 1K tokens</th></tr></thead><tbody></tbody></table></div>
+<th data-k="name">Model</th><th data-k="iq">Intelligence</th><th data-k="cost">Cost / task</th><th data-k="speed">Median tok/s (OpenRouter)</th><th data-k="time">s per 1K tokens</th></tr></thead><tbody></tbody></table></div>
 
 <div class="note">
 <p><b>How the axes are defined.</b> Intelligence = Artificial Analysis Intelligence Index (composite). Cost = weighted average USD per Intelligence Index task (log scale, as in AA's chart). Time = seconds to generate 1,000 output tokens, i.e. 1000 ÷ output tokens per second, so lower is better and it points the same way as cost.</p>
-<p><b>Caveat.</b> Values were read off the two Artificial Analysis charts (Intelligence vs Output Speed, Intelligence vs Cost per task), so they are approximate, probably within a point of index and a few percent of cost or speed. Only models that appear in both charts are plotted. Time is a speed-based proxy, not end-to-end task time, which would also depend on how many tokens each model spends per task. Default octant thresholds are my choice and are adjustable above.</p>
+<p><b>Speed data (OpenRouter, 4 Oct 2026).</b> Output speed is the median (p50) tokens per second that OpenRouter reported for each model over its last 30-minute window, averaged across the model's providers and weighted by each provider's request count. These are average values as of 4 Oct 2026 and shift through the day. Step 5 Preview is not listed on OpenRouter, so it keeps the speed read off the Artificial Analysis chart. Muse Glimmer is matched to OpenRouter's meta/muse-glimmer-30b, and Qwen3.8 Max to qwen/qwen3.8-max-0902.</p>
+<p><b>Caveat.</b> Intelligence and cost were read off the Artificial Analysis charts (Intelligence vs Cost per task), so they are approximate, probably within a point of index and a few percent of cost. Only models that appear in both AA charts are plotted. Time is a speed-based proxy, not end-to-end task time, which would also depend on how many tokens each model spends per task. Default octant thresholds are my choice and are adjustable above.</p>
 </div>
 </div>
 
 <script>
 (function(){
-// name, provider, intelligence, cost USD/task, output tok/s
+// name, provider, intelligence (AA), cost USD/task (AA), output tok/s (OpenRouter 30-min p50, request-weighted avg across providers, 4 Oct 2026; Step 5 Preview is not on OpenRouter so keeps the AA chart value)
 var DATA=[
-["Claude Opus 5.5","Anthropic",57.6,6.0,92],
-["Claude Sonnet 5.5","Anthropic",56.0,7.7,132],
-["Claude Fable 5.1","Anthropic",53.3,7.7,66],
-["GPT-6 Astra","OpenAI",52.5,3.27,60.5],
-["GPT-6.1 Sol","OpenAI",51.8,0.73,52],
-["GPT-6 Sol","OpenAI",47.6,1.05,106.6],
-["GPT-6 Luna","OpenAI",38.0,0.068,140.7],
-["Muse Spark 1.3","Meta",48.0,1.61,134.5],
-["Muse Glimmer","Meta",17.5,0.057,124.5],
-["MiMo-V2.6-Pro","Xiaomi",46.4,0.133,40],
-["Qwen3.8 Max","Alibaba",45.4,5.4,37],
-["Qwen3.8 27B","Alibaba",33.7,1.0,45.7],
-["Kimi K3","Kimi",43.6,2.0,40],
-["GLM-5.3","Z AI",44.7,2.0,71.5],
-["GLM-5.3-Flash","Z AI",41.9,0.253,53],
-["Grok 4.7","SpaceXAI",46.4,3.74,77],
-["Step 5 Preview","StepFun",43.8,0.718,85.7],
-["Gemini 3.8 Flash","Google",40.9,1.25,239],
-["DeepSeek V4.1 Flash","DeepSeek",39.4,0.266,213],
-["MiniMax-M3","MiniMax",29.2,0.51,84.5],
-["Nemotron 3 Ultra","NVIDIA",23.0,0.597,186],
-["Mistral Medium 3.5","Mistral",14.3,0.50,164.6]
-].map(function(r){return{name:r[0],prov:r[1],iq:r[2],cost:r[3],speed:r[4],time:1000/r[4]}});
+["Claude Opus 5.5","Anthropic",57.6,6.0,68.7],
+["Claude Sonnet 5.5","Anthropic",56.0,7.7,82.1],
+["Claude Fable 5.1","Anthropic",53.3,7.7,52.5],
+["GPT-6 Astra","OpenAI",52.5,3.27,37.8],
+["GPT-6.1 Sol","OpenAI",51.8,0.73,39.7],
+["GPT-6 Sol","OpenAI",47.6,1.05,50.8],
+["GPT-6 Luna","OpenAI",38.0,0.068,76.7],
+["Muse Spark 1.3","Meta",48.0,1.61,66.0],
+["Muse Glimmer","Meta",17.5,0.057,74.2],
+["MiMo-V2.6-Pro","Xiaomi",46.4,0.133,30.1],
+["Qwen3.8 Max","Alibaba",45.4,5.4,39.0],
+["Qwen3.8 27B","Alibaba",33.7,1.0,60.6],
+["Kimi K3","Kimi",43.6,2.0,44.8],
+["GLM-5.3","Z AI",44.7,2.0,98.5],
+["GLM-5.3-Flash","Z AI",41.9,0.253,73.7],
+["Grok 4.7","SpaceXAI",46.4,3.74,80.0],
+["Step 5 Preview","StepFun",43.8,0.718,85.7,"aa"],
+["Gemini 3.8 Flash","Google",40.9,1.25,104.7],
+["DeepSeek V4.1 Flash","DeepSeek",39.4,0.266,121.8],
+["MiniMax-M3","MiniMax",29.2,0.51,63.4],
+["Nemotron 3 Ultra","NVIDIA",23.0,0.597,121.8],
+["Mistral Medium 3.5","Mistral",14.3,0.50,89.5]
+].map(function(r){return{name:r[0],prov:r[1],iq:r[2],cost:r[3],speed:r[4],time:1000/r[4],src:r[5]||"or"}});
 
 var COL={Anthropic:"#c4704f",OpenAI:"#6b7280",Meta:"#2f7cf6",Xiaomi:"#f97316",Alibaba:"#e8590c",Kimi:"#3b5bdb",
 "Z AI":"#0ea5e9",SpaceXAI:"#8b5cf6",StepFun:"#14b8a6",Google:"#22a35a",DeepSeek:"#1e3a8a",MiniMax:"#e11d6a",NVIDIA:"#84cc16",Mistral:"#f59e0b"};
@@ -122,7 +123,7 @@ var COL={Anthropic:"#c4704f",OpenAI:"#6b7280",Meta:"#2f7cf6",Xiaomi:"#f97316",Al
 DATA.forEach(function(a){a.pareto=!DATA.some(function(b){return b!==a&&b.iq>=a.iq&&b.cost<=a.cost&&b.time<=a.time&&(b.iq>a.iq||b.cost<a.cost||b.time<a.time)})});
 
 // axis ranges
-var CMIN=0.04,CMAX=12,IMIN=10,IMAX=62,TMIN=0,TMAX=30;
+var CMIN=0.04,CMAX=12,IMIN=10,IMAX=62,TMIN=0,TMAX=35;
 var lc0=Math.log(CMIN),lc1=Math.log(CMAX);
 function nx(c){return (Math.log(c)-lc0)/(lc1-lc0)*2-1}
 function ny(i){return (i-IMIN)/(IMAX-IMIN)*2-1}
@@ -167,7 +168,7 @@ function clipPoly(poly,ax,b,le){
 var cv=document.getElementById("c"),ctx=cv.getContext("2d"),tip=document.getElementById("tip");
 var yaw=-0.55,pitch=0.3,zoom=1,auto=true,showLab=true,showDrops=true,hover=null,dragging=false,dirty=true;
 var W=0,H=0,dpr=1,proj=[];
-var thr={iq:45,cost:2,speed:100};
+var thr={iq:45,cost:2,speed:60};
 var target=null,flat=null,persp=1,showPar=false,showPln=false;
 
 function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
@@ -206,7 +207,7 @@ function draw(){
   var fg=css("--fg"),mu=css("--muted"),gr=css("--grid"),ln=css("--line");
   var L=-1,R=1;
   // floor grid
-  var ct=[0.05,0.1,0.2,0.5,1,2,5,10],it=[10,20,30,40,50,60],tt=[0,5,10,15,20,25,30];
+  var ct=[0.05,0.1,0.2,0.5,1,2,5,10],it=[10,20,30,40,50,60],tt=[0,5,10,15,20,25,30,35];
   ct.forEach(function(c){line(P(nx(c),L,L),P(nx(c),L,R),gr,1)});
   tt.forEach(function(t){line(P(L,L,nz(t)),P(R,L,nz(t)),gr,1)});
   // back walls grids (iq lines)
@@ -365,7 +366,7 @@ cv.addEventListener("pointermove",function(e){
   for(var i=proj.length-1;i>=0;i--){var q=proj[i],d=Math.hypot(q.p.x-mx,q.p.y-my);if(d<q.r+5&&d<bd){bd=d;h=q.m}}
   if(h!==hover){hover=h;dirty=true}
   if(h){
-    tip.innerHTML="<b>"+h.name+"</b>"+h.prov+"<br>Intelligence: "+h.iq.toFixed(1)+"<br>Cost/task: "+fmtCost(h.cost)+"<br>Speed: "+h.speed.toFixed(0)+" tok/s ("+h.time.toFixed(1)+" s/1K)"+(inOct(h)?'<br><span style="color:var(--accent)">Inside green octant</span>':"")+(h.pareto?"<br>Pareto-optimal":"");
+    tip.innerHTML="<b>"+h.name+"</b>"+h.prov+"<br>Intelligence: "+h.iq.toFixed(1)+"<br>Cost/task: "+fmtCost(h.cost)+"<br>Speed: "+h.speed.toFixed(0)+" tok/s"+(h.src==="aa"?" (AA chart)":" (OpenRouter)")+" ("+h.time.toFixed(1)+" s/1K)"+(inOct(h)?'<br><span style="color:var(--accent)">Inside green octant</span>':"")+(h.pareto?"<br>Pareto-optimal":"");
     tip.style.display="block";
     var tx=mx+14,ty=my+14;if(tx>W-190)tx=mx-190;if(ty>H-130)ty=my-120;
     tip.style.left=tx+"px";tip.style.top=ty+"px";
