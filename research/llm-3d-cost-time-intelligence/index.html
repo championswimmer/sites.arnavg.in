@@ -139,9 +139,11 @@ function nz(t){return (t-TMIN)/(TMAX-TMIN)*2-1}
 
 // Pareto plane: outer convex surface over the 3D-Pareto models, closed with
 // projections onto the worst bound of each axis; keep only facets facing the good corner.
-var TRIS=[];function buildTris(){
-  var g=[];
+var TRIS=[],ON={}; // ON = models that are actual vertices of the Pareto surface
+function buildTris(){
+  var g=[],owner=[];ON={};
   DATA.filter(function(m){return m.pareto}).forEach(function(m){
+    owner.push(m.name,null,null,null);
     var p=[-nx(m.cost),ny(m.iq),-nz(m.time)];
     g.push(p,[-1,p[1],p[2]],[p[0],-1,p[2]],[p[0],p[1],-1]);
   });
@@ -157,6 +159,7 @@ var TRIS=[];function buildTris(){
     if(pos&&neg)continue;
     if(pos)N=N.map(function(c){return -c});
     if(N[0]<-e||N[1]<-e||N[2]<-e)continue;
+    [i,j,k].forEach(function(x){if(owner[x])ON[owner[x]]=1});
     out.push([g[i],g[j],g[k]].map(function(q){return[-q[0],q[1],-q[2]]}));
   }
   return out;
@@ -248,7 +251,7 @@ function draw(){
     return{m:m,p:P(x,y,z),f:P(x,L,z),in:fl?inFlat(m,fl):inOct(m)};
   }).sort(function(a,b){return b.p.d-a.p.d});
   var focus=null; // when a Pareto view is on, only these models stay at full strength
-  if(showPln&&!fl){focus={};DATA.forEach(function(m){if(m.pareto)focus[m.name]=1})}
+  if(showPln&&!fl)focus=ON
   function dimmed(q){return focus&&!focus[q.m.name]&&q.m!==hover}
   if(showDrops&&!fl)proj.forEach(function(q){
     ctx.globalAlpha=dimmed(q)?.2:1;
