@@ -55,7 +55,8 @@ jobs:
         if: steps.guard.outputs.changed == 'true'
         run: |
           {
-            git log --since="$GA_LOOKBACK_SINCE" --diff-filter=A --name-only -z --pretty=tformat: -- research learning plans
+            git log --since="$GA_LOOKBACK_SINCE" --diff-filter=A --name-only -z --pretty=tformat: "origin/${GITHUB_REF_NAME}" -- research learning plans
+            printf '\0'
             git diff-tree --no-commit-id --name-only -r --diff-filter=A -z HEAD -- research learning plans
           } \
             | tr '\0' '\n' \
