@@ -54,6 +54,7 @@ tr.in td{background:var(--green-fill)}
   <button id="auto" class="on">Auto-rotate</button>
   <button id="lab" class="on">Labels</button>
   <button id="drops" class="on">Drop lines</button>
+  <button id="par" title="Shown in the 2D views">Pareto line (2D views)</button>
   <button data-view="iso">Isometric</button>
   <button data-view="ci">Cost × Intelligence</button>
   <button data-view="ti">Time × Intelligence</button>
@@ -128,7 +129,7 @@ var cv=document.getElementById("c"),ctx=cv.getContext("2d"),tip=document.getElem
 var yaw=-0.55,pitch=0.3,zoom=1,auto=true,showLab=true,showDrops=true,hover=null,dragging=false,dirty=true;
 var W=0,H=0,dpr=1,proj=[];
 var thr={iq:45,cost:2,speed:100};
-var target=null,flat=null,persp=1;
+var target=null,flat=null,persp=1,showPar=false;
 
 function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
 
@@ -198,6 +199,19 @@ function draw(){
     line(q.p,q.f,q.in?ge:ln,1,[3,3]);
     ctx.beginPath();ctx.arc(q.f.x,q.f.y,2,0,6.3);ctx.fillStyle=q.in?ge:ln;ctx.fill();
   });
+  if(showPar&&fl){
+    var G={ci:function(q){return[-nx(q.m.cost),ny(q.m.iq)]},ti:function(q){return[-nz(q.m.time),ny(q.m.iq)]},ct:function(q){return[-nx(q.m.cost),-nz(q.m.time)]}}[fl];
+    var pts=proj.map(function(q){var g=G(q);return{q:q,x:g[0],y:g[1]}});
+    // non-dominated, then upper concave hull so the line never dips inward
+    pts=pts.filter(function(a){return !pts.some(function(b){return b!==a&&b.x>=a.x&&b.y>=a.y&&(b.x>a.x||b.y>a.y)})}).sort(function(a,b){return a.x-b.x});
+    var h=[];
+    pts.forEach(function(p){
+      while(h.length>=2){var a=h[h.length-2],b=h[h.length-1];
+        if((b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x)>=0)h.pop();else break}
+      h.push(p)});
+    ctx.beginPath();h.forEach(function(p,i){i?ctx.lineTo(p.q.p.x,p.q.p.y):ctx.moveTo(p.q.p.x,p.q.p.y)});
+    ctx.setLineDash([2,5]);ctx.lineWidth=2;ctx.lineCap="round";ctx.strokeStyle=fg;ctx.stroke();ctx.setLineDash([]);ctx.lineCap="butt";
+  }
   proj.forEach(function(q){
     var r=(q.m===hover?9:6.5)*Math.max(.7,q.p.s*Math.sqrt(zoom));
     q.r=r;
@@ -254,7 +268,7 @@ si.oninput=function(){thr.iq=+si.value;updateUI()};
 sc.oninput=function(){thr.cost=costFromSlider(+sc.value);updateUI()};
 ss.oninput=function(){thr.speed=+ss.value;updateUI()};
 function tog(id,fn){var b=document.getElementById(id);b.onclick=function(){b.classList.toggle("on");fn(b.classList.contains("on"));dirty=true}}
-tog("auto",function(v){auto=v;if(v)flat=null});tog("lab",function(v){showLab=v});tog("drops",function(v){showDrops=v});
+tog("auto",function(v){auto=v;if(v)flat=null});tog("lab",function(v){showLab=v});tog("drops",function(v){showDrops=v});tog("par",function(v){showPar=v});
 document.getElementById("zin").onclick=function(){zoom=Math.min(3,zoom*1.2);dirty=true};
 document.getElementById("zout").onclick=function(){zoom=Math.max(.5,zoom/1.2);dirty=true};
 var VIEWS={iso:[-0.55,0.3],ci:[0,0],ti:[-Math.PI/2,0],ct:[0,-Math.PI/2]};
