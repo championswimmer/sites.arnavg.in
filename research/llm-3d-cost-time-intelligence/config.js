@@ -16,7 +16,7 @@ defaultMode:"p90",
 
 // Cost metrics (log axis). cmin/cmax = axis range, ticks = grid lines, limit = default max-cost threshold.
 costModes:{
-  task:{label:"Cost per task (AA)",axis:"Cost per task (USD, log)",cmin:0.04,cmax:12,ticks:[0.05,0.1,0.2,0.5,1,2,5,10],limit:2},
+  task:{label:"Cost per task (AA)",axis:"Cost per task (USD, log)",cmin:0.01,cmax:12,ticks:[0.01,0.02,0.05,0.1,0.2,0.5,1,2,5,10],limit:2},
   mtok:{label:"$ per M tokens (OpenRouter, blended)",axis:"Blended price, USD per M tokens (log)",cmin:0.1,cmax:30,ticks:[0.1,0.2,0.5,1,2,5,10,20],limit:3}
 },
 defaultCostMode:"task",
