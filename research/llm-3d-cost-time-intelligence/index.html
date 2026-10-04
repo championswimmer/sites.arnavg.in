@@ -125,7 +125,7 @@ function ny(i){return (i-IMIN)/(IMAX-IMIN)*2-1}
 function nz(t){return (t-TMIN)/(TMAX-TMIN)*2-1}
 
 var cv=document.getElementById("c"),ctx=cv.getContext("2d"),tip=document.getElementById("tip");
-var yaw=-0.75,pitch=0.38,zoom=1,auto=true,showLab=true,showDrops=true,hover=null,dragging=false,dirty=true;
+var yaw=-0.55,pitch=0.3,zoom=1,auto=true,showLab=true,showDrops=true,hover=null,dragging=false,dirty=true;
 var W=0,H=0,dpr=1,proj=[];
 var thr={iq:45,cost:2,speed:100};
 var target=null;
@@ -140,7 +140,7 @@ function P(x,y,z){ // rotate then perspective
   var x1=x*cy-z*sy,z1=x*sy+z*cy;
   var y1=y*cp-z1*sp,z2=y*sp+z1*cp;
   var f=4.2,s=f/(f+z2*0.9);
-  var base=Math.min(W,H)*0.30*zoom;
+  var base=Math.min(W,H)*0.40*zoom;
   return{x:W/2+x1*s*base,y:H/2-y1*s*base,d:z2,s:s};
 }
 function line(a,b,col,w,dash){ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=col;ctx.lineWidth=w||1;ctx.setLineDash(dash||[]);ctx.stroke();ctx.setLineDash([])}
@@ -256,7 +256,7 @@ function tog(id,fn){var b=document.getElementById(id);b.onclick=function(){b.cla
 tog("auto",function(v){auto=v});tog("lab",function(v){showLab=v});tog("drops",function(v){showDrops=v});
 document.getElementById("zin").onclick=function(){zoom=Math.min(3,zoom*1.2);dirty=true};
 document.getElementById("zout").onclick=function(){zoom=Math.max(.5,zoom/1.2);dirty=true};
-var VIEWS={iso:[-0.75,0.38],ci:[0,0],ti:[-Math.PI/2,0],ct:[0,Math.PI/2-0.001]};
+var VIEWS={iso:[-0.55,0.3],ci:[0,0],ti:[-Math.PI/2,0],ct:[0,Math.PI/2-0.001]};
 document.querySelectorAll("[data-view]").forEach(function(b){b.onclick=function(){
   var v=VIEWS[b.dataset.view];target=v.slice();auto=false;document.getElementById("auto").classList.remove("on");dirty=true}});
 
