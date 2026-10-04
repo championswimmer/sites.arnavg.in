@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Intelligence vs Cost vs Time in 3D</title>
 <style>
-:root{--bg:#fafaf7;--panel:#fff;--fg:#1a1a18;--muted:#6b6b66;--line:#d9d8d2;--grid:#e6e5df;--accent:#16a34a;--plane:124,58,237;--green-fill:rgba(34,197,94,.16);--green-edge:rgba(22,163,74,.85)}
-@media (prefers-color-scheme:dark){:root{--bg:#121311;--panel:#1b1c1a;--fg:#ecece6;--muted:#9a9a92;--line:#34352f;--grid:#2a2b27;--accent:#4ade80;--plane:167,139,250;--green-fill:rgba(74,222,128,.14);--green-edge:rgba(74,222,128,.85)}}
+:root{--bg:#fafaf7;--panel:#fff;--fg:#1a1a18;--muted:#6b6b66;--line:#d9d8d2;--grid:#e6e5df;--accent:#16a34a;--plane:124,58,237;--cut:#d97706;--green-fill:rgba(34,197,94,.16);--green-edge:rgba(22,163,74,.85)}
+@media (prefers-color-scheme:dark){:root{--bg:#121311;--panel:#1b1c1a;--fg:#ecece6;--muted:#9a9a92;--line:#34352f;--grid:#2a2b27;--accent:#4ade80;--plane:167,139,250;--cut:#fbbf24;--green-fill:rgba(74,222,128,.14);--green-edge:rgba(74,222,128,.85)}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
 .wrap{max-width:1100px;margin:0 auto;padding:24px 16px 48px}
@@ -74,6 +74,7 @@ tr.in td{background:var(--green-fill)}
   <span>◯ ring = Pareto-optimal in all 3 dimensions</span>
   <span style="color:var(--accent)">■ green = inside the octant</span>
   <span style="color:rgb(var(--plane))">■ purple = Pareto plane</span>
+  <span style="color:var(--cut)">━ amber = where the plane cuts the octant</span>
 </div>
 <div class="legend" id="legend"></div>
 
@@ -151,6 +152,17 @@ var TRIS=(function(){
   }
   return out;
 })();
+
+function clipPoly(poly,ax,b,le){
+  var out=[],n=poly.length;
+  function inside(p){return le?p[ax]<=b+1e-9:p[ax]>=b-1e-9}
+  for(var i=0;i<n;i++){
+    var a=poly[i],c=poly[(i+1)%n],ia=inside(a),ic=inside(c);
+    if(ia)out.push(a);
+    if(ia!==ic){var t=(b-a[ax])/(c[ax]-a[ax]);out.push([a[0]+(c[0]-a[0])*t,a[1]+(c[1]-a[1])*t,a[2]+(c[2]-a[2])*t])}
+  }
+  return out;
+}
 
 var cv=document.getElementById("c"),ctx=cv.getContext("2d"),tip=document.getElementById("tip");
 var yaw=-0.55,pitch=0.3,zoom=1,auto=true,showLab=true,showDrops=true,hover=null,dragging=false,dirty=true;
@@ -231,7 +243,26 @@ function draw(){
     TRIS.map(function(t){var q=t.map(function(v){return P(v[0],v[1],v[2])});return{q:q,d:(q[0].d+q[1].d+q[2].d)/3}})
       .sort(function(a,b){return b.d-a.d}).forEach(function(t){
         ctx.beginPath();ctx.moveTo(t.q[0].x,t.q[0].y);ctx.lineTo(t.q[1].x,t.q[1].y);ctx.lineTo(t.q[2].x,t.q[2].y);ctx.closePath();
-        ctx.fillStyle="rgba("+pc+",.16)";ctx.fill();ctx.lineWidth=.8;ctx.strokeStyle="rgba("+pc+",.45)";ctx.stroke()});
+        ctx.fillStyle="rgba("+pc+",.10)";ctx.fill();ctx.lineWidth=.6;ctx.strokeStyle="rgba("+pc+",.28)";ctx.stroke()});
+    // part of the plane inside the octant, plus the curve where it crosses the box walls
+    var bnd=[[0,o.x1,true],[1,o.y0,false],[2,o.z1,true]],cuts=[],clipped=[];
+    TRIS.forEach(function(t){
+      var poly=t;
+      bnd.forEach(function(c){if(poly.length)poly=clipPoly(poly,c[0],c[1],c[2])});
+      if(poly.length<3)return;
+      clipped.push(poly);
+      for(var i=0;i<poly.length;i++){
+        var a=poly[i],b=poly[(i+1)%poly.length];
+        bnd.forEach(function(c){if(Math.abs(a[c[0]]-c[1])<1e-6&&Math.abs(b[c[0]]-c[1])<1e-6&&!(Math.abs(t[0][c[0]]-c[1])<1e-6&&Math.abs(t[1][c[0]]-c[1])<1e-6&&Math.abs(t[2][c[0]]-c[1])<1e-6))cuts.push([a,b])});
+      }
+    });
+    clipped.map(function(poly){var q=poly.map(function(v){return P(v[0],v[1],v[2])});return{q:q,d:q.reduce(function(s,p){return s+p.d},0)/q.length}})
+      .sort(function(a,b){return b.d-a.d}).forEach(function(t){
+        ctx.beginPath();t.q.forEach(function(p,i){i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)});ctx.closePath();
+        ctx.fillStyle="rgba("+pc+",.5)";ctx.fill();ctx.lineWidth=.8;ctx.strokeStyle="rgba("+pc+",.8)";ctx.stroke()});
+    ctx.lineCap="round";ctx.lineWidth=3.2;ctx.strokeStyle=css("--cut");
+    cuts.forEach(function(c){var a=P(c[0][0],c[0][1],c[0][2]),b=P(c[1][0],c[1][1],c[1][2]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()});
+    ctx.lineCap="butt";
   }
   if(showPar&&fl){
     var G={ci:function(q){return[-nx(q.m.cost),ny(q.m.iq)]},ti:function(q){return[-nz(q.m.time),ny(q.m.iq)]},ct:function(q){return[-nx(q.m.cost),-nz(q.m.time)]}}[fl];
