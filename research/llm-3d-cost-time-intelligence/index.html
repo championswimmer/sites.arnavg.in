@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Intelligence vs Cost vs Time in 3D</title>
 <style>
-:root{--bg:#fafaf7;--panel:#fff;--fg:#1a1a18;--muted:#6b6b66;--line:#d9d8d2;--grid:#e6e5df;--accent:#16a34a;--plane:124,58,237;--cut:#d97706;--green-fill:rgba(34,197,94,.16);--green-edge:rgba(22,163,74,.85)}
-@media (prefers-color-scheme:dark){:root{--bg:#121311;--panel:#1b1c1a;--fg:#ecece6;--muted:#9a9a92;--line:#34352f;--grid:#2a2b27;--accent:#4ade80;--plane:167,139,250;--cut:#fbbf24;--green-fill:rgba(74,222,128,.14);--green-edge:rgba(74,222,128,.85)}}
+:root{--bg:#fafaf7;--panel:#fff;--fg:#1a1a18;--muted:#6b6b66;--line:#d9d8d2;--grid:#e6e5df;--accent:#16a34a;--plane:124,58,237;--plane2:13,148,136;--cut:#d97706;--green-fill:rgba(34,197,94,.16);--green-edge:rgba(22,163,74,.85)}
+@media (prefers-color-scheme:dark){:root{--bg:#121311;--panel:#1b1c1a;--fg:#ecece6;--muted:#9a9a92;--line:#34352f;--grid:#2a2b27;--accent:#4ade80;--plane:167,139,250;--plane2:45,212,191;--cut:#fbbf24;--green-fill:rgba(74,222,128,.14);--green-edge:rgba(74,222,128,.85)}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
 .wrap{max-width:1100px;margin:0 auto;padding:24px 16px 48px}
@@ -69,6 +69,11 @@ tr.in td{background:var(--green-fill)}
   <button data-src="p50">OpenRouter p50</button>
   <button data-src="p90">OpenRouter p90</button>
 </div>
+<div class="btns" id="pmodes"><span style="align-self:center;font-size:13px;color:var(--muted)">Pareto type:</span>
+  <button data-pm="env" title="Outer convex envelope: never dips inward">Global envelope</button>
+  <button data-pm="nd" title="Every non-dominated model (local maxima), joined directly or as a staircase surface">Local maxima (non-dominated)</button>
+  <button data-pm="both">Both</button>
+</div>
 <div class="controls">
   <label>Min intelligence index: <span id="vi"></span><input id="si" type="range" min="20" max="58" step="0.5" value="45"></label>
   <label>Max cost per task: <span id="vc"></span><input id="sc" type="range" min="0" max="100" step="1"></label>
@@ -78,7 +83,8 @@ tr.in td{background:var(--green-fill)}
   <span id="count"></span>
   <span>◯ ring = Pareto-optimal in all 3 dimensions</span>
   <span style="color:var(--accent)">■ green = inside the octant</span>
-  <span style="color:rgb(var(--plane))">■ purple = Pareto plane</span>
+  <span style="color:rgb(var(--plane))">■ purple = envelope plane / dotted line</span>
+  <span style="color:rgb(var(--plane2))">■ teal = local-maxima staircase / solid line</span>
   <span style="color:var(--cut)">━ amber = where the plane cuts the octant</span>
 </div>
 <div class="legend" id="legend"></div>
@@ -165,6 +171,27 @@ function buildTris(){
   return out;
 }
 
+// Local-maxima ("staircase") surface: boundary of the region dominated by the Pareto models.
+function buildNd(){
+  var g=[];ND={};
+  DATA.forEach(function(m){if(m.pareto){ND[m.name]=1;g.push([-nx(m.cost),ny(m.iq),-nz(m.time)])}});
+  QUADS=[];
+  function cuts(vals,lo,hi){var a=[lo,hi];vals.forEach(function(v){if(v>lo+1e-9&&v<hi-1e-9)a.push(v)});a.sort(function(x,y){return x-y});return a.filter(function(v,i){return !i||v-a[i-1]>1e-9})}
+  g.forEach(function(p,pi){
+    for(var a=0;a<3;a++){
+      var b=(a+1)%3,c=(a+2)%3;
+      var cb=cuts(g.map(function(q){return q[b]}),-1,p[b]),cc=cuts(g.map(function(q){return q[c]}),-1,p[c]);
+      for(var i=0;i<cb.length-1;i++)for(var j=0;j<cc.length-1;j++){
+        var mb=(cb[i]+cb[i+1])/2,mc=(cc[j]+cc[j+1])/2;
+        var covered=g.some(function(q,qi){return qi!==pi&&q[a]>p[a]+1e-9&&q[b]>=mb&&q[c]>=mc});
+        if(covered)continue;
+        var corners=[[cb[i],cc[j]],[cb[i+1],cc[j]],[cb[i+1],cc[j+1]],[cb[i],cc[j+1]]].map(function(k){var v=[0,0,0];v[a]=p[a];v[b]=k[0];v[c]=k[1];return[-v[0],v[1],-v[2]]});
+        QUADS.push(corners);
+      }
+    }
+  });
+}
+
 function clipPoly(poly,ax,b,le){
   var out=[],n=poly.length;
   function inside(p){return le?p[ax]<=b+1e-9:p[ax]>=b-1e-9}
@@ -180,7 +207,7 @@ var cv=document.getElementById("c"),ctx=cv.getContext("2d"),tip=document.getElem
 var yaw=-0.55,pitch=0.3,zoom=1,auto=true,showLab=true,showDrops=true,hover=null,dragging=false,dirty=true;
 var W=0,H=0,dpr=1,proj=[];
 var thr={iq:45,cost:2,speed:100};
-var target=null,flat=null,persp=1,showPar=false,showPln=false;
+var target=null,flat=null,persp=1,showPar=false,showPln=false,pmode="env",ND={},QUADS=[];
 
 function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
 
@@ -251,7 +278,7 @@ function draw(){
     return{m:m,p:P(x,y,z),f:P(x,L,z),in:fl?inFlat(m,fl):inOct(m)};
   }).sort(function(a,b){return b.p.d-a.p.d});
   var focus=null; // when a Pareto view is on, only these models stay at full strength
-  if(showPln&&!fl)focus=ON
+  if(showPln&&!fl)focus=pmode==="env"?ON:pmode==="nd"?ND:Object.assign({},ON,ND)
   function dimmed(q){return focus&&!focus[q.m.name]&&q.m!==hover}
   if(showDrops&&!fl)proj.forEach(function(q){
     ctx.globalAlpha=dimmed(q)?.2:1;
@@ -260,27 +287,31 @@ function draw(){
     ctx.globalAlpha=1;
   });
   if(showPln&&!fl){
-    var pc=css("--plane");
-    TRIS.map(function(t){var q=t.map(function(v){return P(v[0],v[1],v[2])});return{q:q,d:(q[0].d+q[1].d+q[2].d)/3}})
-      .sort(function(a,b){return b.d-a.d}).forEach(function(t){
-        ctx.beginPath();ctx.moveTo(t.q[0].x,t.q[0].y);ctx.lineTo(t.q[1].x,t.q[1].y);ctx.lineTo(t.q[2].x,t.q[2].y);ctx.closePath();
-        ctx.fillStyle="rgba("+pc+",.10)";ctx.fill();ctx.lineWidth=.6;ctx.strokeStyle="rgba("+pc+",.28)";ctx.stroke()});
-    // part of the plane inside the octant, plus the curve where it crosses the box walls
-    var bnd=[[0,o.x1,true],[1,o.y0,false],[2,o.z1,true]],cuts=[],clipped=[];
-    TRIS.forEach(function(t){
-      var poly=t;
-      bnd.forEach(function(c){if(poly.length)poly=clipPoly(poly,c[0],c[1],c[2])});
-      if(poly.length<3)return;
-      clipped.push(poly);
-      for(var i=0;i<poly.length;i++){
-        var a=poly[i],b=poly[(i+1)%poly.length];
-        bnd.forEach(function(c){if(Math.abs(a[c[0]]-c[1])<1e-6&&Math.abs(b[c[0]]-c[1])<1e-6&&!(Math.abs(t[0][c[0]]-c[1])<1e-6&&Math.abs(t[1][c[0]]-c[1])<1e-6&&Math.abs(t[2][c[0]]-c[1])<1e-6))cuts.push([a,b])});
-      }
+    var surfaces=[];
+    if(pmode!=="nd")surfaces.push({polys:TRIS,rgb:css("--plane")});
+    if(pmode!=="env")surfaces.push({polys:QUADS,rgb:css("--plane2")});
+    var bnd=[[0,o.x1,true],[1,o.y0,false],[2,o.z1,true]],cuts=[];
+    function polyPath(q){ctx.beginPath();q.forEach(function(p,i){i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)});ctx.closePath()}
+    function proj3(poly){var q=poly.map(function(v){return P(v[0],v[1],v[2])});return{q:q,d:q.reduce(function(s,p){return s+p.d},0)/q.length}}
+    surfaces.forEach(function(sf){
+      var pc=sf.rgb;
+      sf.polys.map(proj3).sort(function(a,b){return b.d-a.d}).forEach(function(t){
+        polyPath(t.q);ctx.fillStyle="rgba("+pc+",.10)";ctx.fill();ctx.lineWidth=.6;ctx.strokeStyle="rgba("+pc+",.28)";ctx.stroke()});
+      // part of the surface inside the octant, plus the curve where it crosses the box walls
+      var clipped=[];
+      sf.polys.forEach(function(t){
+        var poly=t;
+        bnd.forEach(function(c){if(poly.length)poly=clipPoly(poly,c[0],c[1],c[2])});
+        if(poly.length<3)return;
+        clipped.push(poly);
+        for(var i=0;i<poly.length;i++){
+          var a=poly[i],b=poly[(i+1)%poly.length];
+          bnd.forEach(function(c){if(Math.abs(a[c[0]]-c[1])<1e-6&&Math.abs(b[c[0]]-c[1])<1e-6&&!t.every(function(v){return Math.abs(v[c[0]]-c[1])<1e-6}))cuts.push([a,b])});
+        }
+      });
+      clipped.map(proj3).sort(function(a,b){return b.d-a.d}).forEach(function(t){
+        polyPath(t.q);ctx.fillStyle="rgba("+pc+",.5)";ctx.fill();ctx.lineWidth=.8;ctx.strokeStyle="rgba("+pc+",.8)";ctx.stroke()});
     });
-    clipped.map(function(poly){var q=poly.map(function(v){return P(v[0],v[1],v[2])});return{q:q,d:q.reduce(function(s,p){return s+p.d},0)/q.length}})
-      .sort(function(a,b){return b.d-a.d}).forEach(function(t){
-        ctx.beginPath();t.q.forEach(function(p,i){i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)});ctx.closePath();
-        ctx.fillStyle="rgba("+pc+",.5)";ctx.fill();ctx.lineWidth=.8;ctx.strokeStyle="rgba("+pc+",.8)";ctx.stroke()});
     ctx.lineCap="round";ctx.lineWidth=3.2;ctx.strokeStyle=css("--cut");
     cuts.forEach(function(c){var a=P(c[0][0],c[0][1],c[0][2]),b=P(c[1][0],c[1][1],c[1][2]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()});
     ctx.lineCap="butt";
@@ -295,9 +326,17 @@ function draw(){
       while(h.length>=2){var a=h[h.length-2],b=h[h.length-1];
         if((b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x)>=0)h.pop();else break}
       h.push(p)});
-    ctx.beginPath();h.forEach(function(p,i){i?ctx.lineTo(p.q.p.x,p.q.p.y):ctx.moveTo(p.q.p.x,p.q.p.y)});
-    focus={};h.forEach(function(p){focus[p.q.m.name]=1});
-    ctx.setLineDash([2,5]);ctx.lineWidth=2;ctx.lineCap="round";ctx.strokeStyle=fg;ctx.stroke();ctx.setLineDash([]);ctx.lineCap="butt";
+    focus={};
+    if(pmode!=="nd")h.forEach(function(p){focus[p.q.m.name]=1});
+    if(pmode!=="env")pts.forEach(function(p){focus[p.q.m.name]=1});
+    if(pmode!=="env"){ // local maxima: join every non-dominated model directly
+      ctx.beginPath();pts.forEach(function(p,i){i?ctx.lineTo(p.q.p.x,p.q.p.y):ctx.moveTo(p.q.p.x,p.q.p.y)});
+      ctx.lineWidth=1.8;ctx.strokeStyle="rgb("+css("--plane2")+")";ctx.stroke();
+    }
+    if(pmode!=="nd"){
+      ctx.beginPath();h.forEach(function(p,i){i?ctx.lineTo(p.q.p.x,p.q.p.y):ctx.moveTo(p.q.p.x,p.q.p.y)});
+      ctx.setLineDash([2,5]);ctx.lineWidth=2;ctx.lineCap="round";ctx.strokeStyle=fg;ctx.stroke();ctx.setLineDash([]);ctx.lineCap="butt";
+    }
   }
   proj.forEach(function(q){
     var r=(q.m===hover?9:6.5)*Math.max(.7,q.p.s*Math.sqrt(zoom));
@@ -398,11 +437,14 @@ function applyMode(m){
   mode=m;var cfg=MODES[m];
   DATA.forEach(function(d){var v=d.sp[m];d.src=v==null?"aa":m;if(v==null)v=d.sp.aa;d.speed=v;d.time=1000/v});
   TMAX=cfg.tmax;thr.speed=cfg.speed;ss.value=cfg.speed;
-  computePareto();TRIS=buildTris();
+  computePareto();TRIS=buildTris();buildNd();
   document.querySelectorAll("#srcbtns [data-src]").forEach(function(b){b.classList.toggle("on",b.dataset.src===m)});
   document.getElementById("thspeed").textContent=SRC[m]+" tok/s";
   buildTable();dirty=true;
 }
+document.querySelectorAll("#pmodes [data-pm]").forEach(function(b){b.onclick=function(){pmode=b.dataset.pm;
+  document.querySelectorAll("#pmodes [data-pm]").forEach(function(x){x.classList.toggle("on",x===b)});dirty=true};
+  b.classList.toggle("on",b.dataset.pm===pmode)});
 document.querySelectorAll("#srcbtns [data-src]").forEach(function(b){b.onclick=function(){applyMode(b.dataset.src)}});
 applyMode("p90");resize();loop();
 })();
