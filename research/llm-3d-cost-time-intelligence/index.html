@@ -18,26 +18,32 @@
 @media (prefers-color-scheme:dark){:root{--bg:#121311;--panel:#1b1c1a;--fg:#ecece6;--muted:#9a9a92;--line:#34352f;--grid:#2a2b27;--accent:#4ade80;--plane:167,139,250;--plane2:45,212,191;--cut:#fbbf24;--green-fill:rgba(74,222,128,.14);--green-edge:rgba(74,222,128,.85)}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
-.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 48px}
-h1{font:600 28px/1.2 Georgia,serif;margin:0 0 6px}
-.sub{color:var(--muted);margin:0 0 18px;max-width:75ch}
+.wrap{max-width:1500px;margin:0 auto;padding:14px 16px 40px}
+h1{font:600 22px/1.2 Georgia,serif;margin:0 0 2px}
+.sub{color:var(--muted);margin:0 0 10px;max-width:110ch;font-size:13px;line-height:1.4}
 .stage{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 canvas{display:block;width:100%;height:min(70vh,640px);min-height:380px;touch-action:none;cursor:grab}
 canvas.drag{cursor:grabbing}
 .tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.18);display:none;white-space:nowrap}
 .tip b{display:block;margin-bottom:2px}
 .hint{position:absolute;left:12px;bottom:10px;font-size:12px;color:var(--muted)}
-.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 22px;margin:16px 0}
-.controls label{display:block;font-size:13px;color:var(--muted)}
+.app{display:block}
+.panel{margin-top:10px;font-size:12px}
+.panel .grp{border-top:1px solid var(--line);padding:6px 0 2px}
+.panel .grp:first-child{border-top:0;padding-top:0}
+.panel .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 3px}
+.controls{display:grid;grid-template-columns:1fr;gap:4px;margin:2px 0}
+.controls label{display:block;font-size:12px;color:var(--muted)}
 .controls label span{color:var(--fg);font-weight:600}
-input[type=range]{width:100%;accent-color:var(--accent)}
-.btns{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 8px}
-button{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+input[type=range]{width:100%;margin:0;height:16px;accent-color:var(--accent)}
+.btns{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 4px}
+button{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font:inherit;font-size:12px;cursor:pointer}
 button:hover{border-color:var(--accent)}
 button.on{border-color:var(--accent);color:var(--accent)}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;margin:10px 0}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
-.key{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 18px;margin-bottom:6px}
+.key{font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:1px}
+#count{color:var(--fg);font-weight:600;font-size:12px}
 table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
 th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}
 th:first-child,td:first-child{text-align:left}
@@ -45,6 +51,11 @@ th{color:var(--muted);font-weight:500;cursor:pointer}
 tr.in td{background:var(--green-fill)}
 .tablewrap{overflow-x:auto}
 button.pin{padding:0 7px;font-size:13px;line-height:20px}
+@media (min-width:980px){
+  .app{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start}
+  canvas{height:min(calc(100vh - 118px),820px);min-height:420px}
+  .panel{margin-top:0;position:sticky;top:10px;max-height:calc(100vh - 20px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+}
 .note{font-size:13px;color:var(--muted);margin-top:18px;max-width:85ch}
 .note p{margin:6px 0}
 </style>
@@ -54,56 +65,71 @@ button.pin{padding:0 7px;font-size:13px;line-height:20px}
 <h1>Intelligence vs Cost vs Time</h1>
 <p class="sub">A 3D take on Artificial Analysis' two 2D charts. Every model is placed by Intelligence Index, cost per task and response time. The green octant is the corner where cost is lowest, time is lowest and intelligence is highest. Drag to rotate, scroll to zoom, hover for details.</p>
 
+<div class="app">
 <div class="stage">
   <canvas id="c"></canvas>
   <div class="tip" id="tip"></div>
-  <div class="hint">drag: rotate · scroll / pinch buttons: zoom</div>
+  <div class="hint">drag: rotate · scroll: zoom</div>
 </div>
 
+<aside class="panel">
+<div class="grp"><div class="lbl">Display</div>
 <div class="btns">
   <button id="auto" class="on">Auto-rotate</button>
   <button id="lab" class="on">Labels</button>
   <button id="drops">Drop lines</button>
   <button id="pln" class="on">Pareto plane (3D)</button>
-  <button id="par" class="on" title="Shown in the 2D views">Pareto line (2D views)</button>
+  <button id="par" class="on" title="Shown in the 2D views">Pareto line (2D)</button>
+</div></div>
+
+<div class="grp"><div class="lbl">View</div>
+<div class="btns">
   <button data-view="iso">Isometric</button>
-  <button data-view="ci">Cost × Intelligence</button>
-  <button data-view="ti">Time × Intelligence</button>
+  <button data-view="ci">Cost × Int.</button>
+  <button data-view="ti">Time × Int.</button>
   <button data-view="ct">Cost × Time</button>
   <button id="zin">Zoom +</button>
   <button id="zout">Zoom −</button>
-</div>
+</div></div>
 
-<div class="btns" id="srcbtns"><span style="align-self:center;font-size:13px;color:var(--muted)">Time metric:</span>
-  <button data-src="aa" title="Output tokens/s from AA's chart">tok/s · AA chart</button>
-  <button data-src="p50">tok/s · OpenRouter p50</button>
-  <button data-src="p90">tok/s · OpenRouter p90</button>
-  <button data-src="task" title="Wall-clock seconds per Intelligence Index task, from AA">time per task · AA</button>
-</div>
-<div class="btns" id="costbtns"><span style="align-self:center;font-size:13px;color:var(--muted)">Cost metric:</span>
-  <button data-cost="task" title="AA's cost per Intelligence Index task">$ per task · AA</button>
-  <button data-cost="mtok" title="OpenRouter list price, input and output blended 3:1">$ per M tokens · OpenRouter blended</button>
-</div>
-<div class="btns" id="pmodes"><span style="align-self:center;font-size:13px;color:var(--muted)">Pareto type:</span>
+<div class="grp"><div class="lbl">Time metric</div>
+<div class="btns" id="srcbtns">
+  <button data-src="aa" title="Output tokens/s from AA's chart">tok/s · AA</button>
+  <button data-src="p50" title="OpenRouter median tokens/s">tok/s · OR p50</button>
+  <button data-src="p90" title="OpenRouter 90th-percentile tokens/s">tok/s · OR p90</button>
+  <button data-src="task" title="Wall-clock seconds per Intelligence Index task, from AA">time / task · AA</button>
+</div></div>
+<div class="grp"><div class="lbl">Cost metric</div>
+<div class="btns" id="costbtns">
+  <button data-cost="task" title="AA's cost per Intelligence Index task">$ / task · AA</button>
+  <button data-cost="mtok" title="OpenRouter list price, input and output blended 3:1">$ / M tokens · OR blended</button>
+</div></div>
+<div class="grp"><div class="lbl">Pareto type</div>
+<div class="btns" id="pmodes">
   <button data-pm="env" title="Outer convex envelope: never dips inward">Global envelope</button>
-  <button data-pm="nd" title="Every non-dominated model joined directly; may dip inward between models">Local maxima (non-dominated)</button>
-</div>
+  <button data-pm="nd" title="Every non-dominated model joined directly; may dip inward between models">Local maxima</button>
+</div></div>
+
+<div class="grp"><div class="lbl">Octant thresholds</div>
 <div class="controls">
   <label>Min intelligence index: <span id="vi"></span><input id="si" type="range" min="20" max="58" step="0.5" value="45"></label>
   <label><span id="lbc">Max cost per task</span>: <span id="vc"></span><input id="sc" type="range" min="0" max="100" step="1"></label>
   <label><span id="lbs">Min output speed</span>: <span id="vs"></span><input id="ss" type="range" min="30" max="240" step="5" value="100"></label>
-</div>
+</div></div>
+<div class="grp"><div class="lbl">Timeline</div>
 <div class="controls">
-  <label>Timeline — models released by: <span id="vd"></span><input id="sd" type="range" min="0" max="0" step="1" value="0"></label>
-  <div class="btns" style="align-self:end"><button id="play">▶ Play timeline</button></div>
+  <label>Models released by: <span id="vd"></span><input id="sd" type="range" min="0" max="0" step="1" value="0"></label>
 </div>
-<div class="key">
+<div class="btns"><button id="play">▶ Play timeline</button></div></div>
+<div class="grp key">
   <span id="count"></span>
   <span id="hid"></span>
   <span>◯ ring = Pareto-optimal in all 3 dimensions</span>
   <span style="color:var(--accent)">■ green = inside the octant</span>
   <span style="color:rgb(var(--plane))">■ purple = Pareto plane / dotted line</span>
   <span style="color:var(--cut)">━ amber = where the plane cuts the octant</span>
+</div>
+</aside>
 </div>
 <div class="legend" id="legend"></div>
 
