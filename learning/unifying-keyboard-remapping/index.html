@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Native macOS Key Remapping: Unifying vs Bolt, UK Keyboard in a US Setup</title>
+<meta name="description" content="Remap a UK keyboard on Logitech Unifying while leaving a Bolt keyboard unchanged. A tested hidutil setup, BTT persistence, and the macOS permission trap that makes registry-only checks misleading.">
+<style>
+:root{--ink:#192329;--muted:#55626b;--line:#dce3e6;--accent:#166454}*{box-sizing:border-box}body{max-width:860px;margin:0 auto;padding:48px 24px 72px;color:var(--ink);background:#fafbf9;font:18px/1.7 Georgia,'Times New Roman',serif}nav,.eyebrow,.meta,button,th{font-family:system-ui,sans-serif}nav{font-size:14px;margin-bottom:38px}a{color:var(--accent);text-underline-offset:3px}h1{font-size:clamp(32px,6vw,48px);line-height:1.12;letter-spacing:-1px;margin:12px 0 24px}h2{font-size:28px;line-height:1.25;margin:48px 0 18px}h3{font-size:21px;margin:28px 0 12px}.eyebrow{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent)}.meta{font-size:14px;color:var(--muted)}.lead{font-size:22px}.callout{background:#eaf3ee;border-left:4px solid var(--accent);padding:16px 22px;margin:24px 0}.warning{background:#fff4df;border-color:#b38124}code{font:14px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow-wrap:anywhere}p code,li code,td code{background:#edf0ec;padding:2px 5px;border-radius:3px}pre{background:#18252d;color:#eff5f2;border-radius:8px;padding:20px;overflow:auto;margin:16px 0}pre code{white-space:pre;overflow-wrap:normal}.codeblock{position:relative}.copy{position:absolute;right:10px;top:10px;background:#34464e;border:1px solid #65767c;color:#fff;border-radius:4px;padding:5px 9px;cursor:pointer;font-size:12px}table{width:100%;border-collapse:collapse;font-size:16px}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:13px}.table-wrap{overflow-x:auto}ul,ol{padding-left:24px}li{margin:8px 0}details{border:1px solid var(--line);padding:14px 18px;border-radius:6px;margin:20px 0}summary{cursor:pointer;font-weight:bold}footer{margin-top:60px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}section{scroll-margin-top:24px}@media(max-width:600px){body{padding:28px 16px}pre{padding:16px;padding-top:42px}td,th{padding:10px 6px}}
+</style>
+</head>
+<body>
+<nav><a href="/">sites.arnavg.in</a> / <a href="/learning/">learning</a></nav>
+<header>
+<div class="eyebrow">macOS · Keyboards · Tested setup</div>
+<h1>Two keyboards.<br>Only one needs remapping.</h1>
+<p class="lead">A UK keyboard on Logitech Unifying, another keyboard on Logi Bolt, and native macOS key remapping that does not spill from one onto the other.</p>
+<p class="meta">Arnav Gupta’s UK-keyboard-in-a-US-setup scenario · Tested on macOS 26.6.2</p>
+</header>
+<div class="callout"><strong>The working setup:</strong> macOS <code>hidutil</code> performs the remapping, filtered by receiver VID/PID. BetterTouchTool runs the command from its permitted execution context and reapplies it at launch, reconnect, and wake. A standalone login agent initially looked correct in the registry but failed the physical-key test.</div>
+<nav aria-label="Contents"><a href="#scenario">My setup</a> · <a href="#identify">Device IDs</a> · <a href="#mapping">The mapping</a> · <a href="#permissions">Permission trap</a> · <a href="#persist">Persistence</a> · <a href="#verify">Verify</a> · <a href="#undo">Undo</a></nav>
+<section id="scenario">
+<h2>1. What I actually wanted</h2>
+<p>Both receivers are connected to the same Mac. My UK/ISO keyboard uses <strong>Unifying</strong>; the keyboard using <strong>Bolt</strong> should keep its normal behavior. With the macOS <strong>ABC</strong> input source, my desired behavior on Unifying is:</p>
+<ul><li><strong>§ key → backtick <code>`</code></strong></li><li><strong>Shift + § key → tilde <code>~</code></strong></li><li>Keep the separate grave/backtick-position key’s existing <strong>Left Shift</strong> mapping.</li><li>Leave every Bolt interface unchanged.</li></ul>
+<p>This is a personal layout fix, <strong>not a universal UK-to-US conversion</strong>. The extra Shift mapping is deliberate; most UK keyboards do not need it. <code>hidutil</code> remaps HID usages, not printed characters or input sources. Select your input source separately and test the physical keys.</p>
+<p>The original BTT “Remap Keyboard Key” rules matched the keyboard product name. Both receivers were called <strong>USB Receiver</strong>. BTT’s <code>BTTKeyRemapKeyboard</code> supports product-name matching and wildcards, but that cannot distinguish two identical names. Device-filtered <code>hidutil</code> can.</p>
+</section>
+<section id="identify">
+<h2>2. Identify Unifying and Bolt</h2>
+<div class="codeblock"><pre><code>hidutil list --matching '{"VendorID":1133}'</code></pre></div>
+<div class="table-wrap"><table><thead><tr><th>Receiver in this setup</th><th>VID:PID (hex)</th><th>Decimal vendor / product</th></tr></thead><tbody><tr><td>Logitech Unifying</td><td><code>046D:C52B</code></td><td><code>1133 / 50475</code></td></tr><tr><td>Logi Bolt</td><td><code>046D:C548</code></td><td><code>1133 / 50504</code></td></tr></tbody></table></div>
+<p>Inspect your own hardware: other receiver models may have different IDs. <code>ioreg -p IOUSB -l -w 0</code> also exposes USB vendor/product IDs.</p>
+<p>The filter below selects the <em>Unifying keyboard interface</em>, not the receiver’s mouse or other interfaces:</p>
+<div class="codeblock"><pre><code>{"VendorID":1133,"ProductID":50475,"PrimaryUsagePage":1,"PrimaryUsage":6}</code></pre></div>
+<p>Usage page 1 / usage 6 means keyboard. On my Mac, this selected exactly one keyboard service. Bolt’s product ID never matches.</p>
+<div class="callout warning"><strong>Receiver-specific is not always individual-keyboard-specific.</strong> All matching keyboard interfaces get this map. This does not separate two keyboards paired through one Unifying receiver, nor two Unifying receivers with identical VID/PID. It solves <em>Unifying versus Bolt</em>. Bluetooth and direct USB connections have different identifiers.</div>
+</section>
+<section id="mapping">
+<h2>3. Apply the native map</h2>
+<p>First read the current map. Save any existing entries: setting <code>UserKeyMapping</code> replaces the complete map on matched interfaces rather than merging it.</p>
+<div class="codeblock"><pre><code>/usr/bin/hidutil property \
+  --matching '{"VendorID":1133,"ProductID":50475,"PrimaryUsagePage":1,"PrimaryUsage":6}' \
+  --get UserKeyMapping</code></pre></div>
+<p>The intended two mappings are:</p>
+<div class="table-wrap"><table><thead><tr><th>Source HID usage</th><th>Destination HID usage</th></tr></thead><tbody><tr><td>Non-US backslash / plus-minus<br><code>0x700000064</code></td><td>Grave accent / tilde<br><code>0x700000035</code></td></tr><tr><td>Grave accent / tilde<br><code>0x700000035</code></td><td>Left Shift<br><code>0x7000000E1</code></td></tr></tbody></table></div>
+<p>A raw HID probe confirmed that my physical § key sends keyboard usage <code>0x64</code> through receiver <code>046D:C52B</code>. HID names are not necessarily the legends printed on a UK keyboard.</p>
+<div class="codeblock"><pre><code>/usr/bin/hidutil property \
+  --matching '{"VendorID":1133,"ProductID":50475,"PrimaryUsagePage":1,"PrimaryUsage":6}' \
+  --set '{"UserKeyMapping":[
+    {"HIDKeyboardModifierMappingSrc":30064771172,"HIDKeyboardModifierMappingDst":30064771125},
+    {"HIDKeyboardModifierMappingSrc":30064771125,"HIDKeyboardModifierMappingDst":30064771297}
+  ]}'</code></pre></div>
+<p>The decimal values encode <code>(0x07 &lt;&lt; 32) | usage</code>. The first entry is <code>0x64 → 0x35</code>; the second is <code>0x35 → 0xE1</code>. To keep the second key normal in a different setup, omit the second entry.</p>
+<p><strong>Never omit <code>--matching</code> casually.</strong> An unfiltered remap can affect other keyboards. Both keyboards can remain connected when this filter is used.</p>
+</section>
+<section id="permissions">
+<h2>4. The trap: “set” does not prove “working”</h2>
+<p>The first implementation used a standalone LaunchAgent running <code>hidutil</code> every ten seconds. The command exited successfully. Readback displayed both desired entries. Clearing the map and waiting caused the agent to restore them. Bolt stayed unmapped.</p>
+<p><strong>But the physical § key still typed §.</strong> Those checks proved the property was stored—not that the character-key remap was honored.</p>
+<p>Apple’s <code>IOHIDKeyboardFilter</code> source includes permission checks for restricted character-key remappings: the client needs the relevant entitlement or a successful Input Monitoring access check. Modifier-only behavior can therefore be a misleading sign that the whole configuration works.</p>
+<p>Running the same intended map as a <strong>BTT Execute Terminal Command action</strong> fixed the physical behavior in this setup; the user confirmed it worked. That points to an execution-context/permission difference, not a wrong source usage. An attempted identity mapping did not fix it.</p>
+<div class="callout warning"><strong>Test the physical key before declaring success.</strong> Exit code 0 and a populated <code>UserKeyMapping</code> are insufficient. If a direct command fails physically, check System Settings → Privacy &amp; Security → Input Monitoring. Permission needs and attribution vary by macOS release; the running app and/or <code>/usr/bin/hidutil</code> may need permission. Retest after any change. Do not default to broad passwordless sudo.</div>
+<p><strong>Can this work without BTT?</strong> Native <code>hidutil</code> can be automated by launchd when the execution context has the necessary permissions. However, that standalone route was <em>not physically working</em> on this Mac as first configured. The final tested route uses BTT to invoke the native command. Do not copy an unverified login-agent solution and assume it works.</p>
+</section>
+<section id="persist">
+<h2>5. Reapply at login, reconnect, and wake</h2>
+<p><code>hidutil</code> maps live on keyboard services. They are not permanent preferences and may disappear after reboot or service removal. The final configuration uses three enabled, Global BTT automations in the Default preset, each with the same <strong>Execute / Run Terminal Command (Async)</strong> action:</p>
+<div class="table-wrap"><table><thead><tr><th>BTT event</th><th>Configuration</th></tr></thead><tbody><tr><td>After launching BTT on this Mac<br><code>641</code></td><td>Select this Mac / its serial number. Do not copy someone else’s serial.</td></tr><tr><td>USB Device Did Connect<br><code>785</code></td><td>Vendor ID <code>1133</code>, product ID <code>50475</code> only.</td></tr><tr><td>After Mac Wakes From Sleep<br><code>606</code></td><td>No device configuration needed; the command itself filters Unifying.</td></tr></tbody></table></div>
+<p>BTT’s USB-connect event supports VID/PID filtering even though its native keyboard-remap name selector does not. In this BTT version, the Terminal Command action is <code>BTTPredefinedActionType:137</code>. Verify native names if importing JSON on another version.</p>
+<h3>Command for all three actions</h3>
+<p>This allows two seconds for device enumeration, then retries briefly if the keyboard interface is not ready. It writes only to the matching Unifying service:</p>
+<div class="codeblock"><pre><code>/bin/sleep 2
+for attempt in 1 2 3 4 5 6 7 8 9 10; do
+  if /usr/bin/hidutil list \
+      --matching '{"VendorID":1133,"ProductID":50475,"PrimaryUsagePage":1,"PrimaryUsage":6}' \
+      | /usr/bin/grep -q '0xc52b'; then
+    /usr/bin/hidutil property \
+      --matching '{"VendorID":1133,"ProductID":50475,"PrimaryUsagePage":1,"PrimaryUsage":6}' \
+      --set '{"UserKeyMapping":[{"HIDKeyboardModifierMappingSrc":30064771172,"HIDKeyboardModifierMappingDst":30064771125},{"HIDKeyboardModifierMappingSrc":30064771125,"HIDKeyboardModifierMappingDst":30064771297}]}'
+    exit $?
+  fi
+  /bin/sleep 1
+done</code></pre></div>
+<p><strong>BTT must start at login and stay running to handle reconnect/wake events.</strong> Enable its startup option, or use a user LaunchAgent that opens the installed BTT app at login. In my setup, a login agent opens the Setapp installation of BTT; BTT’s launch automation then applies the map. This works after login, <strong>not on the FileVault pre-login unlock screen</strong>.</p>
+<p>The original two name-based BTT remap rules remain deleted. These new automations execute a native, device-filtered command; they are not name-based remap rules. The old standalone polling agent is unloaded and its plist disabled so it cannot overwrite the working map.</p>
+</section>
+<section id="verify">
+<h2>6. Verification checklist</h2>
+<div class="codeblock"><pre><code># Unifying: expect the two source/destination pairs.
+hidutil property \
+  --matching '{"VendorID":1133,"ProductID":50475,"PrimaryUsagePage":1,"PrimaryUsage":6}' \
+  --get UserKeyMapping
+
+# Bolt: expect (null), or its pre-existing mapping unchanged.
+hidutil property \
+  --matching '{"VendorID":1133,"ProductID":50504}' \
+  --get UserKeyMapping</code></pre></div>
+<ol><li>With both keyboards connected, press § on Unifying: expect <code>`</code>.</li><li>Press Shift + that key: expect <code>~</code>.</li><li>Check the separate Shift remap if using the second mapping.</li><li>Check Bolt’s physical keys remain normal, not just its registry output.</li><li>Reconnect Unifying, wait a few seconds, and test again.</li><li>Test wake and a real reboot/login on your own machine.</li></ol>
+<p><strong>What was verified in this session:</strong> the raw § key usage and receiver ID; successful physical behavior after BTT ran the command; saved Global startup/connect/wake automations; execution of the saved startup action; the login opener’s exit code 0; both intended Unifying map entries; and null maps on all inspected Bolt interfaces.</p>
+<p><strong>What was not tested:</strong> a full Mac reboot, an actual sleep/wake cycle, or a physical receiver reconnect after installing the final automations. Those paths are configured, but a saved trigger is not proof that the event fired. Repeat the physical checks after each event.</p>
+</section>
+<section id="undo">
+<h2>7. Undo without it reappearing</h2>
+<p>First disable or delete the three “Unifying keymap” automations in BTT. Unload any standalone remapping agent too. Then clear only the Unifying keyboard map:</p>
+<div class="codeblock"><pre><code>hidutil property \
+  --matching '{"VendorID":1133,"ProductID":50475,"PrimaryUsagePage":1,"PrimaryUsage":6}' \
+  --set '{"UserKeyMapping":[]}'</code></pre></div>
+<p>Restore a saved pre-existing map instead if necessary. If a permission issue prevents effective clearing, run the clear command through the same permitted BTT action context, after disabling automatic reapplication. Bolt needs no cleanup because this setup never writes to it.</p>
+<p>If you installed a dedicated BTT login opener just for this setup, unload and remove that agent separately. Do not remove unrelated BTT settings or other login items.</p>
+</section>
+<section id="sources">
+<h2>References</h2>
+<ul>
+<li><a href="https://developer.apple.com/library/archive/technotes/tn2450/_index.html">Apple TN2450: Remapping Keys in macOS</a> — mapping format, HID encoding, and service lifetime. This older note is not a guarantee of current permission behavior.</li>
+<li><a href="https://github.com/apple-oss-distributions/IOHIDFamily/blob/main/IOHIDEventSystemPlugIns/IOHIDKeyboardFilter.mm">Apple IOHIDKeyboardFilter source</a> — see <code>allowRemapping</code>, <code>hasTCCPermissions</code>, and the alpha-numeric remapping entitlement.</li>
+<li><a href="https://github.com/pwr-Solaar/Solaar/blob/master/lib/logitech_receiver/base_usb.py">Solaar receiver definitions</a> — Unifying and Bolt VID/PID identification.</li>
+<li><a href="https://community.folivora.ai/t/low-level-key-remap/41043">BTT developer discussion: Low Level Key Remap</a> — native remapping and keyboard-name targeting. Event/action IDs above were also checked against the running BTT schema.</li>
+<li><a href="https://apple.stackexchange.com/questions/467341/hidutil-stopped-working-on-macos-14-2-update">Historical macOS hidutil permission discussion</a> — version-specific caveats.</li>
+<li>On your Mac: <code>man hidutil</code>, <code>man launchd.plist</code>, and <code>man launchctl</code>.</li>
+</ul>
+</section>
+<footer><p>A practical guide based on Arnav Gupta’s live setup and physical-key feedback, prepared with an LLM agent. <a href="/learning/">More guides →</a></p></footer>
+<script>
+document.querySelectorAll('.codeblock').forEach(function(block){
+  var button=document.createElement('button');button.type='button';button.className='copy';button.textContent='Copy';button.setAttribute('aria-label','Copy code block');
+  button.addEventListener('click',async function(){try{await navigator.clipboard.writeText(block.querySelector('code').textContent);button.textContent='Copied';}catch(e){button.textContent='Select & copy';}setTimeout(function(){button.textContent='Copy';},1800);});block.appendChild(button);
+});
+</script>
+</body>
+</html>
