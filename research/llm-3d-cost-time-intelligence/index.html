@@ -49,6 +49,7 @@ th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}
 th:first-child,td:first-child{text-align:left}
 th{color:var(--muted);font-weight:500;cursor:pointer}
 tr.in td{background:var(--green-fill)}
+tr.na td{color:var(--muted)}
 .tablewrap{overflow-x:auto}
 button.pin{padding:0 7px;font-size:13px;line-height:20px}
 @media (min-width:980px){
@@ -387,8 +388,8 @@ function draw(){
   dirty=false;
 }
 
-function fmtCost(c){return c<0.1?"$"+c.toFixed(3):"$"+c.toFixed(2)}
-function fmtTime(t){return TM.kind==="task"?t.toFixed(0):t.toFixed(1)}
+function fmtCost(c){return c==null?"—":c<0.1?"$"+c.toFixed(3):"$"+c.toFixed(2)}
+function fmtTime(t){return t==null?"—":TM.kind==="task"?t.toFixed(0):t.toFixed(1)}
 function updateUI(){
   document.getElementById("vi").textContent=thr.iq.toFixed(1);
   document.getElementById("vc").textContent=fmtCost(thr.cost);
@@ -396,7 +397,7 @@ function updateUI(){
   var n=DATA.filter(inOct).length;
   document.getElementById("count").textContent=pinned?n+" model"+(n===1?"":"s")+" cheaper, faster and smarter than "+pinned.name:n+" of "+DATA.length+" models inside the octant";
   var rows=document.querySelectorAll("#tbl tbody tr");
-  rows.forEach(function(r){var m=DATA[+r.dataset.i];r.className=inOct(m)?"in":"";r.querySelector(".pin").classList.toggle("on",m===pinned)});
+  rows.forEach(function(r){var m=TBL[+r.dataset.i];if(DATA.indexOf(m)<0){r.className="na";return}r.className=inOct(m)?"in":"";r.querySelector(".pin").classList.toggle("on",m===pinned)});
   dirty=true;
 }
 // cost slider maps 0..100 to log range
@@ -407,24 +408,27 @@ function sliderFromCost(c){return Math.round((Math.log(c)-lc0)/(lc1-lc0)*100)}
 var provs={};DATA.forEach(function(m){provs[m.prov]=1});
 document.getElementById("legend").innerHTML=Object.keys(provs).map(function(p){return '<span><i style="background:'+COL[p]+'"></i>'+p+'</span>'}).join("");
 var sortK="iq",sortDir=-1;
+// the table lists every released model, including ones not plotted for lack of data (shown greyed out, with "—" for missing values)
+var TBL=[];
 function buildTable(){
-  var idx=DATA.map(function(_,i){return i}).sort(function(a,b){
-    var x=DATA[a][sortK],y=DATA[b][sortK];
+  var idx=TBL.map(function(_,i){return i}).sort(function(a,b){
+    var x=TBL[a][sortK],y=TBL[b][sortK];
+    if(x==null||y==null)return x==null?(y==null?0:1):-1; // missing values always sort last
     return typeof x==="string"?sortDir*x.localeCompare(y):sortDir*(x-y)*1;
   });
-  document.querySelector("#tbl tbody").innerHTML=idx.map(function(i){var m=DATA[i];
-    return '<tr data-i="'+i+'"><td><button class="pin" title="Pin: set every threshold to this model, so green means cheaper, faster and smarter than it">◎</button></td><td>'+m.name+(m.pareto?" ◯":"")+'</td><td>'+m.iq.toFixed(1)+'</td><td>'+fmtCost(m.cost)+'</td><td>'+m.speed.toFixed(0)+'</td><td>'+fmtTime(m.time)+'</td></tr>'}).join("");
+  document.querySelector("#tbl tbody").innerHTML=idx.map(function(i){var m=TBL[i],ok=DATA.indexOf(m)>=0;
+    return '<tr data-i="'+i+'"'+(ok?'':' class="na" title="Not plotted: missing data for this metric"')+'><td>'+(ok?'<button class="pin" title="Pin: set every threshold to this model, so green means cheaper, faster and smarter than it">◎</button>':'')+'</td><td>'+m.name+(ok&&m.pareto?" ◯":"")+'</td><td>'+m.iq.toFixed(1)+'</td><td>'+fmtCost(m.cost)+'</td><td>'+(m.speed==null?"—":m.speed.toFixed(0))+'</td><td>'+fmtTime(m.time)+'</td></tr>'}).join("");
   updateUI();
 }
 document.querySelectorAll("#tbl th[data-k]").forEach(function(th){th.onclick=function(){var k=th.dataset.k;if(k===sortK)sortDir*=-1;else{sortK=k;sortDir=k==="name"?1:-1}buildTable()}});
 document.querySelector("#tbl tbody").addEventListener("click",function(e){
   var b=e.target.closest(".pin");if(!b)return;
-  var m=DATA[+b.closest("tr").dataset.i];
+  var m=TBL[+b.closest("tr").dataset.i];
   pinned=pinned===m?null:m;
   if(pinned)applyPin();
   updateUI();
 });
-document.querySelector("#tbl tbody").addEventListener("mouseover",function(e){var tr=e.target.closest("tr");hover=tr?DATA[+tr.dataset.i]:null;dirty=true});
+document.querySelector("#tbl tbody").addEventListener("mouseover",function(e){var tr=e.target.closest("tr");hover=tr?TBL[+tr.dataset.i]:null;if(DATA.indexOf(hover)<0)hover=null;dirty=true});
 
 // controls
 var si=document.getElementById("si"),sc=document.getElementById("sc"),ss=document.getElementById("ss");
@@ -481,6 +485,7 @@ function refresh(){
   var miss=ALL.filter(function(d){return d.released<=cutoff&&(d.cost==null||d.time==null)});
   document.getElementById("hid").textContent=miss.length?miss.length+" hidden, missing data for this metric: "+miss.map(function(d){return d.name}).join(", "):"";
   DATA=ALL.filter(function(d){return d.released<=cutoff&&d.cost!=null&&d.time!=null});
+  TBL=ALL.filter(function(d){return d.released<=cutoff});
   if(pinned&&DATA.indexOf(pinned)<0)pinned=null;
   if(pinned)applyPin();
   if(hover&&DATA.indexOf(hover)<0)hover=null;
