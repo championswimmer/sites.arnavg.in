@@ -10,13 +10,13 @@ modes:{
   aa:{kind:"tok",tmax:30,tstep:5,limit:100,smin:30,smax:240,sstep:5},
   p50:{kind:"tok",tmax:35,tstep:5,limit:60,smin:30,smax:240,sstep:5},
   p90:{kind:"tok",tmax:25,tstep:5,limit:100,smin:30,smax:240,sstep:5},
-  task:{kind:"task",tmax:2500,tstep:500,limit:1000,smin:100,smax:2500,sstep:50}
+  task:{kind:"task",tmax:3000,tstep:500,limit:1000,smin:100,smax:3000,sstep:50}
 },
 defaultMode:"p90",
 
 // Cost metrics (log axis). cmin/cmax = axis range, ticks = grid lines, limit = default max-cost threshold.
 costModes:{
-  task:{label:"Cost per task (AA)",axis:"Cost per task (USD, log)",cmin:0.01,cmax:12,ticks:[0.01,0.02,0.05,0.1,0.2,0.5,1,2,5,10],limit:2},
+  task:{label:"Cost per task (AA)",axis:"Cost per task (USD, log)",cmin:0.01,cmax:30,ticks:[0.01,0.02,0.05,0.1,0.2,0.5,1,2,5,10,20],limit:2},
   mtok:{label:"$ per M tokens (OpenRouter, blended)",axis:"Blended price, USD per M tokens (log)",cmin:0.1,cmax:30,ticks:[0.1,0.2,0.5,1,2,5,10,20],limit:3}
 },
 defaultCostMode:"task",
@@ -29,8 +29,8 @@ Anthropic:"#c4704f",OpenAI:"#6b7280",Meta:"#2f7cf6",Xiaomi:"#f97316",Alibaba:"#e
 },
 
 // Intelligence axis range and time axis minimum (cost/time maxima are per mode, above)
-axes:{imin:10,imax:62,tmin:0},
+axes:{imin:0,imax:68,tmin:0},
 
 // Default octant thresholds
-thresholds:{iq:45}
+thresholds:{iq:30}
 };
