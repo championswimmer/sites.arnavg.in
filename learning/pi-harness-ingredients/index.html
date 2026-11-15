@@ -1,15 +1,6 @@
 <!doctype html>
 <html lang="en">
 <head>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-J2YR2RVR6L"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-J2YR2RVR6L');
-</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Harness Ingredients</title>
@@ -357,8 +348,8 @@ svg text{font-family:var(--mono)}
       <path d="M260 120 C 260 160, 100 150, 100 196"/>
       <path d="M260 120 L 260 196"/>
       <path d="M260 120 C 260 160, 420 150, 420 196"/>
-      <path d="M420 290 C 420 315, 370 310, 370 330" stroke-dasharray="5 6"/>
-      <path d="M420 290 C 420 315, 470 310, 470 330" stroke-dasharray="5 6"/>
+      <path d="M420 308 C 420 322, 370 318, 370 334" stroke-dasharray="5 6"/>
+      <path d="M420 308 C 420 322, 470 318, 470 334" stroke-dasharray="5 6"/>
     </g>
     <!-- root -->
     <circle cx="260" cy="96" r="30" fill="url(#hroot)" filter="url(#hglow)"/>
@@ -366,8 +357,8 @@ svg text{font-family:var(--mono)}
 
     <!-- children -->
     <g transform="translate(100,244)" color="#5eead4"><use href="#hbot"/></g>
-    <g transform="translate(260,244)" color="#a78bfa"><use href="#hbot"/></g>
-    <g transform="translate(420,244)" color="#f9a8d4"><use href="#hbot"/></g>
+    <g transform="translate(260,244)" color="#f87171"><use href="#hbot"/></g>
+    <g transform="translate(420,244)" color="#a78bfa"><use href="#hbot"/></g>
     <!-- status badges -->
     <g transform="translate(136,206)"><circle r="13" fill="#0a1120"/><circle r="10" fill="none" stroke="#fbbf24" stroke-width="3.5" stroke-dasharray="44 20"><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1.6s" repeatCount="indefinite"/></circle></g>
     <g transform="translate(296,206)"><circle r="13" fill="#22c55e"/><path d="M-6 0l4 4 8-8" fill="none" stroke="#052e16" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g>
@@ -376,10 +367,11 @@ svg text{font-family:var(--mono)}
     <g font-family="'FiraCode Nerd Font',ui-monospace,monospace" font-size="17" fill="#94a3b8" text-anchor="middle">
       <text x="100" y="300">coder</text>
       <text x="260" y="300">reviewer</text>
+      <text x="420" y="300">architect</text>
     </g>
     <!-- grandchildren -->
     <g transform="translate(370,368) scale(.55)" color="#f9a8d4" opacity=".85"><use href="#hbot"/></g>
-    <g transform="translate(470,368) scale(.55)" color="#f9a8d4" opacity=".85"><use href="#hbot"/></g>
+    <g transform="translate(470,368) scale(.55)" color="#5eead4" opacity=".85"><use href="#hbot"/></g>
 
     <!-- steer bubble -->
     <g transform="translate(40,330)">
@@ -658,11 +650,11 @@ svg text{font-family:var(--mono)}
           <path d="M52 52 V 236 M52 112 H 96 M52 236 H 96 M118 128 V 174 M118 174 H 160" class="fN sV w3 rd"/>
           <g transform="translate(52,40)"><circle r="22" class="fV"/><text y="9" class="t22 mid b fO" style="font-family:Georgia,serif;font-style:italic">π</text></g>
           <text x="86" y="48" class="t20 fI b">/root</text>
-          <g transform="translate(120,112) scale(.42)" class="cT"><use href="#bot"/></g>
+          <g transform="translate(120,112) scale(.42)" class="cV"><use href="#bot"/></g>
           <text x="150" y="119" class="t18 fI">fix-auth</text>
           <g transform="translate(186,174) scale(.38)" class="cK"><use href="#bot"/></g>
           <text x="214" y="181" class="t18 fI">review</text>
-          <g transform="translate(120,236) scale(.42)" class="cV"><use href="#bot"/></g>
+          <g transform="translate(120,236) scale(.42)" class="cA"><use href="#bot"/></g>
           <text x="150" y="243" class="t18 fI">research</text>
           <!-- path chip -->
           <g transform="translate(300,166)"><rect width="240" height="30" rx="8" class="fQ sL"/><text x="12" y="20" class="t12 fD">/root/fix-auth/<tspan class="fK b">review</tspan></text></g>
