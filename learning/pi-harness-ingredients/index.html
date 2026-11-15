@@ -1,0 +1,1063 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harness Ingredients</title>
+<meta name="description" content="Checklists, subagents and monitors: three ingredients of a coding harness, illustrated through three pi extensions.">
+<meta property="og:title" content="Three ingredients of a coding harness">
+<meta property="og:description" content="Checklists to plan. Subagents to delegate. Monitors to wait without polling.">
+<meta property="og:image" content="hero.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+:root{
+  --bg:#070a14; --bg2:#0b1020; --panel:#0f1628; --panel2:#18213a; --line:#26324d; --line2:#3a4767;
+  --ink:#e8edf6; --dim:#8492b0; --faint:#4a5675;
+  --teal:#2dd4bf; --violet:#a78bfa; --amber:#fbbf24; --green:#4ade80; --red:#f87171; --pink:#f9a8d4; --on:#08101f;
+  --mono:"JetBrains Mono","FiraCode Nerd Font","Fira Code",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f6f4ee; --bg2:#efece3; --panel:#ffffff; --panel2:#eef1f6; --line:#d9dee8; --line2:#b9c2d3;
+    --ink:#101828; --dim:#5b6780; --faint:#a3adc0;
+    --teal:#0d9488; --violet:#7c3aed; --amber:#c27803; --green:#16a34a; --red:#dc2626; --pink:#db2777; --on:#ffffff;
+    color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#f6f4ee; --bg2:#efece3; --panel:#ffffff; --panel2:#eef1f6; --line:#d9dee8; --line2:#b9c2d3;
+  --ink:#101828; --dim:#5b6780; --faint:#a3adc0;
+  --teal:#0d9488; --violet:#7c3aed; --amber:#c27803; --green:#16a34a; --red:#dc2626; --pink:#db2777; --on:#ffffff;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(var(--line) 1px,transparent 1.2px);background-size:28px 28px;opacity:.55;z-index:-1}
+a{color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+@media (max-width:640px){.wrap{padding:0 16px}}
+
+/* nav */
+nav{position:sticky;top:0;z-index:10;backdrop-filter:blur(10px);background:color-mix(in srgb,var(--bg) 78%,transparent);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;gap:18px;height:56px}
+.logo{font-family:Georgia,serif;font-style:italic;font-weight:700;font-size:26px;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#c4b5fd,#7c3aed);color:#1e1b4b;text-decoration:none}
+nav .links{display:flex;gap:8px;margin-left:auto;flex-wrap:nowrap;overflow:hidden}
+nav .links a{font-family:var(--mono);font-size:13px;text-decoration:none;padding:6px 12px;border-radius:999px;border:1px solid var(--line);display:flex;align-items:center;gap:7px;white-space:nowrap}
+nav .links a i{width:9px;height:9px;border-radius:50%;display:inline-block}
+@media (max-width:560px){nav .links a span{display:none} nav .links a{padding:8px}}
+
+/* hero */
+header{padding:56px 0 28px;text-align:center}
+.kicker{font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+h1{font-size:clamp(34px,6vw,68px);line-height:1.02;letter-spacing:-.03em;margin:14px 0 16px;font-weight:800}
+h1 .t{color:var(--teal)} h1 .v{color:var(--violet)} h1 .a{color:var(--amber)}
+.tag{font-size:clamp(16px,2vw,20px);color:var(--dim);margin:0 auto 34px;max-width:640px}
+.heroimg{border-radius:20px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px rgba(0,0,0,.6)}
+.heroimg svg{display:block;width:100%;height:auto}
+.recipe{text-align:left;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px}
+.recipe a{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:16px;background:var(--panel);border:1px solid var(--line);text-decoration:none;transition:transform .2s,border-color .2s}
+.recipe a:hover{transform:translateY(-3px)}
+.recipe a:nth-child(1):hover{border-color:var(--teal)} .recipe a:nth-child(2):hover{border-color:var(--violet)} .recipe a:nth-child(3):hover{border-color:var(--amber)}
+.recipe svg{flex:none;width:52px;height:52px}
+.recipe b{display:block;font-size:17px}
+.recipe small{font-family:var(--mono);color:var(--dim);font-size:12.5px}
+@media (max-width:760px){.recipe{grid-template-columns:1fr}}
+
+/* sections */
+section{padding:84px 0 20px}
+.shead{display:flex;align-items:center;gap:18px;margin-bottom:10px;flex-wrap:wrap}
+.num{font-family:var(--mono);font-size:14px;font-weight:700;padding:6px 14px;border-radius:999px;color:var(--on)}
+.shead h2{font-size:clamp(30px,4.4vw,48px);margin:0;letter-spacing:-.025em;line-height:1.05}
+.lead{font-size:clamp(17px,2vw,21px);color:var(--dim);margin:6px 0 22px;max-width:760px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px}
+.tools code{font-family:var(--mono);font-size:13px;padding:5px 11px;border-radius:8px;background:var(--panel2);border:1px solid var(--line)}
+.tools code.cmd{border-style:dashed}
+.c-teal{--c:var(--teal)} .c-violet{--c:var(--violet)} .c-amber{--c:var(--amber)} .c-green{--c:var(--green)}
+.c-teal .num,.c-violet .num,.c-amber .num,.c-green .num{background:var(--c)}
+.shead h2 em{font-style:normal;color:var(--c)}
+
+.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:18px}
+figure{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px 18px 14px;position:relative;overflow:hidden}
+figure.wide{grid-column:1/-1}
+figure svg{display:block;width:100%;height:auto}
+figcaption{display:flex;align-items:baseline;gap:10px;margin-top:10px;font-weight:700;font-size:17px}
+figcaption::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--c);flex:none;transform:translateY(-1px)}
+figcaption span{font-family:var(--mono);font-weight:400;font-size:12.5px;color:var(--dim);margin-left:auto;text-align:right}
+
+/* pipeline */
+.pipe{display:flex;align-items:stretch;gap:0}
+.step{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:14px 12px 12px;text-align:center;min-width:0}
+.step svg{width:100%;max-width:150px;height:auto;margin:0 auto 6px}
+.step b{display:block;font-size:15px}
+.step small{display:block;font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-top:2px}
+.arrow{flex:none;width:34px;display:grid;place-items:center}
+.arrow svg{width:26px;height:26px}
+.chips{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:8px}
+.chips i{font-style:normal;font-family:var(--mono);font-size:11.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--amber);color:var(--amber)}
+.chips i.on{background:var(--amber);color:var(--on)}
+@media (max-width:860px){.pipe{flex-direction:column}.arrow{width:auto;height:30px}.arrow svg{transform:rotate(90deg)}.step svg{max-width:130px}}
+
+/* together */
+.loopgrid{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;align-items:stretch}
+@media (max-width:900px){.loopgrid{grid-template-columns:1fr}}
+.wires{display:grid;gap:18px}
+.wire{display:flex;gap:14px;align-items:center}
+.wire svg{flex:none;width:44%;max-width:230px}
+.wire b{display:block;font-size:17px;margin-bottom:4px}
+.wire p{margin:0;color:var(--dim);font-size:14.5px}
+.wire code{font-family:var(--mono);font-size:12.5px;color:var(--ink);background:var(--panel2);padding:1px 6px;border-radius:6px}
+
+/* install */
+.install{display:grid;gap:12px;margin-top:8px}
+.term{display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:15px;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:12px;padding:14px 14px 14px 18px;overflow:hidden}
+.term .p{color:var(--c);font-weight:700}
+.term code{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.term button{flex:none;font:600 12px var(--mono);color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer}
+.term button:hover{border-color:var(--c)}
+.term a{flex:none;font-size:12px;color:var(--dim);text-decoration:none}
+.term a:hover{color:var(--c)}
+@media (max-width:560px){.term{font-size:12.5px}.term a{display:none}}
+footer{padding:70px 0 50px;text-align:center;color:var(--dim);font-size:13.5px;font-family:var(--mono)}
+
+/* ---------- SVG paint classes ---------- */
+svg text{font-family:var(--mono)}
+.fT{fill:var(--teal)} .fV{fill:var(--violet)} .fA{fill:var(--amber)} .fG{fill:var(--green)} .fR{fill:var(--red)} .fK{fill:var(--pink)}
+.fI{fill:var(--ink)} .fD{fill:var(--dim)} .fF{fill:var(--faint)} .fL{fill:var(--line)} .fP{fill:var(--panel)} .fQ{fill:var(--panel2)} .fB{fill:var(--bg)} .fO{fill:var(--on)} .fN{fill:none}
+.sT{stroke:var(--teal)} .sV{stroke:var(--violet)} .sA{stroke:var(--amber)} .sG{stroke:var(--green)} .sR{stroke:var(--red)} .sK{stroke:var(--pink)}
+.sI{stroke:var(--ink)} .sD{stroke:var(--dim)} .sF{stroke:var(--faint)} .sL{stroke:var(--line)} .sL2{stroke:var(--line2)} .sP{stroke:var(--panel)}
+.w2{stroke-width:2} .w3{stroke-width:3} .w4{stroke-width:4} .w5{stroke-width:5}
+.rd{stroke-linecap:round;stroke-linejoin:round}
+.ds{stroke-dasharray:6 7} .ds2{stroke-dasharray:3 6}
+.o1{opacity:.12} .o2{opacity:.22} .o4{opacity:.45} .o6{opacity:.65}
+.cT{color:var(--teal)} .cV{color:var(--violet)} .cA{color:var(--amber)} .cG{color:var(--green)} .cR{color:var(--red)} .cK{color:var(--pink)}
+.t12{font-size:12px} .t14{font-size:14px} .t16{font-size:16px} .t18{font-size:18px} .t20{font-size:20px} .t22{font-size:22px} .t26{font-size:26px}
+.b{font-weight:700} .mid{text-anchor:middle} .end{text-anchor:end}
+
+/* ---------- motion ---------- */
+.spin,.ring,.grow,.flow,.phA,.phB,.blink,.beat,.zz,.travel{transform-box:fill-box}
+@media (prefers-reduced-motion: no-preference){
+  .spin{transform-origin:center;animation:spin 1.6s linear infinite}
+  .ring{transform-origin:50% 10%;animation:ring 3s ease-in-out infinite}
+  .grow{transform-origin:left center;animation:grow 6s ease-out infinite both;animation-delay:var(--d,0s)}
+  .flow{animation:flow 1.2s linear infinite}
+  .phA{animation:phA 6s ease-in-out infinite}
+  .phB{animation:phB 6s ease-in-out infinite}
+  .blink{animation:blink 1.1s steps(1) infinite}
+  .beat{stroke-dasharray:600;animation:beat 3s linear infinite}
+  .zz{animation:zz 3s ease-in-out infinite;animation-delay:var(--d,0s)}
+  .travel{animation:travel 3.2s ease-in-out infinite}
+  .pop{transform-box:fill-box;transform-origin:center;animation:pop 3s ease-in-out infinite;animation-delay:var(--d,0s)}
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes ring{0%,70%,100%{transform:rotate(0)}75%{transform:rotate(14deg)}80%{transform:rotate(-12deg)}85%{transform:rotate(8deg)}90%{transform:rotate(-4deg)}}
+@keyframes grow{0%{transform:scaleX(0)}35%,100%{transform:scaleX(1)}}
+@keyframes flow{to{stroke-dashoffset:-26}}
+@keyframes phA{0%,40%{opacity:1}50%,90%{opacity:0}100%{opacity:1}}
+@keyframes phB{0%,40%{opacity:0}50%,90%{opacity:1}100%{opacity:0}}
+@keyframes blink{50%{opacity:0}}
+@keyframes beat{from{stroke-dashoffset:600}to{stroke-dashoffset:-600}}
+@keyframes zz{0%{opacity:0;transform:translate(0,0)}30%{opacity:1}100%{opacity:0;transform:translate(10px,-22px)}}
+@keyframes travel{0%{transform:translate(0,0);opacity:0}10%{opacity:1}70%{transform:translate(0,-150px);opacity:1}80%,100%{transform:translate(0,-150px);opacity:0}}
+@keyframes pop{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+</style>
+</head>
+<body>
+
+<!-- shared SVG defs -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="aT" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="fT"/></marker>
+    <marker id="aV" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="fV"/></marker>
+    <marker id="aA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="fA"/></marker>
+    <marker id="aG" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="fG"/></marker>
+    <marker id="aR" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="fR"/></marker>
+    <marker id="aD" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="fD"/></marker>
+    <g id="bot">
+      <line x1="0" y1="-30" x2="0" y2="-44" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="0" cy="-48" r="6" fill="currentColor"/>
+      <rect x="-34" y="-30" width="68" height="56" rx="16" class="fQ" stroke="currentColor" stroke-width="4"/>
+      <rect x="-22" y="-14" width="44" height="22" rx="11" class="fB"/>
+      <circle cx="-10" cy="-3" r="5" fill="currentColor"/>
+      <circle cx="10" cy="-3" r="5" fill="currentColor"/>
+      <rect x="-42" y="-8" width="8" height="18" rx="4" fill="currentColor"/>
+      <rect x="34" y="-8" width="8" height="18" rx="4" fill="currentColor"/>
+    </g>
+    <g id="botSleep">
+      <line x1="0" y1="-30" x2="0" y2="-44" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="0" cy="-48" r="6" fill="currentColor"/>
+      <rect x="-34" y="-30" width="68" height="56" rx="16" class="fQ" stroke="currentColor" stroke-width="4"/>
+      <rect x="-22" y="-14" width="44" height="22" rx="11" class="fB"/>
+      <path d="M-15 -3h10M5 -3h10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+      <rect x="-42" y="-8" width="8" height="18" rx="4" fill="currentColor"/>
+      <rect x="34" y="-8" width="8" height="18" rx="4" fill="currentColor"/>
+    </g>
+    <g id="icDone"><circle r="14" class="fG"/><path d="M-6 0l4 4 8-8" fill="none" class="sP w3 rd"/></g>
+    <g id="icReady"><circle r="13" class="fN sD w3"/><path d="M-4 -6l10 6-10 6z" class="fD"/></g>
+    <g id="icBlocked"><circle r="14" class="fR"/><rect x="-8" y="-2.5" width="16" height="5" rx="2.5" class="fP"/></g>
+    <g id="icCancel"><circle r="13" class="fN sF w3"/><path d="M-5 -5l10 10M5 -5l-10 10" class="sF w3 rd"/></g>
+    <g id="icOngoing"><circle r="13" class="fN sA w4" stroke-dasharray="58 24"/></g>
+    <g id="bell">
+      <path d="M-11 7 v-7 a11 11 0 0 1 22 0 v7 l5 5 h-32z" class="fA"/>
+      <circle cy="16" r="4" class="fA"/>
+    </g>
+  </defs>
+</svg>
+
+<nav>
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="Top">π</a>
+    <div class="links">
+      <a href="#checklists"><i style="background:var(--teal)"></i><span>checklists</span></a>
+      <a href="#subagents"><i style="background:var(--violet)"></i><span>subagents</span></a>
+      <a href="#monitors"><i style="background:var(--amber)"></i><span>monitors</span></a>
+      <a href="#together"><i style="background:linear-gradient(90deg,var(--teal),var(--violet),var(--amber))"></i><span>together</span></a>
+    </div>
+  </div>
+</nav>
+
+<header id="top">
+  <div class="wrap">
+    <div class="kicker">three pi extensions · one recipe</div>
+    <h1>Ingredients of a<br>coding harness</h1>
+    <p class="tag"><b style="color:var(--teal)">Checklists</b> to plan. <b style="color:var(--violet)">Subagents</b> to delegate. <b style="color:var(--amber)">Monitors</b> to wait without polling.</p>
+    <div class="heroimg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 800" role="img" aria-labelledby="heroTitle">
+  <title id="heroTitle">A coding harness using checklists, subagents and monitors together</title>
+  <defs>
+    <radialGradient id="hbg" cx="50%" cy="40%" r="75%">
+      <stop offset="0" stop-color="#141c33"/>
+      <stop offset="1" stop-color="#070a14"/>
+    </radialGradient>
+    <pattern id="hdots" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.4" fill="#1f2a47"/>
+    </pattern>
+    <filter id="hblur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="70"/></filter>
+    <filter id="hshadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#000" flood-opacity=".55"/>
+    </filter>
+    <filter id="hglow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="hroot" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#c4b5fd"/><stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="hprog" x1="0" x2="1">
+      <stop offset="0" stop-color="#2dd4bf"/><stop offset="1" stop-color="#5eead4"/>
+    </linearGradient>
+    <g id="hbot">
+      <line x1="0" y1="-30" x2="0" y2="-44" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="0" cy="-48" r="6" fill="currentColor"/>
+      <rect x="-34" y="-30" width="68" height="56" rx="16" fill="#1a2242" stroke="currentColor" stroke-width="4"/>
+      <rect x="-22" y="-14" width="44" height="22" rx="11" fill="#0b1022"/>
+      <circle cx="-10" cy="-3" r="5" fill="currentColor"/>
+      <circle cx="10" cy="-3" r="5" fill="currentColor"/>
+      <rect x="-42" y="-8" width="8" height="18" rx="4" fill="currentColor"/>
+      <rect x="34" y="-8" width="8" height="18" rx="4" fill="currentColor"/>
+    </g>
+  </defs>
+
+  <rect fill="url(#hbg)"/>
+  <rect fill="url(#hdots)"/>
+  <g filter="url(#hblur)" opacity=".8">
+    <circle cx="430" cy="430" r="260" fill="#0d9488"/>
+    <circle cx="1000" cy="380" r="240" fill="#6d28d9"/>
+    <circle cx="1560" cy="440" r="250" fill="#b45309"/>
+  </g>
+
+  <!-- harness window -->
+  <g filter="url(#hshadow)">
+    <rect x="150" y="80" width="1700" height="650" rx="24" fill="#0c1324" stroke="#2b3757" stroke-width="2"/>
+  </g>
+  <path d="M174 80h1652a24 24 0 0 1 24 24v32H150v-32a24 24 0 0 1 24-24z" fill="#121b31"/>
+  <circle cx="192" cy="108" r="8" fill="#f87171"/>
+  <circle cx="220" cy="108" r="8" fill="#fbbf24"/>
+  <circle cx="248" cy="108" r="8" fill="#4ade80"/>
+  <text x="1000" y="115" text-anchor="middle" font-family="'FiraCode Nerd Font','JetBrains Mono',ui-monospace,monospace" font-size="20" fill="#7d8bab">π  pi — coding harness</text>
+
+  <!-- prompt -->
+  <text x="196" y="186" font-family="'FiraCode Nerd Font','JetBrains Mono',ui-monospace,monospace" font-size="27" fill="#e2e8f0"><tspan fill="#2dd4bf" font-weight="700">❯ </tspan>migrate auth to JWT, keep the tests green</text>
+  <rect x="918" y="162" width="14" height="30" fill="#2dd4bf" opacity=".85"/>
+
+  <!-- ============ PANE 1 : CHECKLIST ============ -->
+  <g transform="translate(190,222)">
+    <rect width="520" height="420" rx="16" fill="#0a1120" stroke="#2dd4bf" stroke-opacity=".45" stroke-width="2"/>
+    <rect x="20" y="20" width="168" height="36" rx="18" fill="#2dd4bf"/>
+    <text x="104" y="45" text-anchor="middle" font-family="Inter,'Segoe UI',system-ui,sans-serif" font-size="18" font-weight="800" letter-spacing="2" fill="#042f2e">CHECKLISTS</text>
+    <text x="496" y="46" text-anchor="end" font-family="'FiraCode Nerd Font',ui-monospace,monospace" font-size="22" fill="#5eead4">☑ 2/5</text>
+
+    <!-- rows -->
+    <g font-family="'FiraCode Nerd Font',ui-monospace,monospace" font-size="19">
+      <!-- done -->
+      <g transform="translate(0,100)">
+        <circle cx="46" r="16" fill="#22c55e"/><path d="M38 0l6 6 11-12" fill="none" stroke="#052e16" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="76" y="7" fill="#3b8f86">a1x</text>
+        <rect x="128" y="-7" width="230" height="14" rx="7" fill="#24324c"/>
+      </g>
+      <g transform="translate(0,156)">
+        <circle cx="46" r="16" fill="#22c55e"/><path d="M38 0l6 6 11-12" fill="none" stroke="#052e16" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="76" y="7" fill="#3b8f86">k7q</text>
+        <rect x="128" y="-7" width="180" height="14" rx="7" fill="#24324c"/>
+      </g>
+      <!-- ongoing -->
+      <g transform="translate(0,212)">
+        <rect x="8" y="-26" width="476" height="52" rx="12" fill="#fbbf24" fill-opacity=".08" stroke="#fbbf24" stroke-opacity=".35"/>
+        <circle cx="46" r="16" fill="none" stroke="#fbbf24" stroke-width="4" stroke-dasharray="70 31" transform="rotate(-40 46 0)"/>
+        <path d="M58 -14l4 9-10 1z" fill="#fbbf24"/>
+        <text x="76" y="7" fill="#5eead4">m3z</text>
+        <rect x="128" y="-7" width="270" height="14" rx="7" fill="#e2e8f0" opacity=".9"/>
+      </g>
+      <!-- ready -->
+      <g transform="translate(0,268)">
+        <circle cx="46" r="15" fill="none" stroke="#cbd5e1" stroke-width="3"/><path d="M41 -7l12 7-12 7z" fill="#cbd5e1"/>
+        <text x="76" y="7" fill="#5eead4">p2r</text>
+        <rect x="128" y="-7" width="200" height="14" rx="7" fill="#94a3b8" opacity=".75"/>
+      </g>
+      <!-- blocked -->
+      <g transform="translate(0,324)">
+        <circle cx="46" r="16" fill="#ef4444"/><rect x="36" y="-3" width="20" height="6" rx="3" fill="#450a0a"/>
+        <text x="76" y="7" fill="#5eead4">w9t</text>
+        <rect x="128" y="-7" width="240" height="14" rx="7" fill="#94a3b8" opacity=".45"/>
+      </g>
+    </g>
+    <!-- dependency arrow blocked -> ongoing -->
+    <path d="M380 324 C 470 324, 470 212, 412 212" fill="none" stroke="#f87171" stroke-width="3" stroke-dasharray="7 7"/>
+    <path d="M412 212l14 -8v16z" fill="#f87171"/>
+    <!-- progress -->
+    <rect x="30" y="376" width="460" height="12" rx="6" fill="#1b2740"/>
+    <rect x="30" y="376" width="184" height="12" rx="6" fill="url(#hprog)"/>
+  </g>
+
+  <!-- ============ PANE 2 : SUBAGENTS ============ -->
+  <g transform="translate(740,222)">
+    <rect width="520" height="420" rx="16" fill="#0a1120" stroke="#a78bfa" stroke-opacity=".5" stroke-width="2"/>
+    <rect x="20" y="20" width="168" height="36" rx="18" fill="#a78bfa"/>
+    <text x="104" y="45" text-anchor="middle" font-family="Inter,'Segoe UI',system-ui,sans-serif" font-size="18" font-weight="800" letter-spacing="2" fill="#2e1065">SUBAGENTS</text>
+    <g transform="translate(450,38)">
+      <circle cx="0" cy="0" r="7" fill="#a78bfa"><animate attributeName="opacity" values="1;.3;1" dur="1.4s" repeatCount="indefinite"/></circle>
+      <circle cx="20" cy="0" r="7" fill="#a78bfa" opacity=".7"/>
+      <circle cx="40" cy="0" r="7" fill="#a78bfa" opacity=".4"/>
+    </g>
+
+    <!-- edges -->
+    <g fill="none" stroke="#a78bfa" stroke-width="3" stroke-opacity=".7">
+      <path d="M260 120 C 260 160, 100 150, 100 196"/>
+      <path d="M260 120 L 260 196"/>
+      <path d="M260 120 C 260 160, 420 150, 420 196"/>
+      <path d="M420 290 C 420 315, 370 310, 370 330" stroke-dasharray="5 6"/>
+      <path d="M420 290 C 420 315, 470 310, 470 330" stroke-dasharray="5 6"/>
+    </g>
+    <!-- root -->
+    <circle cx="260" cy="96" r="30" fill="url(#hroot)" filter="url(#hglow)"/>
+    <text x="260" y="107" text-anchor="middle" font-family="Georgia,serif" font-size="32" font-style="italic" font-weight="700" fill="#1e1b4b">π</text>
+
+    <!-- children -->
+    <g transform="translate(100,244)" color="#5eead4"><use href="#hbot"/></g>
+    <g transform="translate(260,244)" color="#a78bfa"><use href="#hbot"/></g>
+    <g transform="translate(420,244)" color="#f9a8d4"><use href="#hbot"/></g>
+    <!-- status badges -->
+    <g transform="translate(136,206)"><circle r="13" fill="#0a1120"/><circle r="10" fill="none" stroke="#fbbf24" stroke-width="3.5" stroke-dasharray="44 20"><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1.6s" repeatCount="indefinite"/></circle></g>
+    <g transform="translate(296,206)"><circle r="13" fill="#22c55e"/><path d="M-6 0l4 4 8-8" fill="none" stroke="#052e16" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <g transform="translate(456,206)"><circle r="13" fill="#0a1120"/><circle r="10" fill="none" stroke="#fbbf24" stroke-width="3.5" stroke-dasharray="44 20"/></g>
+
+    <g font-family="'FiraCode Nerd Font',ui-monospace,monospace" font-size="17" fill="#94a3b8" text-anchor="middle">
+      <text x="100" y="300">coder</text>
+      <text x="260" y="300">reviewer</text>
+    </g>
+    <!-- grandchildren -->
+    <g transform="translate(370,368) scale(.55)" color="#f9a8d4" opacity=".85"><use href="#hbot"/></g>
+    <g transform="translate(470,368) scale(.55)" color="#f9a8d4" opacity=".85"><use href="#hbot"/></g>
+
+    <!-- steer bubble -->
+    <g transform="translate(40,330)">
+      <rect width="190" height="54" rx="14" fill="#1a2242" stroke="#5eead4" stroke-opacity=".6" stroke-width="2"/>
+      <path d="M60 0 l14 -18 l8 18z" fill="#1a2242"/>
+      <path d="M60 0 l14 -18 l8 18" fill="none" stroke="#5eead4" stroke-opacity=".6" stroke-width="2"/>
+      <rect x="61" y="-2" width="20" height="4" fill="#1a2242"/>
+      <text x="22" y="34" font-family="'FiraCode Nerd Font',ui-monospace,monospace" font-size="18" fill="#5eead4">steer ↵</text>
+      <circle cx="140" cy="27" r="5" fill="#5eead4" opacity=".9"/>
+      <circle cx="158" cy="27" r="5" fill="#5eead4" opacity=".6"/>
+      <circle cx="176" cy="27" r="5" fill="#5eead4" opacity=".3"/>
+    </g>
+  </g>
+
+  <!-- ============ PANE 3 : MONITORS ============ -->
+  <g transform="translate(1290,222)">
+    <rect width="520" height="420" rx="16" fill="#0a1120" stroke="#fbbf24" stroke-opacity=".5" stroke-width="2"/>
+    <rect x="20" y="20" width="160" height="36" rx="18" fill="#fbbf24"/>
+    <text x="100" y="45" text-anchor="middle" font-family="Inter,'Segoe UI',system-ui,sans-serif" font-size="18" font-weight="800" letter-spacing="2" fill="#451a03">MONITORS</text>
+    <!-- bell -->
+    <g transform="translate(470,38)">
+      <circle r="22" fill="#fbbf24" fill-opacity=".15"/>
+      <path d="M-10 6 v-6 a10 10 0 0 1 20 0 v6 l4 4 h-28z" fill="#fbbf24"/>
+      <circle cy="14" r="3.5" fill="#fbbf24"/>
+      <path d="M-20 -10 q-5 10 0 20 M20 -10 q5 10 0 20" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round"/>
+    </g>
+
+    <!-- job 1 : heartbeat -->
+    <g transform="translate(24,80)">
+      <rect width="472" height="118" rx="12" fill="#111a2f" stroke="#2b3757"/>
+      <circle cx="24" cy="26" r="7" fill="#4ade80"><animate attributeName="opacity" values="1;.35;1" dur="1.2s" repeatCount="indefinite"/></circle>
+      <text x="42" y="33" font-family="'FiraCode Nerd Font',ui-monospace,monospace" font-size="19" fill="#e2e8f0">dev-server</text>
+      <text x="456" y="33" text-anchor="end" font-family="'FiraCode Nerd Font',ui-monospace,monospace" font-size="16" fill="#64748b">tmux</text>
+      <polyline points="16,84 80,84 100,84 112,58 126,104 140,70 152,84 230,84 248,84 260,52 274,108 288,74 300,84 380,84 396,84 406,66 418,96 430,84 456,84" fill="none" stroke="#4ade80" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+    </g>
+
+    <!-- job 2 : log with match -->
+    <g transform="translate(24,214)">
+      <rect width="472" height="130" rx="12" fill="#111a2f" stroke="#2b3757"/>
+      <circle cx="24" cy="26" r="7" fill="#4ade80"/>
+      <text x="42" y="33" font-family="'FiraCode Nerd Font',ui-monospace,monospace" font-size="19" fill="#e2e8f0">test --watch</text>
+      <rect x="18" y="52" width="250" height="10" rx="5" fill="#334155"/>
+      <rect x="18" y="72" width="320" height="10" rx="5" fill="#334155"/>
+      <rect x="12" y="88" width="356" height="22" rx="6" fill="#fbbf24" fill-opacity=".18" stroke="#fbbf24" stroke-opacity=".7"/>
+      <rect x="18" y="94" width="200" height="10" rx="5" fill="#fbbf24"/>
+      <!-- magnifier -->
+      <g transform="translate(420,82)">
+        <circle r="24" fill="none" stroke="#fbbf24" stroke-width="5"/>
+        <line x1="17" y1="17" x2="34" y2="34" stroke="#fbbf24" stroke-width="7" stroke-linecap="round"/>
+        <text y="7" text-anchor="middle" font-family="'FiraCode Nerd Font',ui-monospace,monospace" font-size="13" font-weight="700" fill="#fbbf24">/re/</text>
+      </g>
+    </g>
+
+    <!-- delivery chips -->
+    <g font-family="'FiraCode Nerd Font',ui-monospace,monospace" font-size="17" text-anchor="middle">
+      <rect x="24" y="362" width="110" height="36" rx="18" fill="none" stroke="#475569" stroke-width="2"/>
+      <text x="79" y="386" fill="#94a3b8">ui</text>
+      <rect x="146" y="362" width="150" height="36" rx="18" fill="none" stroke="#475569" stroke-width="2"/>
+      <text x="221" y="386" fill="#94a3b8">nextTurn</text>
+      <rect x="308" y="362" width="188" height="36" rx="18" fill="#fbbf24"/>
+      <text x="402" y="386" fill="#451a03" font-weight="700">wake ⟲ agent</text>
+    </g>
+  </g>
+
+  <!-- footer status bar -->
+  <g font-family="'FiraCode Nerd Font',ui-monospace,monospace" font-size="19">
+    <line x1="170" y1="664" x2="1830" y2="664" stroke="#1f2a44" stroke-width="2"/>
+    <rect x="196" y="682" width="18" height="18" rx="4" fill="none" stroke="#2dd4bf" stroke-width="2.5"/>
+    <path d="M200 691l3.5 3.5 6-7" fill="none" stroke="#2dd4bf" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="224" y="698" fill="#5eead4">2/5 tasks</text>
+    <circle cx="384" cy="691" r="7" fill="#a78bfa"/>
+    <text x="398" y="698" fill="#c4b5fd">3 agents</text>
+    <circle cx="546" cy="691" r="7" fill="#fbbf24"/>
+    <text x="560" y="698" fill="#fcd34d">2 jobs watched</text>
+    <text x="1804" y="698" text-anchor="end" fill="#475569">~/project · main</text>
+  </g>
+</svg>
+</div>
+    <div class="recipe">
+      <a href="#checklists">
+        <svg viewBox="0 0 52 52"><rect x="4" y="4" width="44" height="44" rx="12" class="fT o2"/><path d="M15 26l7 7 15-15" fill="none" class="sT w5 rd"/></svg>
+        <div><b>Checklists</b><small>pi-checklist</small></div>
+      </a>
+      <a href="#subagents">
+        <svg viewBox="0 0 52 52"><rect x="4" y="4" width="44" height="44" rx="12" class="fV o2"/><g transform="translate(26,30) scale(.42)" class="cV"><use href="#bot"/></g></svg>
+        <div><b>Subagents</b><small>pi-subagent-manager</small></div>
+      </a>
+      <a href="#monitors">
+        <svg viewBox="0 0 52 52"><rect x="4" y="4" width="44" height="44" rx="12" class="fA o2"/><g transform="translate(26,24)"><g class="ring"><use href="#bell"/></g></g></svg>
+        <div><b>Monitors</b><small>pi-background-monitor</small></div>
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- ================= CHECKLISTS ================= -->
+<section id="checklists" class="c-teal">
+  <div class="wrap">
+    <div class="shead"><span class="num">01</span><h2>A <em>checklist</em> the agent keeps</h2></div>
+    <p class="lead">A plan you can see. It updates as the agent works.</p>
+    <div class="tools"><code>checklist_create</code><code>checklist_read</code><code>checklist_update</code><code class="cmd">/checklist</code><code class="cmd">/checklist add</code></div>
+
+    <div class="figs">
+      <!-- state machine -->
+      <figure>
+        <svg viewBox="0 0 560 340" role="img" aria-label="Task state machine: planned, ongoing, done, cancelled">
+          <!-- edges -->
+          <path d="M95 143 C95 92, 150 58, 204 58" class="fN sA w3" marker-end="url(#aA)"/>
+          <path d="M222 84 C200 108, 178 124, 160 140" class="fN sD w2 ds" marker-end="url(#aD)"/>
+          <path d="M352 58 C412 58, 465 92, 465 139" class="fN sG w3" marker-end="url(#aG)"/>
+          <path d="M168 170 L 389 170" class="fN sG w3" marker-end="url(#aG)"/>
+          <path d="M280 87 L 280 252" class="fN sR w3" marker-end="url(#aR)"/>
+          <path d="M120 197 C130 245, 165 268, 204 274" class="fN sR w3" marker-end="url(#aR)"/>
+          <path d="M212 296 C150 304, 92 268, 88 202" class="fN sD w2 ds" marker-end="url(#aD)"/>
+          <!-- nodes -->
+          <g transform="translate(25,145)"><rect width="142" height="50" rx="25" class="fQ sD w2"/><use href="#icReady" x="28" y="25"/><text x="52" y="31" class="t18 fI">planned</text></g>
+          <g transform="translate(208,33)"><rect width="144" height="52" rx="26" class="fA o2"/><rect width="144" height="52" rx="26" class="fN sA w3"/><g transform="translate(28,26)"><g class="spin"><use href="#icOngoing"/></g></g><text x="52" y="32" class="t18 fI b">ongoing</text></g>
+          <g transform="translate(393,145)"><rect width="142" height="50" rx="25" class="fG o2"/><rect width="142" height="50" rx="25" class="fN sG w3"/><use href="#icDone" x="28" y="25"/><text x="54" y="31" class="t18 fI b">done</text></g>
+          <g transform="translate(208,256)"><rect width="148" height="50" rx="25" class="fQ sF w2"/><use href="#icCancel" x="28" y="25"/><text x="52" y="31" class="t18 fD">cancelled</text></g>
+          <!-- terminal lock -->
+          <g transform="translate(464,232)"><rect x="-11" y="-2" width="22" height="18" rx="4" class="fG"/><path d="M-6 -2v-5a6 6 0 0 1 12 0v5" class="fN sG w3"/><text x="0" y="40" class="t14 fD mid">final</text></g>
+        </svg>
+        <figcaption>One state machine <span>done is final</span></figcaption>
+      </figure>
+
+      <!-- dependsOn -->
+      <figure>
+        <svg viewBox="0 0 560 340" role="img" aria-label="Dependent task stays blocked until its dependency is done">
+          <g class="t14 fD"><text x="90" y="54" class="mid">schema</text><text x="280" y="54" class="mid">api</text><text x="470" y="54" class="mid">ui</text></g>
+          <!-- card 1 -->
+          <g transform="translate(25,72)">
+            <rect width="130" height="150" rx="18" class="fQ sG w3"/>
+            <use href="#icDone" x="65" y="48"/>
+            <rect x="22" y="88" width="86" height="10" rx="5" class="fF"/><rect x="22" y="108" width="60" height="10" rx="5" class="fF"/>
+          </g>
+          <!-- card 2 -->
+          <g transform="translate(215,72)">
+            <rect width="130" height="150" rx="18" class="fQ"/>
+            <rect width="130" height="150" rx="18" class="fN sA w3 phA"/>
+            <rect width="130" height="150" rx="18" class="fN sG w3 phB" opacity="0"/>
+            <g class="phA"><g transform="translate(65,48)"><g class="spin"><use href="#icOngoing"/></g></g></g>
+            <g class="phB" opacity="0"><use href="#icDone" x="65" y="48"/></g>
+            <rect x="22" y="88" width="86" height="10" rx="5" class="fI o6"/><rect x="22" y="108" width="60" height="10" rx="5" class="fI o6"/>
+          </g>
+          <!-- card 3 -->
+          <g transform="translate(405,72)">
+            <rect width="130" height="150" rx="18" class="fQ"/>
+            <rect width="130" height="150" rx="18" class="fN sR w3 phA"/>
+            <rect width="130" height="150" rx="18" class="fN sD w3 phB" opacity="0"/>
+            <g class="phA"><use href="#icBlocked" x="65" y="48"/></g>
+            <g class="phB" opacity="0"><use href="#icReady" x="65" y="48"/></g>
+            <rect x="22" y="88" width="86" height="10" rx="5" class="fF"/><rect x="22" y="108" width="60" height="10" rx="5" class="fF"/>
+            <!-- lock -->
+            <g class="phA" transform="translate(108,-6)"><circle r="22" class="fR"/><rect x="-9" y="-3" width="18" height="15" rx="3" class="fP"/><path d="M-5 -3v-4a5 5 0 0 1 10 0v4" class="fN sP w3"/></g>
+          </g>
+          <!-- arrows -->
+          <path d="M159 147 H 209" class="fN sG w3" marker-end="url(#aG)"/>
+          <path d="M349 147 H 399" class="fN sD w3 ds phA" marker-end="url(#aD)"/>
+          <path d="M349 147 H 399" class="fN sG w3 phB" opacity="0" marker-end="url(#aG)"/>
+          <!-- legend -->
+          <g transform="translate(140,270)" class="t14">
+            <rect x="-14" y="-22" width="308" height="44" rx="22" class="fQ sL"/>
+            <text x="0" y="5" class="fD">ui</text><text x="30" y="5" class="fT b">dependsOn</text><text x="132" y="5" class="fD">api</text>
+            <path d="M172 0h28" class="sD w2" marker-end="url(#aD)"/>
+            <g class="phA"><text x="212" y="5" class="fR b">blocked</text></g>
+            <g class="phB" opacity="0"><text x="212" y="5" class="fG b">ready</text></g>
+          </g>
+        </svg>
+        <figcaption>dependsOn blocks work <span>3-char ids</span></figcaption>
+      </figure>
+
+      <!-- capacity -->
+      <figure>
+        <svg viewBox="0 0 560 340" role="img" aria-label="Up to ten tasks, top five in the live widget, up to three subtasks per task">
+          <!-- ten rows -->
+          <g transform="translate(36,44)">
+            <rect x="-18" y="-12" width="296" height="160" rx="14" class="fT o1"/>
+            <rect x="-18" y="-12" width="296" height="160" rx="14" class="fN sT w3"/>
+            <g>
+              <use href="#icDone" x="12" y="14" transform="scale(1)"/><rect x="38" y="9" width="170" height="10" rx="5" class="fF"/>
+              <use href="#icDone" x="12" y="42"/><rect x="38" y="37" width="130" height="10" rx="5" class="fF"/>
+              <g transform="translate(12,70)"><g class="spin"><use href="#icOngoing"/></g></g><rect x="38" y="65" width="200" height="10" rx="5" class="fI"/>
+              <use href="#icReady" x="12" y="98"/><rect x="38" y="93" width="150" height="10" rx="5" class="fD"/>
+              <use href="#icBlocked" x="12" y="126"/><rect x="38" y="121" width="180" height="10" rx="5" class="fD"/>
+            </g>
+            <g opacity=".35">
+              <use href="#icReady" x="12" y="172"/><rect x="38" y="167" width="100" height="10" rx="5" class="fD"/>
+              <use href="#icReady" x="12" y="200"/><rect x="38" y="195" width="80" height="10" rx="5" class="fD"/>
+              <use href="#icBlocked" x="12" y="228"/><rect x="38" y="223" width="96" height="10" rx="5" class="fD"/>
+              <use href="#icReady" x="12" y="256"/><rect x="38" y="251" width="70" height="10" rx="5" class="fD"/>
+              <use href="#icReady" x="12" y="284"/><rect x="38" y="279" width="90" height="10" rx="5" class="fD"/>
+            </g>
+            <text x="278" y="-22" class="t14 fT b end">top 5 · live widget</text>
+            <!-- bracket 10 -->
+            <path d="M268 -12 h10 v310 h-10" class="fN sD w2"/>
+            <text x="258" y="222" class="t14 fD end">+5 more in</text><text x="258" y="242" class="t14 fD end">/checklist</text>
+            <text x="288" y="150" class="t22 fI b">≤10</text>
+          </g>
+          <!-- subtasks -->
+          <g transform="translate(372,40)">
+            <g transform="translate(14,14)"><g class="spin"><use href="#icOngoing"/></g></g><rect x="40" y="9" width="96" height="10" rx="5" class="fI"/>
+            <path d="M14 30 V 132 M14 52 H 36 M14 92 H 36 M14 132 H 36" class="fN sL2 w3 rd"/>
+            <use href="#icDone" x="56" y="52"/><rect x="80" y="47" width="60" height="10" rx="5" class="fF"/>
+            <g transform="translate(56,92)"><g class="spin"><use href="#icOngoing"/></g></g><rect x="80" y="87" width="70" height="10" rx="5" class="fI o6"/>
+            <use href="#icReady" x="56" y="132"/><rect x="80" y="127" width="50" height="10" rx="5" class="fD"/>
+            <text x="14" y="184" class="t16 fD"><tspan class="t22 fI b">≤3</tspan> subtasks</text>
+          </g>
+          <!-- footer pill -->
+          <g transform="translate(360,262)">
+            <rect width="170" height="44" rx="22" class="fQ sL2 w2"/>
+            <rect x="18" y="13" width="18" height="18" rx="4" class="fN sT w3"/><path d="M22 22l3.5 3.5 6-7" class="fN sT w3 rd"/>
+            <text x="46" y="28" class="t16 fI">2/5</text>
+            <use href="#icDone" transform="translate(98,22) scale(.6)"/><text x="112" y="28" class="t16 fG">2</text>
+            <g transform="translate(140,22) scale(.6)"><use href="#icOngoing"/></g><text x="152" y="28" class="t16 fA">1</text>
+          </g>
+        </svg>
+        <figcaption>Small on purpose <span>widget · footer · dialog</span></figcaption>
+      </figure>
+
+      <!-- survives -->
+      <figure>
+        <svg viewBox="0 0 560 340" role="img" aria-label="Checklist state lives in the session file and survives resume, branch, undo and compaction">
+          <!-- file -->
+          <g transform="translate(26,96)">
+            <path d="M0 0h70l22 22v108H0z" class="fQ sL2 w2"/>
+            <path d="M70 0v22h22" class="fN sL2 w2"/>
+            <rect x="12" y="38" width="56" height="7" rx="3.5" class="fF"/>
+            <rect x="12" y="54" width="44" height="7" rx="3.5" class="fF"/>
+            <rect x="8" y="68" width="76" height="16" rx="5" class="fT o2"/><rect x="12" y="72" width="64" height="8" rx="4" class="fT"/>
+            <rect x="12" y="92" width="60" height="7" rx="3.5" class="fF"/>
+            <rect x="12" y="106" width="40" height="7" rx="3.5" class="fF"/>
+            <text x="46" y="156" class="t14 fD mid">session</text><text x="46" y="174" class="t14 fD mid">.jsonl</text>
+          </g>
+          <!-- timeline -->
+          <path d="M130 240 H 540" class="fN sL2 w3"/>
+          <path d="M130 120 H 540" class="fN sT w5 rd flow" stroke-dasharray="14 12"/>
+          <g class="t14 fD mid">
+            <g transform="translate(190,0)">
+              <path d="M0 240v-104" class="sL w2 ds2"/><circle cy="240" r="9" class="fP sV w3"/><text y="272">/resume</text>
+              <g transform="translate(-22,96)"><rect width="44" height="44" rx="8" class="fP sT w2"/><path d="M10 14h24M10 22h18M10 30h22" class="sT w3 rd"/></g>
+            </g>
+            <g transform="translate(290,0)">
+              <path d="M0 240v-104" class="sL w2 ds2"/><circle cy="240" r="9" class="fP sV w3"/><text y="272">/branch</text>
+              
+              <g transform="translate(-22,96)"><rect width="44" height="44" rx="8" class="fP sT w2"/><path d="M10 14h24M10 22h18M10 30h22" class="sT w3 rd"/></g>
+            </g>
+            <g transform="translate(390,0)">
+              <path d="M0 240v-104" class="sL w2 ds2"/><circle cy="240" r="9" class="fP sV w3"/><text y="272">/undo</text>
+              <g transform="translate(-22,96)"><rect width="44" height="44" rx="8" class="fP sT w2"/><path d="M10 14h24M10 22h18M10 30h22" class="sT w3 rd"/></g>
+            </g>
+            <g transform="translate(490,0)">
+              <path d="M0 240v-104" class="sL w2 ds2"/><circle cy="240" r="9" class="fP sV w3"/><text y="272">compact</text>
+              
+              <g transform="translate(-22,96)"><rect width="44" height="44" rx="8" class="fP sT w2"/><path d="M10 14h24M10 22h18M10 30h22" class="sT w3 rd"/></g>
+            </g>
+          </g>
+          <text x="335" y="70" class="t16 fT mid b">same checklist, every time</text>
+        </svg>
+        <figcaption>Lives in the session <span>no sidecar file</span></figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SUBAGENTS ================= -->
+<section id="subagents" class="c-violet">
+  <div class="wrap">
+    <div class="shead"><span class="num">02</span><h2><em>Subagents</em> you can steer</h2></div>
+    <p class="lead">Helpers that work in parallel, in a tree. Watch any of them and steer it.</p>
+    <div class="tools"><code>agent_spawn</code><code>agent_wait</code><code>agent_steer</code><code>agent_status</code><code>agent_stop</code><code>agent_output</code><code class="cmd">/agents tree</code><code class="cmd">/agents fork:coder …</code></div>
+
+    <div class="figs">
+      <!-- tree -->
+      <figure>
+        <svg viewBox="0 0 560 340" role="img" aria-label="Agents form a tree of paths under /root; independent roots like /k have no /root history">
+          <path d="M52 52 V 236 M52 112 H 96 M52 236 H 96 M118 128 V 174 M118 174 H 160" class="fN sV w3 rd"/>
+          <g transform="translate(52,40)"><circle r="22" class="fV"/><text y="9" class="t22 mid b fO" style="font-family:Georgia,serif;font-style:italic">π</text></g>
+          <text x="86" y="48" class="t20 fI b">/root</text>
+          <g transform="translate(120,112) scale(.42)" class="cT"><use href="#bot"/></g>
+          <text x="150" y="119" class="t18 fI">fix-auth</text>
+          <g transform="translate(186,174) scale(.38)" class="cK"><use href="#bot"/></g>
+          <text x="214" y="181" class="t18 fI">review</text>
+          <g transform="translate(120,236) scale(.42)" class="cV"><use href="#bot"/></g>
+          <text x="150" y="243" class="t18 fI">research</text>
+          <!-- path chip -->
+          <g transform="translate(300,166)"><rect width="240" height="30" rx="8" class="fQ sL"/><text x="12" y="20" class="t12 fD">/root/fix-auth/<tspan class="fK b">review</tspan></text></g>
+          <!-- independent root -->
+          <g transform="translate(330,52)">
+            <rect x="-16" y="-36" width="210" height="104" rx="16" class="fN sL2 w2 ds"/>
+            <circle r="18" class="fQ sA w3"/><text y="7" class="t18 mid b fA">k</text>
+            <path d="M0 18 V 44 H 38" class="fN sA w3 rd"/>
+            <g transform="translate(60,44) scale(.34)" class="cA"><use href="#bot"/></g>
+            <text x="86" y="50" class="t16 fI">/k/l</text>
+            <text x="30" y="6" class="t14 fD">no /root history</text>
+          </g>
+          <!-- context snapshot -->
+          <g transform="translate(300,232)">
+            <rect width="240" height="76" rx="14" class="fQ sL"/>
+            <rect x="14" y="14" width="80" height="14" rx="7" class="fV o4"/><rect x="40" y="34" width="80" height="14" rx="7" class="fT o4"/><rect x="14" y="54" width="60" height="10" rx="5" class="fV o4"/>
+            <path d="M136 38 h 30" class="sV w3" marker-end="url(#aV)"/>
+            <g transform="translate(198,44) scale(.36)" class="cT"><use href="#bot"/></g>
+          </g>
+          <text x="420" y="330" class="t14 fD mid">child gets a frozen snapshot</text>
+        </svg>
+        <figcaption>A tree of threads <span>named after the task</span></figcaption>
+      </figure>
+
+      <!-- parallel -->
+      <figure>
+        <svg viewBox="0 0 560 340" role="img" aria-label="Launching siblings with wait false then waiting once is faster than one at a time">
+          <text x="24" y="44" class="t16 fD">one at a time</text>
+          <rect x="24" y="62" width="160" height="26" rx="8" class="fT grow" style="--d:0s"/>
+          <rect x="188" y="62" width="140" height="26" rx="8" class="fV grow" style="--d:.7s"/>
+          <rect x="332" y="62" width="170" height="26" rx="8" class="fK grow" style="--d:1.4s"/>
+          <path d="M506 52v46" class="sD w3"/>
+          <text x="24" y="156" class="t16 fD">wait: false ×3, then <tspan class="fV b">agent_wait</tspan></text>
+          <rect x="24" y="174" width="160" height="26" rx="8" class="fT grow"/>
+          <rect x="24" y="206" width="140" height="26" rx="8" class="fV grow"/>
+          <rect x="24" y="238" width="170" height="26" rx="8" class="fK grow"/>
+          <path d="M198 164v110" class="sV w4"/>
+          <!-- saved bracket -->
+          <path d="M198 300 H 506" class="fN sG w3" marker-start="url(#aG)" marker-end="url(#aG)"/>
+          <text x="352" y="330" class="t18 fG mid b">time saved</text>
+          <path d="M506 110 V 290" class="sD w2 ds2"/>
+          <!-- clock -->
+          <g transform="translate(352,219)"><circle r="34" class="fG o1"/><circle r="26" class="fN sG w3"/><path d="M0 -14 V0 L10 8" class="fN sG w3 rd"/></g>
+        </svg>
+        <figcaption>Fan out, then wait <span>finished agents wake the parent</span></figcaption>
+      </figure>
+
+      <!-- roles -->
+      <figure>
+        <svg viewBox="0 0 560 340" role="img" aria-label="Six bundled agent roles: architect, coder, researcher, reviewer, tasker, writer">
+          <g class="t16 fI mid">
+            <g transform="translate(95,96)" class="cV"><use href="#bot"/><g transform="translate(34,24)"><circle r="17" class="fV"/><path d="M0 -9 L-7 8 M0 -9 L7 8 M-5 3 h10" class="fN sP w3 rd"/></g><text y="64">architect</text></g>
+            <g transform="translate(280,96)" class="cT"><use href="#bot"/><g transform="translate(34,24)"><circle r="17" class="fT"/><path d="M-4 -6 L-9 0 L-4 6 M4 -6 L9 0 L4 6" class="fN sP w3 rd"/></g><text y="64">coder</text></g>
+            <g transform="translate(465,96)" class="cA"><use href="#bot"/><g transform="translate(34,24)"><circle r="17" class="fA"/><circle cx="-2" cy="-2" r="5.5" class="fN sP w3"/><path d="M2 2 L8 8" class="sP w3 rd"/></g><text y="64">researcher</text></g>
+            <g transform="translate(95,246)" class="cR"><use href="#bot"/><g transform="translate(34,24)"><circle r="17" class="fR"/><path d="M0 -9 L8 -5 V1 C8 6 4 8 0 10 C-4 8 -8 6 -8 1 V-5Z" class="fP"/></g><text y="64">reviewer</text></g>
+            <g transform="translate(280,246)" class="cG"><use href="#bot"/><g transform="translate(34,24)"><circle r="17" class="fG"/><path d="M2 -10 L-6 2 H0 L-2 10 L6 -2 H0Z" class="fP"/></g><text y="64">tasker</text></g>
+            <g transform="translate(465,246)" class="cK"><use href="#bot"/><g transform="translate(34,24)"><circle r="17" class="fK"/><path d="M-7 7 L-5 1 L4 -8 L8 -4 L-1 5Z" class="fP"/></g><text y="64">writer</text></g>
+          </g>
+        </svg>
+        <figcaption>Six bundled roles <span>add your own · /agents types</span></figcaption>
+      </figure>
+
+      <!-- fork vs fresh -->
+      <figure>
+        <svg viewBox="0 0 560 340" role="img" aria-label="fork copies the current conversation into the child; fresh starts with only the task">
+          <text x="140" y="36" class="t22 fV b mid">fork:</text>
+          <text x="420" y="36" class="t22 fA b mid">fresh:</text>
+          <path d="M280 20 V 320" class="sL w2 ds"/>
+          <!-- fork: parent chat -->
+          <g transform="translate(20,62)">
+            <rect width="96" height="170" rx="14" class="fQ sL"/>
+            <rect x="10" y="14" width="56" height="18" rx="9" class="fV o4"/>
+            <rect x="30" y="42" width="56" height="18" rx="9" class="fT o4"/>
+            <rect x="10" y="70" width="66" height="18" rx="9" class="fV o4"/>
+            <rect x="24" y="98" width="62" height="18" rx="9" class="fT o4"/>
+            <rect x="10" y="126" width="48" height="18" rx="9" class="fV o4"/>
+            <text x="48" y="196" class="t14 fD mid">you</text>
+          </g>
+          <path d="M122 146 H 150" class="sV w3" marker-end="url(#aV)"/>
+          <g transform="translate(158,62)">
+            <rect width="108" height="170" rx="14" class="fQ sV w2"/>
+            <rect x="10" y="14" width="44" height="14" rx="7" class="fV o4"/>
+            <rect x="34" y="34" width="44" height="14" rx="7" class="fT o4"/>
+            <rect x="10" y="54" width="54" height="14" rx="7" class="fV o4"/>
+            <rect x="28" y="74" width="50" height="14" rx="7" class="fT o4"/>
+            <rect x="8" y="104" width="92" height="28" rx="8" class="fV"/>
+            <text x="54" y="123" class="t14 mid b fO">task</text>
+          </g>
+          <g transform="translate(212,290) scale(.6)" class="cV"><use href="#bot"/></g>
+          <!-- fresh -->
+          <g transform="translate(366,62)">
+            <rect width="108" height="170" rx="14" class="fQ sA w2"/>
+            <rect x="12" y="14" width="84" height="80" rx="10" class="fN sF w2 ds"/>
+            <rect x="8" y="104" width="92" height="28" rx="8" class="fA"/>
+            <text x="54" y="123" class="t14 mid b fO">task</text>
+          </g>
+          <g transform="translate(420,290) scale(.6)" class="cA"><use href="#bot"/></g>
+        </svg>
+        <figcaption>Bring context, or not <span>fork: / fresh:</span></figcaption>
+      </figure>
+
+      <!-- watch & steer -->
+      <figure>
+        <svg viewBox="0 0 560 340" role="img" aria-label="Watch a running agent live and type into the Steer input to redirect it">
+          <rect x="20" y="16" width="520" height="308" rx="16" class="fB sL2 w2"/>
+          <path d="M20 54 H 540" class="sL w2"/>
+          <g transform="translate(46,35)"><g class="spin"><circle r="9" class="fN sA w3" stroke-dasharray="40 17"/></g></g>
+          <text x="66" y="41" class="t16 fI">/root/fix-auth</text>
+          <text x="520" y="41" class="t14 fA end">running</text>
+          <!-- transcript -->
+          <g transform="translate(40,74)">
+            <rect width="220" height="12" rx="6" class="fD o4"/>
+            <rect y="20" width="160" height="12" rx="6" class="fD o4"/>
+            <rect y="46" width="480" height="62" rx="10" class="fQ sL"/>
+            <text x="14" y="70" class="t14 fA">$</text><rect x="32" y="60" width="120" height="10" rx="5" class="fI o6"/>
+            <rect x="14" y="84" width="10" height="10" rx="2" class="fG"/><rect x="32" y="84" width="200" height="10" rx="5" class="fG o4"/>
+            <rect y="120" width="480" height="40" rx="10" class="fQ sL"/>
+            <rect x="14" y="135" width="10" height="10" rx="2" class="fR"/><rect x="32" y="135" width="140" height="10" rx="5" class="fR o4"/>
+            <rect x="200" y="135" width="10" height="10" rx="2" class="fG"/><rect x="218" y="135" width="180" height="10" rx="5" class="fG o4"/>
+          </g>
+          <!-- steer input -->
+          <g transform="translate(40,252)">
+            <rect width="480" height="52" rx="12" class="fP sT w3"/>
+            <text x="18" y="33" class="t16 fT b">Steer ›</text>
+            <text x="100" y="33" class="t16 fI">add refresh tokens too</text>
+            <rect x="330" y="16" width="10" height="22" class="fT blink"/>
+            <g transform="translate(410,12)"><rect width="56" height="28" rx="6" class="fQ sL2 w2"/><text x="28" y="20" class="t14 fD mid">↵</text></g>
+          </g>
+          <!-- travelling message -->
+          
+        </svg>
+        <figcaption>Watch it live, steer it <span>Enter in /agents tree</span></figcaption>
+      </figure>
+
+      <!-- resumable -->
+      <figure>
+        <svg viewBox="0 0 560 340" role="img" aria-label="Completed, paused, stopped and failed agents can all be resumed with agent_steer">
+          <g transform="translate(280,176)" class="cV"><use href="#bot"/></g>
+          <g class="fN w3 rd">
+            <path d="M234 150 C 190 120, 160 100, 136 92" class="sD"/>
+            <path d="M326 150 C 370 120, 400 100, 424 92" class="sD"/>
+            <path d="M234 200 C 190 230, 160 244, 136 250" class="sD"/>
+            <path d="M326 200 C 370 230, 400 244, 424 250" class="sD"/>
+            <path d="M136 58 C 200 30, 240 60, 262 106" class="sV ds flow" marker-end="url(#aV)"/>
+            <path d="M424 58 C 360 30, 320 60, 298 106" class="sV ds flow" marker-end="url(#aV)"/>
+            <path d="M110 288 C 170 320, 240 300, 262 236" class="sV ds flow" marker-end="url(#aV)"/>
+            <path d="M450 288 C 390 320, 320 300, 298 236" class="sV ds flow" marker-end="url(#aV)"/>
+          </g>
+          <g class="t16 mid">
+            <g transform="translate(108,82)"><circle r="28" class="fG"/><path d="M-11 0l7 7 15-15" class="fN sP w4 rd"/><text y="-40" class="fI">completed</text></g>
+            <g transform="translate(452,82)"><circle r="28" class="fA"/><rect x="-9" y="-11" width="6" height="22" rx="2" class="fP"/><rect x="3" y="-11" width="6" height="22" rx="2" class="fP"/><text y="-40" class="fI">paused</text></g>
+            <g transform="translate(108,258)"><circle r="28" class="fF"/><rect x="-10" y="-10" width="20" height="20" rx="3" class="fP"/><text x="0" y="56" class="fI">stopped</text></g>
+            <g transform="translate(452,258)"><circle r="28" class="fR"/><path d="M-9 -9l18 18M9 -9l-18 18" class="sP w4 rd"/><text x="0" y="56" class="fI">failed</text></g>
+          </g>
+          <g transform="translate(280,262)"><rect x="-62" y="-16" width="124" height="30" rx="15" class="fV"/><text y="5" class="t14 mid b fO">agent_steer</text></g>
+        </svg>
+        <figcaption>Every ending resumes <span>sessions are kept</span></figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MONITORS ================= -->
+<section id="monitors" class="c-amber">
+  <div class="wrap">
+    <div class="shead"><span class="num">03</span><h2><em>Monitors</em> instead of polling</h2></div>
+    <p class="lead">Long jobs run in tmux. The agent sets a watch and stops polling.</p>
+    <div class="tools"><code>bgmon_start</code><code>bgmon_watch</code><code>bgmon_inspect</code><code>bgmon_control</code><code>bgmon_events</code><code class="cmd">/bgmon</code></div>
+
+    <div class="figs">
+      <figure class="wide">
+        <div class="pipe">
+          <div class="step">
+            <svg viewBox="0 0 160 110"><rect x="10" y="12" width="140" height="86" rx="12" class="fB sL2 w2"/><text x="24" y="50" class="t18 fA b">$</text><rect x="44" y="38" width="80" height="12" rx="6" class="fI o6"/><rect x="24" y="66" width="12" height="16" class="fA blink"/></svg>
+            <b>Start</b><small>any shell command</small>
+          </div>
+          <div class="arrow"><svg viewBox="0 0 26 26"><path d="M4 13h16M14 6l7 7-7 7" class="fN sA w3 rd"/></svg></div>
+          <div class="step">
+            <svg viewBox="0 0 160 110"><rect x="16" y="12" width="128" height="86" rx="10" class="fQ sA w3"/><path d="M80 12v86M80 55h64" class="sA w2"/><rect x="26" y="26" width="40" height="7" rx="3.5" class="fD o6"/><rect x="26" y="40" width="30" height="7" rx="3.5" class="fD o6"/><rect x="92" y="26" width="40" height="7" rx="3.5" class="fD o6"/><rect x="92" y="68" width="34" height="7" rx="3.5" class="fD o6"/><g transform="translate(130,22)"><circle r="16" class="fA"/><rect x="-7" y="-2" width="14" height="11" rx="2" class="fP"/><path d="M-4 -2v-3a4 4 0 0 1 8 0v3" class="fN sP w2"/></g></svg>
+            <b>Private tmux</b><small>own server per session</small>
+          </div>
+          <div class="arrow"><svg viewBox="0 0 26 26"><path d="M4 13h16M14 6l7 7-7 7" class="fN sA w3 rd"/></svg></div>
+          <div class="step">
+            <svg viewBox="0 0 160 110"><g transform="translate(20,20)"><rect width="26" height="70" rx="5" class="fF"/><rect x="30" width="26" height="70" rx="5" class="fF"/><rect x="60" width="26" height="70" rx="5" class="fD o6"/><rect x="90" width="26" height="70" rx="5" class="fA o6"/><rect x="90" y="40" width="26" height="30" rx="5" class="fA"/></g><path d="M20 100 H 136" class="sA w2" marker-end="url(#aA)"/></svg>
+            <b>Bounded log</b><small>rotating segments</small>
+          </div>
+          <div class="arrow"><svg viewBox="0 0 26 26"><path d="M4 13h16M14 6l7 7-7 7" class="fN sA w3 rd"/></svg></div>
+          <div class="step">
+            <svg viewBox="0 0 160 110"><path d="M22 14 H 138 L 96 60 V 92 L 64 100 V 60 Z" class="fA o2"/><path d="M22 14 H 138 L 96 60 V 92 L 64 100 V 60 Z" class="fN sA w3 rd"/><circle cx="56" cy="30" r="5" class="fI o4"/><circle cx="80" cy="26" r="5" class="fI o4"/><circle cx="104" cy="32" r="5" class="fA"/><circle cx="80" cy="74" r="6" class="fA"/></svg>
+            <b>Watch</b><div class="chips"><i>any</i><i>contains</i><i class="on">regex</i><i>exit</i></div>
+          </div>
+          <div class="arrow"><svg viewBox="0 0 26 26"><path d="M4 13h16M14 6l7 7-7 7" class="fN sA w3 rd"/></svg></div>
+          <div class="step">
+            <svg viewBox="0 0 160 110"><g transform="translate(80,46)"><circle r="36" class="fA o1"/><g class="ring"><use href="#bell" transform="scale(1.5)"/></g></g><path d="M34 36 q-8 12 0 24 M126 36 q8 12 0 24" class="fN sA w3 rd"/></svg>
+            <b>Deliver</b><div class="chips"><i>ui</i><i>nextTurn</i><i class="on">wake</i></div>
+          </div>
+        </div>
+        <figcaption>From command to nudge <span>alerts carry labels, not output</span></figcaption>
+      </figure>
+
+      <!-- poll vs wake -->
+      <figure>
+        <svg viewBox="0 0 560 340" role="img" aria-label="Polling repeatedly burns turns; a watch sleeps until a match then wakes the agent once">
+          <text x="24" y="36" class="t16 fD">polling</text>
+          <g transform="translate(60,100) scale(.62)" class="cR"><use href="#bot"/></g>
+          <path d="M104 100 H 520" class="sL2 w2"/>
+          <g class="t16 b mid">
+            <g transform="translate(150,100)"><circle r="16" class="fR o2"/><text y="6" class="fR">?</text></g>
+            <g transform="translate(210,100)"><circle r="16" class="fR o2"/><text y="6" class="fR">?</text></g>
+            <g transform="translate(270,100)"><circle r="16" class="fR o2"/><text y="6" class="fR">?</text></g>
+            <g transform="translate(330,100)"><circle r="16" class="fR o2"/><text y="6" class="fR">?</text></g>
+            <g transform="translate(390,100)"><circle r="16" class="fR o2"/><text y="6" class="fR">?</text></g>
+            <g transform="translate(450,100)"><circle r="16" class="fR o2"/><text y="6" class="fR">?</text></g>
+          </g>
+          <!-- token meter -->
+          <rect x="104" y="134" width="416" height="10" rx="5" class="fL"/>
+          <rect x="104" y="134" width="400" height="10" rx="5" class="fR o6"/>
+          <text x="520" y="166" class="t14 fR end">turns burned</text>
+
+          <text x="24" y="210" class="t16 fD">watch</text>
+          <g transform="translate(60,276) scale(.62)" class="cA"><use href="#botSleep"/></g>
+          <g class="t18 fA b"><text x="84" y="236" class="zz">z</text><text x="94" y="226" class="zz t14" style="--d:1s">z</text></g>
+          <polyline points="104,276 380,276 392,256 404,296 416,262 426,276 444,276" class="fN sA w3 rd"/>
+          <g transform="translate(490,262)"><circle r="26" class="fA o2"/><g class="ring"><use href="#bell"/></g></g>
+          <path d="M466 300 C 400 330, 160 330, 92 296" class="fN sA w3 ds flow" marker-end="url(#aA)"/>
+          <rect x="104" y="314" width="0" height="0"/>
+        </svg>
+        <figcaption>Sleep until it matters <span>wake starts a turn if idle</span></figcaption>
+      </figure>
+
+      <!-- outlives pi -->
+      <figure>
+        <svg viewBox="0 0 560 340" role="img" aria-label="Jobs keep running after pi exits; reattach manually with tmux or read history by logRef">
+          <text x="24" y="70" class="t18 fV b">pi</text>
+          <rect x="80" y="52" width="210" height="28" rx="10" class="fV o6"/>
+          <g transform="translate(316,66)"><circle r="16" class="fQ sR w3"/><path d="M0 -8 v8" class="sR w3 rd"/><path d="M-6 -4 a8 8 0 1 0 12 0" class="fN sR w3 rd"/></g>
+          <path d="M340 66 H 410" class="sF w3 ds"/>
+          <rect x="420" y="52" width="116" height="28" rx="10" class="fV o6"/>
+
+          <text x="24" y="164" class="t18 fA b">job</text>
+          <rect x="80" y="146" width="456" height="28" rx="10" class="fA o2"/>
+          <polyline points="88,160 140,160 150,148 160,172 170,160 260,160 270,150 280,170 290,160 380,160 390,148 400,172 410,160 528,160" class="fN sA w3 rd"/>
+
+          <!-- reattach -->
+          <path d="M470 86 V 140" class="sT w3" marker-end="url(#aT)"/>
+          <g transform="translate(330,210)">
+            <rect width="206" height="40" rx="10" class="fQ sT w2"/>
+            <text x="14" y="26" class="t16 fT">tmux attach …</text>
+          </g>
+          <g transform="translate(330,262)">
+            <rect width="206" height="40" rx="10" class="fQ sL2 w2"/>
+            <text x="14" y="26" class="t16 fD">logRef → history</text>
+          </g>
+          <!-- keep running label -->
+          <g transform="translate(80,210)"><rect width="200" height="92" rx="14" class="fQ sL"/><path d="M28 30 h28" class="sA w4 rd"/><text x="66" y="36" class="t14 fI">keeps running</text><path d="M28 64 h28" class="sV w4 rd"/><text x="66" y="70" class="t14 fI">pi can quit</text></g>
+        </svg>
+        <figcaption>Outlives the session <span>re-attach by hand</span></figcaption>
+      </figure>
+
+      <!-- subagents own monitors -->
+      <figure class="wide">
+        <svg viewBox="0 0 1120 300" role="img" aria-label="With the lab setting each subagent gets its own watches while sharing the root's job budget">
+          <g transform="translate(560,46)"><circle r="26" class="fV"/><text y="10" class="t26 mid b fO" style="font-family:Georgia,serif;font-style:italic">π</text></g>
+          <path d="M560 72 C 560 110, 240 100, 240 140 M560 72 V 140 M560 72 C 560 110, 880 100, 880 140" class="fN sV w3"/>
+          <g transform="translate(240,186) scale(.7)" class="cT"><use href="#bot"/></g>
+          <g transform="translate(560,186) scale(.7)" class="cK"><use href="#bot"/></g>
+          <g transform="translate(880,186) scale(.7)" class="cA"><use href="#bot"/></g>
+          <!-- each child job & bell -->
+          <g transform="translate(290,150)"><rect width="140" height="52" rx="10" class="fQ sL2"/><polyline points="10,32 40,32 48,18 56,44 64,32 130,32" class="fN sG w3 rd"/><g transform="translate(150,10) scale(.7)"><g class="ring"><use href="#bell"/></g></g></g>
+          <g transform="translate(610,150)"><rect width="140" height="52" rx="10" class="fQ sL2"/><rect x="12" y="14" width="90" height="8" rx="4" class="fD o6"/><rect x="12" y="30" width="110" height="10" rx="5" class="fA"/><g transform="translate(150,10) scale(.7)"><g class="ring"><use href="#bell"/></g></g></g>
+          <g transform="translate(930,150)"><rect width="140" height="52" rx="10" class="fQ sL2"/><polyline points="10,32 70,32 78,20 86,40 94,32 130,32" class="fN sG w3 rd"/><g transform="translate(150,10) scale(.7)"><g class="ring"><use href="#bell"/></g></g></g>
+          <!-- shared budget -->
+          <g transform="translate(330,250)">
+            <text x="-20" y="25" class="t16 fD end">shared budget</text>
+            <g>
+              <rect x="0" y="6" width="50" height="26" rx="6" class="fT"/>
+              <rect x="56" y="6" width="50" height="26" rx="6" class="fK"/>
+              <rect x="112" y="6" width="50" height="26" rx="6" class="fA"/>
+              <rect x="168" y="6" width="50" height="26" rx="6" class="fV"/>
+              <rect x="224" y="6" width="50" height="26" rx="6" class="fN sL2 w2"/>
+              <rect x="280" y="6" width="50" height="26" rx="6" class="fN sL2 w2"/>
+              <rect x="336" y="6" width="50" height="26" rx="6" class="fN sL2 w2"/>
+              <rect x="392" y="6" width="50" height="26" rx="6" class="fN sL2 w2"/>
+            </g>
+            <text x="460" y="25" class="t16 fI">8 running</text>
+          </g>
+          <g transform="translate(40,30)"><rect width="88" height="30" rx="8" class="fN sA w2 ds"/><text x="44" y="21" class="t14 fA mid">[lab]</text></g>
+        </svg>
+        <figcaption>Every subagent can watch <span>its own watches · one root budget</span></figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TOGETHER ================= -->
+<section id="together" class="c-green">
+  <div class="wrap">
+    <div class="shead"><span class="num">04</span><h2>Put <em>together</em>: the loop</h2></div>
+    <p class="lead">Plan, delegate, watch, check off. The agent gets woken up and never has to poll.</p>
+    <div class="loopgrid">
+      <figure>
+        <svg viewBox="0 0 640 620" role="img" aria-label="Harness loop: plan with checklist, delegate to subagents, watch with monitors, tick off on checklist">
+          <defs>
+            <linearGradient id="lgA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c4b5fd"/><stop offset="1" stop-color="#7c3aed"/></linearGradient>
+          </defs>
+          <!-- ring arcs -->
+          <g class="fN w5 rd">
+            <path d="M378 104 A 220 220 0 0 1 528 252" class="sT ds flow" marker-end="url(#aT)"/>
+            <path d="M528 368 A 220 220 0 0 1 380 514" class="sV ds flow" marker-end="url(#aV)"/>
+            <path d="M262 516 A 220 220 0 0 1 112 368" class="sA ds flow" marker-end="url(#aA)"/>
+            <path d="M112 252 A 220 220 0 0 1 260 104" class="sG ds flow" marker-end="url(#aG)"/>
+          </g>
+          <!-- center -->
+          <circle cx="320" cy="310" r="92" class="fQ sL2 w2"/>
+          <circle cx="320" cy="292" r="44" fill="url(#lgA)"/>
+          <text x="320" y="309" class="mid b" style="font-family:Georgia,serif;font-style:italic;font-size:50px;fill:#1e1b4b">π</text>
+          <text x="320" y="370" class="t18 mid fI b">harness</text>
+
+          <!-- PLAN top -->
+          <g transform="translate(320,96)">
+            <circle r="74" class="fP sT w4"/>
+            <g transform="translate(-26,-40)">
+              <use href="#icDone" x="0" y="0" transform="scale(.8)"/><rect x="18" y="-5" width="40" height="10" rx="5" class="fF"/>
+              <g transform="translate(0,26) scale(.8)"><g class="spin"><use href="#icOngoing"/></g></g><rect x="18" y="21" width="34" height="10" rx="5" class="fI"/>
+              <use href="#icReady" transform="translate(0,52) scale(.8)"/><rect x="18" y="47" width="28" height="10" rx="5" class="fD"/>
+            </g>
+          </g>
+          <text x="320" y="138" class="t16 mid fT b">plan</text>
+
+          <!-- DELEGATE right -->
+          <g transform="translate(540,310)">
+            <circle r="74" class="fP sV w4"/>
+            <g transform="translate(-22,2) scale(.46)" class="cT"><use href="#bot"/></g>
+            <g transform="translate(22,2) scale(.46)" class="cK"><use href="#bot"/></g>
+            <g transform="translate(0,-28) scale(.46)" class="cV"><use href="#bot"/></g>
+          </g>
+          <text x="540" y="352" class="t16 mid fV b">delegate</text>
+
+          <!-- WATCH bottom -->
+          <g transform="translate(320,524)">
+            <circle r="74" class="fP sA w4"/>
+            <polyline points="-40,6 -18,6 -10,-8 0,18 10,0 18,6 40,6" class="fN sA w3 rd"/>
+            <g transform="translate(0,-34)"><g class="ring"><use href="#bell"/></g></g>
+          </g>
+          <text x="320" y="566" class="t16 mid fA b">watch</text>
+
+          <!-- TICK left -->
+          <g transform="translate(100,310)">
+            <circle r="74" class="fP sG w4"/>
+            <g transform="translate(0,-12)"><g class="pop"><circle r="28" class="fG"/><path d="M-12 0l8 8 16-16" class="fN sP w5 rd"/></g></g>
+          </g>
+          <text x="100" y="352" class="t16 mid fG b">check off</text>
+        </svg>
+        <figcaption>The harness loop <span>events drive each step</span></figcaption>
+      </figure>
+
+      <div class="wires">
+        <figure>
+          <div class="wire">
+            <svg viewBox="0 0 230 130"><rect x="6" y="20" width="160" height="40" rx="10" class="fQ sT w2"/><g transform="translate(26,40) scale(.75)"><g class="spin"><use href="#icOngoing"/></g></g><text x="44" y="46" class="t16 fI">api</text><rect x="84" y="30" width="72" height="20" rx="10" class="fV o4"/><text x="120" y="45" class="t12 fI mid">agent: …</text><path d="M120 62 C 120 92, 160 96, 180 96" class="fN sV w2 ds" marker-end="url(#aV)"/><g transform="translate(206,100) scale(.45)" class="cT"><use href="#bot"/></g></svg>
+            <div><b>Tasks name their agent</b><p>Checklist <code>meta</code> can tag a task, for example <code>{agent: "fix-auth"}</code>.</p></div>
+          </div>
+          <figcaption>Checklist × Subagents <span>meta preview</span></figcaption>
+        </figure>
+        <figure>
+          <div class="wire">
+            <svg viewBox="0 0 230 130"><g transform="translate(60,74) scale(.7)" class="cT"><use href="#bot"/></g><path d="M100 70 H 140" class="sA w3" marker-end="url(#aA)"/><g transform="translate(180,64)"><circle r="30" class="fA o2"/><g class="ring"><use href="#bell"/></g></g></svg>
+            <div><b>Children watch their own jobs</b><p>Turn on bgmon under <code>[lab] Subagent extensions</code>.</p></div>
+          </div>
+          <figcaption>Subagents × Monitors <span>lab setting</span></figcaption>
+        </figure>
+        <figure>
+          <div class="wire">
+            <svg viewBox="0 0 230 130"><g transform="translate(70,76) scale(.7)" class="cV"><use href="#botSleep"/></g><text x="96" y="40" class="t18 fV b zz">z</text><path d="M196 30 C 160 20, 130 30, 116 50" class="fN sG w3 ds flow" marker-end="url(#aG)"/><path d="M196 110 C 160 120, 130 110, 116 92" class="fN sA w3 ds flow" marker-end="url(#aA)"/><circle cx="204" cy="30" r="10" class="fG"/><circle cx="204" cy="110" r="10" class="fA"/></svg>
+            <div><b>Nothing has to poll</b><p>A finished agent or a matching watch is enough to wake the main agent.</p></div>
+          </div>
+          <figcaption>Events, not loops <span>agent done · watch hit</span></figcaption>
+        </figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= INSTALL ================= -->
+<section id="install" class="c-teal" style="padding-top:70px">
+  <div class="wrap">
+    <div class="shead"><span class="num" style="background:var(--ink)">→</span><h2>Get the ingredients</h2></div>
+    <div class="install">
+      <div class="term c-teal"><span class="p">$</span><code>pi install npm:pi-checklist</code><a href="https://github.com/championswimmer/pi-checklist">github ↗</a><button data-copy="pi install npm:pi-checklist">copy</button></div>
+      <div class="term c-violet"><span class="p">$</span><code>pi install npm:pi-subagent-manager</code><a href="https://github.com/championswimmer/pi-subagent-manager">github ↗</a><button data-copy="pi install npm:pi-subagent-manager">copy</button></div>
+      <div class="term c-amber"><span class="p">$</span><code>pi install npm:pi-background-monitor</code><a href="https://github.com/championswimmer/pi-background-monitor">github ↗</a><button data-copy="pi install npm:pi-background-monitor">copy</button></div>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">built for <a href="https://github.com/earendil-works/pi-coding-agent">pi</a> · checklists · subagents · monitors</div></footer>
+
+<script>
+document.querySelectorAll('[data-copy]').forEach(function(b){
+  b.addEventListener('click',function(){
+    var t=b.getAttribute('data-copy');
+    var done=function(){b.textContent='copied';setTimeout(function(){b.textContent='copy'},1400)};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,function(){})}
+  });
+});
+</script>
+</body>
+</html>
