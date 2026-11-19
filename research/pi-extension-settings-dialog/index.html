@@ -1,0 +1,1470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-J2YR2RVR6L"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-J2YR2RVR6L');
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>pi-extension-settings-dialog — Architecture &amp; Feasibility Research</title>
+<meta name="description" content="Feasibility study and technical architecture for pi-extension-settings-dialog: a declarative, mouse-capable TUI settings dialog and layered JSON persistence library over @earendil-works/pi-tui.">
+<meta name="theme-color" content="#101e31">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23101e31'/%3E%3Crect x='5' y='6' width='22' height='20' rx='3' fill='none' stroke='%23c9f27a' stroke-width='2'/%3E%3Cline x1='9' y1='12' x2='17' y2='12' stroke='%23e8f0f8' stroke-width='2' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='12' r='2' fill='%23087f75'/%3E%3Cline x1='9' y1='17' x2='19' y2='17' stroke='%239bb0c9' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='9' y1='22' x2='15' y2='22' stroke='%239bb0c9' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --sidebar-w: 272px;
+    --navy: #101e31;
+    --navy-2: #172942;
+    --navy-border: #223856;
+    --bg: #f3f6fa;
+    --surface: #ffffff;
+    --surface-2: #f8fafd;
+    --ink: #152338;
+    --ink-muted: #52647c;
+    --ink-soft: #6e8098;
+    --line: #dbe4ef;
+    --line-strong: #c2d0e1;
+    --teal: #087f75;
+    --teal-soft: #e6f5f3;
+    --lime: #c9f27a;
+    --link: #214dcc;
+    --warn: #b45309;
+    --warn-bg: #fef3c7;
+    --err: #b91c1c;
+    --err-bg: #fee2e2;
+    --ok: #15803d;
+    --ok-bg: #dcfce7;
+    --code-bg: #0f172a;
+    --code-ink: #e2e8f0;
+    --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; background: var(--bg); color: var(--ink); }
+  body {
+    margin: 0;
+    font: 16.5px/1.68 var(--sans);
+    color: var(--ink);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; border-radius: 3px; }
+
+  .skip {
+    position: absolute; left: -9999px; top: 8px; z-index: 999;
+    background: var(--navy); color: #fff; padding: 8px 14px; border-radius: 6px;
+    font-size: 14px; text-decoration: none;
+  }
+  .skip:focus { left: 12px; }
+
+  /* Sidebar */
+  .sidebar {
+    position: fixed; inset: 0 auto 0 0; width: var(--sidebar-w);
+    background: var(--navy); color: #d6e2f0;
+    display: flex; flex-direction: column;
+    border-right: 1px solid var(--navy-border);
+    z-index: 30;
+  }
+  .sb-head {
+    padding: 22px 20px 16px;
+    border-bottom: 1px solid var(--navy-border);
+  }
+  .sb-kicker {
+    font: 600 11px/1.2 var(--mono);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--lime); margin-bottom: 6px;
+  }
+  .sb-title {
+    font-size: 16px; font-weight: 700; line-height: 1.3; color: #fff;
+    margin: 0;
+  }
+  .sb-sub {
+    font: 12px/1.4 var(--mono); color: #8ea4be; margin-top: 6px;
+  }
+  .sb-nav {
+    flex: 1; overflow-y: auto; padding: 14px 12px;
+  }
+  .sb-nav a {
+    display: flex; align-items: baseline; gap: 10px;
+    padding: 7px 10px; margin-bottom: 2px; border-radius: 6px;
+    color: #b7c8dc; text-decoration: none; font-size: 13.5px; line-height: 1.35;
+    transition: background .15s, color .15s;
+  }
+  .sb-nav a:hover { background: var(--navy-2); color: #fff; }
+  .sb-nav a.active {
+    background: rgba(201, 242, 122, 0.12);
+    color: var(--lime); font-weight: 600;
+  }
+  .sb-nav .num {
+    font: 600 11px/1 var(--mono); color: #718aa8; min-width: 20px;
+  }
+  .sb-nav a.active .num { color: var(--lime); }
+  .sb-foot {
+    padding: 14px 20px; border-top: 1px solid var(--navy-border);
+    font-size: 12.5px; color: #8ea4be;
+  }
+  .sb-foot a { color: #d6e2f0; text-decoration: none; display: inline-block; margin-bottom: 6px; }
+  .sb-foot a:hover { color: var(--lime); }
+  .sb-foot .meta { font: 11px/1.4 var(--mono); color: #6f86a1; }
+
+  /* Main layout */
+  .shell { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(255,255,255,0.92); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+    padding: 10px 32px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .crumb { font: 13px/1 var(--mono); color: var(--ink-muted); }
+  .crumb a { color: var(--ink-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--ink); }
+  .tag-pill {
+    font: 600 11px/1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 5px 9px; border-radius: 999px;
+    background: var(--teal-soft); color: var(--teal);
+  }
+  .mobile-nav { display: none; }
+
+  main {
+    width: 100%; max-width: 980px; margin: 0 auto;
+    padding: 36px 32px 84px;
+  }
+
+  .eyebrow {
+    font: 600 12px/1.2 var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--teal); margin-bottom: 10px;
+  }
+  h1 {
+    font-size: clamp(1.9rem, 3.4vw, 2.65rem);
+    line-height: 1.14; letter-spacing: -0.025em;
+    margin: 0 0 14px; color: var(--navy);
+  }
+  .lead {
+    font-size: 18px; line-height: 1.6; color: var(--ink-muted);
+    margin: 0 0 26px; max-width: 72ch;
+  }
+
+  section { margin-top: 52px; scroll-margin-top: 68px; }
+  .sec-kicker {
+    font: 600 11.5px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--teal); margin-bottom: 6px;
+  }
+  h2 {
+    font-size: clamp(1.35rem, 2.2vw, 1.7rem);
+    line-height: 1.25; letter-spacing: -0.018em;
+    margin: 0 0 14px; color: var(--navy);
+    padding-bottom: 8px; border-bottom: 1px solid var(--line);
+  }
+  h3 {
+    font-size: 1.12rem; line-height: 1.35; margin: 26px 0 10px; color: var(--navy);
+  }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.35rem; }
+  li { margin-bottom: 6px; }
+
+  code {
+    font-family: var(--mono); font-size: 0.87em;
+    background: #eaf0f7; color: #162a45;
+    padding: 1.5px 5px; border-radius: 4px;
+  }
+  pre {
+    background: var(--code-bg); color: var(--code-ink);
+    padding: 16px 18px; border-radius: var(--radius);
+    overflow-x: auto; font: 13px/1.55 var(--mono);
+    margin: 14px 0 20px; border: 1px solid #1e293b;
+  }
+  pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+  .tok-k { color: #93c5fd; }
+  .tok-s { color: #86efac; }
+  .tok-c { color: #64748b; }
+  .tok-t { color: #fcd34d; }
+  .tok-p { color: #f9a8d4; }
+
+  /* Key takeaways strip */
+  .concepts {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin: 22px 0 26px;
+  }
+  .concept {
+    background: var(--surface); border: 1px solid var(--line);
+    border-top: 3px solid var(--teal); border-radius: var(--radius);
+    padding: 16px 18px;
+  }
+  .concept .k {
+    font: 600 11px/1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--teal); margin-bottom: 6px;
+  }
+  .concept .v {
+    font-size: 17px; font-weight: 700; color: var(--navy); line-height: 1.3; margin-bottom: 6px;
+  }
+  .concept p { font-size: 13.8px; line-height: 1.5; color: var(--ink-muted); margin: 0; }
+
+  /* Callouts */
+  .note {
+    background: var(--surface); border: 1px solid var(--line);
+    border-left: 4px solid var(--teal); border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 14px 18px; margin: 18px 0 22px; font-size: 15px;
+  }
+  .note.warn { border-left-color: var(--warn); background: #fffdf5; }
+  .note strong { color: var(--navy); }
+
+  /* Cards */
+  .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 18px 0 22px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 18px 20px;
+  }
+  .card h4 { margin: 0 0 8px; font-size: 15.5px; color: var(--navy); display: flex; align-items: center; gap: 8px; }
+  .card p { font-size: 14.5px; color: var(--ink-muted); margin: 0 0 10px; }
+  .card ul { margin: 0; font-size: 14px; color: var(--ink-muted); }
+
+  /* Chips */
+  .chip {
+    display: inline-block; font: 600 11.5px/1.2 var(--mono);
+    padding: 3px 7px; border-radius: 5px; white-space: nowrap;
+  }
+  .chip.ok { background: var(--ok-bg); color: var(--ok); }
+  .chip.warn { background: var(--warn-bg); color: var(--warn); }
+  .chip.err { background: var(--err-bg); color: var(--err); }
+  .chip.info { background: var(--teal-soft); color: var(--teal); }
+  .chip.muted { background: #e8eef5; color: #52647c; }
+
+  /* Tables */
+  .table-controls {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0 12px;
+  }
+  .filter-btn {
+    border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
+    font: 500 12.5px/1 var(--mono); padding: 7px 11px; border-radius: 6px; cursor: pointer;
+    transition: background .12s, border-color .12s, color .12s;
+  }
+  .filter-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .filter-btn.active { background: var(--navy); color: var(--lime); border-color: var(--navy); }
+
+  .tablewrap {
+    overflow-x: auto; background: var(--surface);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    margin: 12px 0 18px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13.8px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    background: var(--surface-2); font: 600 12px/1.3 var(--mono);
+    color: var(--navy); position: sticky; top: 0; white-space: nowrap;
+  }
+  tr:last-child td { border-bottom: 0; }
+  tr.highlight td { background: #f1fbf9; }
+  .num-col { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .source { font: 12px/1.5 var(--mono); color: var(--ink-soft); margin-top: -8px; margin-bottom: 18px; }
+
+  /* Architecture Diagram */
+  .arch-stack {
+    display: grid; gap: 10px; margin: 18px 0 24px;
+  }
+  .arch-layer {
+    background: var(--surface); border: 1px solid var(--line);
+    border-left: 5px solid var(--navy); border-radius: var(--radius);
+    padding: 14px 18px; display: grid; grid-template-columns: 210px 1fr; gap: 16px; align-items: start;
+  }
+  .arch-layer.l1 { border-left-color: #214dcc; }
+  .arch-layer.l2 { border-left-color: var(--teal); }
+  .arch-layer.l3 { border-left-color: #b45309; }
+  .arch-layer.l4 { border-left-color: #475569; background: var(--surface-2); }
+  .arch-name { font: 700 13.5px/1.3 var(--mono); color: var(--navy); }
+  .arch-sub { font: 12px/1.4 var(--mono); color: var(--ink-soft); margin-top: 3px; }
+  .arch-desc { font-size: 14.5px; color: var(--ink-muted); }
+
+  /* Interactive TUI Simulator */
+  .lab {
+    background: var(--surface); border: 1px solid var(--line-strong);
+    border-radius: 12px; overflow: hidden; margin: 20px 0 26px;
+    box-shadow: 0 4px 18px rgba(16, 30, 49, 0.06);
+  }
+  .lab-bar {
+    background: var(--navy); color: #d6e2f0; padding: 12px 16px;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .lab-title { font: 600 12.5px/1 var(--mono); color: var(--lime); letter-spacing: 0.04em; text-transform: uppercase; }
+  .lab-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .lab-btn {
+    background: var(--navy-2); color: #d6e2f0; border: 1px solid var(--navy-border);
+    font: 500 12px/1 var(--mono); padding: 6px 10px; border-radius: 6px; cursor: pointer;
+  }
+  .lab-btn:hover { border-color: var(--lime); color: #fff; }
+  .lab-btn.on { background: var(--teal); border-color: var(--teal); color: #fff; }
+
+  .lab-grid {
+    display: grid; grid-template-columns: 1.35fr 1fr; gap: 0;
+  }
+  .tui-pane {
+    background: #0b1220; color: #dbe7f5; padding: 16px;
+    font: 13px/1.5 var(--mono); border-right: 1px solid #1e293b;
+    user-select: none; outline: none;
+  }
+  .tui-frame {
+    border: 1px solid #334155; border-radius: 8px; overflow: hidden;
+    background: #0f172a;
+  }
+  .tui-top {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 12px; background: #162238; border-bottom: 1px solid #26354d;
+    color: #93c5fd; font-weight: 600; font-size: 12.5px;
+  }
+  .tui-badge { color: #fbbf24; font-weight: 600; }
+  .tui-tabs {
+    display: flex; gap: 6px; padding: 7px 10px; border-bottom: 1px solid #1e293b;
+    background: #111c30;
+  }
+  .tui-tab {
+    padding: 2px 10px; border-radius: 4px; color: #94a3b8; cursor: pointer;
+    border: 1px solid transparent; background: transparent; font: inherit;
+  }
+  .tui-tab.active { background: #1e3a5f; color: #f8fafc; border-color: #3b82f6; }
+  .tui-tab.disabled-mouse { cursor: not-allowed; }
+  .tui-rows { padding: 6px 0; min-height: 196px; }
+  .tui-row {
+    display: grid; grid-template-columns: 18px 1fr 34px auto; gap: 8px; align-items: center;
+    padding: 4px 12px; cursor: pointer;
+  }
+  .tui-row.selected { background: #1b2c47; color: #c9f27a; }
+  .tui-row.disabled-mouse { cursor: default; }
+  .tui-prov { text-align: center; font-size: 12px; letter-spacing: 2px; }
+  .dot-g { color: #60a5fa; }
+  .dot-p { color: #fbbf24; }
+  .dot-e { color: #334155; }
+  .tui-val { color: #e2e8f0; }
+  .tui-row.selected .tui-val { color: #c9f27a; font-weight: 600; }
+  .tui-help {
+    padding: 8px 12px; border-top: 1px solid #1e293b; background: #0d1526;
+    color: #94a3b8; font-size: 12px; min-height: 44px;
+  }
+  .tui-legend {
+    padding: 5px 12px; border-top: 1px dashed #1e293b; font-size: 11.5px; color: #94a3b8;
+  }
+  .tui-foot {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px;
+    padding: 7px 12px; background: #162238; border-top: 1px solid #26354d;
+    font-size: 11.5px; color: #94a3b8;
+  }
+  .tui-actions { display: flex; gap: 6px; }
+  .tui-act {
+    background: #1e293b; color: #e2e8f0; border: 1px solid #334155;
+    padding: 2px 8px; border-radius: 4px; font: 11.5px/1.3 var(--mono); cursor: pointer;
+  }
+  .tui-act.primary { background: #087f75; border-color: #0d9488; color: #fff; }
+  .tui-act.disabled-mouse { opacity: 0.55; cursor: not-allowed; }
+  .tui-inline-edit {
+    display: flex; gap: 8px; align-items: center; padding: 6px 12px;
+    background: #17253d; border-top: 1px solid #3b82f6;
+  }
+  .tui-inline-edit input {
+    flex: 1; background: #0b1220; color: #f8fafc; border: 1px solid #475569;
+    border-radius: 4px; padding: 4px 8px; font: 12.5px var(--mono);
+  }
+
+  .inspector-pane {
+    padding: 14px 16px; background: var(--surface-2); font-size: 13px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .insp-box {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 8px; padding: 10px 12px;
+  }
+  .insp-head {
+    font: 600 11px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--teal); margin-bottom: 6px; display: flex; justify-content: space-between;
+  }
+  .insp-pre {
+    margin: 0; padding: 8px 10px; font-size: 11.8px; line-height: 1.45;
+    background: #0f172a; color: #cbd5e1; border-radius: 6px;
+    max-height: 130px; overflow: auto;
+  }
+
+  details {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 12px 16px; margin: 12px 0;
+  }
+  summary {
+    cursor: pointer; font-weight: 600; color: var(--navy); list-style: none;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  summary::after { content: "+"; font: 600 16px/1 var(--mono); color: var(--teal); }
+  details[open] summary::after { content: "−"; }
+  details[open] summary { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+
+  /* Responsive */
+  @media (max-width: 1050px) {
+    :root { --sidebar-w: 236px; }
+    .lab-grid { grid-template-columns: 1fr; }
+    .tui-pane { border-right: 0; border-bottom: 1px solid #1e293b; }
+    .concepts { grid-template-columns: 1fr; }
+    .cards { grid-template-columns: 1fr; }
+    .arch-layer { grid-template-columns: 1fr; gap: 6px; }
+  }
+  @media (max-width: 760px) {
+    .sidebar { display: none; }
+    .shell { margin-left: 0; }
+    .topbar { padding: 10px 16px; }
+    .mobile-nav {
+      display: block; font: 13px var(--mono);
+      padding: 5px 8px; border: 1px solid var(--line-strong);
+      border-radius: 6px; background: #fff; color: var(--ink); max-width: 190px;
+    }
+    .tag-pill { display: none; }
+    main { padding: 24px 16px 64px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition: none !important; }
+  }
+
+  @media print {
+    .sidebar, .topbar, .lab, .table-controls { display: none !important; }
+    .shell { margin-left: 0; }
+    main { max-width: 100%; padding: 0; }
+    pre, .card, .concept, .tablewrap { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to report</a>
+
+<aside class="sidebar" aria-label="Report navigation">
+  <div class="sb-head">
+    <div class="sb-kicker">Pi Ecosystem · Research</div>
+    <h2 class="sb-title">pi-extension-settings-dialog</h2>
+    <div class="sb-sub">Wrapper over @earendil-works/pi-tui</div>
+  </div>
+  <nav class="sb-nav" id="toc">
+    <a href="#verdict"><span class="num">01</span>Executive Verdict</a>
+    <a href="#audit"><span class="num">02</span>Audit of 4 Pi Extensions</a>
+    <a href="#pi-tui"><span class="num">03</span>pi-tui &amp; Overlay Internals</a>
+    <a href="#architecture"><span class="num">04</span>3-Layer Package Architecture</a>
+    <a href="#declarative"><span class="num">05</span>Declarative Schema &amp; Types</a>
+    <a href="#persistence"><span class="num">06</span>Layered JSON &amp; Hardening</a>
+    <a href="#mouse"><span class="num">07</span>Full-TUI Mouse Events</a>
+    <a href="#simulator"><span class="num">08</span>Interactive Dialog Simulator</a>
+    <a href="#roadmap"><span class="num">09</span>Packaging, Tradeoffs &amp; Roadmap</a>
+  </nav>
+  <div class="sb-foot">
+    <a href="https://sites.arnavg.in/research/">← Arnav's research ↗</a>
+    <div class="meta">Inspected Pi v1.5.2 &amp; 4 local extensions · Nov 2026</div>
+  </div>
+</aside>
+
+<div class="shell">
+  <header class="topbar">
+    <div class="crumb"><a href="https://sites.arnavg.in/">sites.arnavg.in</a> / <a href="https://sites.arnavg.in/research/">research</a> / pi-extension-settings-dialog</div>
+    <span class="tag-pill">Architecture &amp; Feasibility</span>
+    <select class="mobile-nav" id="mobile-nav" aria-label="Jump to section">
+      <option value="#verdict">01 · Executive Verdict</option>
+      <option value="#audit">02 · Audit of 4 Extensions</option>
+      <option value="#pi-tui">03 · pi-tui Internals</option>
+      <option value="#architecture">04 · 3-Layer Architecture</option>
+      <option value="#declarative">05 · Declarative Schema</option>
+      <option value="#persistence">06 · Layered JSON &amp; Hardening</option>
+      <option value="#mouse">07 · Full-TUI Mouse Events</option>
+      <option value="#simulator">08 · Interactive Simulator</option>
+      <option value="#roadmap">09 · Packaging &amp; Roadmap</option>
+    </select>
+  </header>
+
+  <main id="main">
+    <div class="eyebrow">19 November 2026 · Pi Coding Agent Architecture Research</div>
+    <h1>Designing <code>pi-extension-settings-dialog</code></h1>
+    <p class="lead">
+      A feasibility study and technical blueprint for a zero-dependency wrapper over <code>@earendil-works/pi-tui</code>
+      that gives any Pi extension declarative settings schemas, Global vs Project layered JSON persistence,
+      <code>Ctrl+S</code> draft workflows, and native mouse support in fullscreen TUI mode.
+    </p>
+
+    <div class="concepts">
+      <div class="concept">
+        <div class="k">Feasibility Verdict</div>
+        <div class="v">Strong yes — high leverage</div>
+        <p>4 real Pi extensions re-implemented 2,000+ LOC of overlay framing, route stacks, and JSON hardening with inconsistent UX and safety.</p>
+      </div>
+      <div class="concept">
+        <div class="k">Why pi-tui Isn't Enough</div>
+        <div class="v">SettingsList is too flat</div>
+        <p>Built-in <code>SettingsList</code> handles flat cycling and one submenu slot, but lacks text/number editing, validation, tabs, drafts, and provenance.</p>
+      </div>
+      <div class="concept">
+        <div class="k">Mouse in Full TUI</div>
+        <div class="v">Ready in Pi v1.5.2</div>
+        <p><code>TuiAltScreen</code> already dispatches overlay-local <code>TuiMouseEvent</code>s with click synthesis and wheel deltas; only 1 of 4 extensions uses it.</p>
+      </div>
+    </div>
+
+    <!-- 01 -->
+    <section id="verdict">
+      <div class="sec-kicker">01 / Executive Verdict</div>
+      <h2>There is a clear, well-bounded library waiting to be extracted</h2>
+      <p>
+        Inspecting four production Pi extensions (<code>pi-context-decisions</code>, <code>pi-subagent-manager</code>,
+        <code>pi-context-prune</code>, and <code>pi-background-monitor</code>) alongside <code>@earendil-works/pi-tui</code>
+        and <code>@earendil-works/pi-coding-agent</code> (v1.5.2) reveals a recurring architectural tax: every extension
+        that outgrows two boolean toggles ends up hand-rolling its own overlay shell, route stack, height-budget allocator,
+        settings schema validator, atomic file writer, and non-TUI fallback.
+      </p>
+      <div class="note">
+        <strong>Core thesis:</strong> <code>pi-extension-settings-dialog</code> should sit directly above
+        <code>@earendil-works/pi-tui</code> as a <strong>zero-runtime-dependency TypeScript/ESM library</strong>
+        split into three independently usable layers: (1) a declarative schema &amp; hardened layered JSON store,
+        (2) a single-overlay TUI dialog engine with built-in mouse hit-testing, and (3) automatic RPC/non-TUI degradation.
+      </div>
+      <p>
+        Crucially, the library should <em>not</em> try to absorb domain-specific pickers (such as LLM model registries,
+        MCP server provenance discovery, or YAML agent editors). Instead, it should provide a clean <code>custom</code>
+        field/sub-route escape hatch plus reusable primitives (<code>SearchableList</code>, <code>MultiSelectTree</code>,
+        <code>ConfirmRoute</code>) so extensions keep domain logic lean while sharing 100% of the settings plumbing.
+      </p>
+    </section>
+
+    <!-- 02 -->
+    <section id="audit">
+      <div class="sec-kicker">02 / Empirical Evidence</div>
+      <h2>Audit of 4 Pi Extensions in the Workspace</h2>
+      <p>
+        Each extension solved a different subset of the settings problem. Together, they form an exact specification
+        of what works, what breaks, and what gets forgotten when every author starts from scratch.
+      </p>
+
+      <div class="table-controls" role="group" aria-label="Filter matrix rows">
+        <button class="filter-btn active" data-filter="all">All dimensions</button>
+        <button class="filter-btn" data-filter="ui">TUI &amp; Mouse</button>
+        <button class="filter-btn" data-filter="store">Storage &amp; Scopes</button>
+        <button class="filter-btn" data-filter="safety">Security &amp; Fallbacks</button>
+      </div>
+
+      <div class="tablewrap">
+        <table id="audit-table">
+          <thead>
+            <tr>
+              <th>Dimension</th>
+              <th>pi-context-prune</th>
+              <th>pi-background-monitor</th>
+              <th>pi-subagent-manager</th>
+              <th>pi-context-decisions</th>
+              <th>pi-tui SettingsList</th>
+              <th>Proposed Library</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-cat="store">
+              <td><strong>Storage &amp; Scopes</strong></td>
+              <td>Global JSON only (<code>~/.pi/agent/context-prune/settings.json</code>)</td>
+              <td>Session entries via <code>pi.appendEntry</code> (no JSON file)</td>
+              <td><span class="chip ok">Unified 2-layer</span> Global + Trusted Project (overrides only)</td>
+              <td>Split: Global JSON + separate project allowlist JSON</td>
+              <td><span class="chip muted">None</span> (UI only)</td>
+              <td><span class="chip info">Pluggable</span> Default: Global + Trusted Project override JSON</td>
+            </tr>
+            <tr data-cat="ui">
+              <td><strong>Field Types</strong></td>
+              <td>Bool, enum, model search submenu</td>
+              <td>2 bounded ints (<code>1..64</code>)</td>
+              <td>Bool, enum, bounded int, model, string[]/bool, YAML</td>
+              <td>Nested groups, bool, int, float, enum, union, allowlists</td>
+              <td>Cycle <code>values[]</code> or raw <code>submenu</code></td>
+              <td><span class="chip ok">Declarative</span> bool, int, float, string, enum, multi, custom</td>
+            </tr>
+            <tr data-cat="ui">
+              <td><strong>Overlay Pattern</strong></td>
+              <td>Single <code>SettingsOverlay</code> (width 60); fake composited modal in tree browser</td>
+              <td>Single 3-tab overlay (width 100)</td>
+              <td><code>DialogSession</code> intercepts nested <code>ctx.ui.custom</code> in-place</td>
+              <td>Single-overlay <code>Frame[]</code> route stack + singleton focus manager</td>
+              <td>Rendered inline inside Pi's editor container</td>
+              <td><span class="chip ok">Single overlay</span> <code>Frame[]</code> stack + optional <code>DialogSession</code> bridge</td>
+            </tr>
+            <tr data-cat="ui">
+              <td><strong>Save Model</strong></td>
+              <td><span class="chip warn">Immediate</span> (unawaited fire-and-forget)</td>
+              <td>Immediate on Enter</td>
+              <td><span class="chip ok">Draft + Ctrl+S</span> (dirty badge; submenus share draft)</td>
+              <td>Hybrid: immediate serialized <code>mutate()</code>; draft + <code>Ctrl+S</code> in allowlists</td>
+              <td>Immediate <code>onChange</code> callback</td>
+              <td><span class="chip info">Configurable</span> Default <code>draft</code> + <code>Ctrl+S</code>; opt-in <code>immediate</code></td>
+            </tr>
+            <tr data-cat="store">
+              <td><strong>Provenance &amp; Reset</strong></td>
+              <td>None</td>
+              <td>Hardcoded defaults</td>
+              <td><span class="chip ok">3-cell dots (●)</span> Global / Project / Both + Restore Defaults</td>
+              <td>Project count + warning badge on tab rows</td>
+              <td>None (2 columns only)</td>
+              <td><span class="chip ok">Built-in</span> Provenance column, legend &amp; scope delete/reset</td>
+            </tr>
+            <tr data-cat="ui">
+              <td><strong>Mouse Support</strong></td>
+              <td><span class="chip muted">None</span></td>
+              <td><span class="chip muted">None</span></td>
+              <td><span class="chip ok">Partial</span> <code>DialogSession</code> forwards; wheel in <code>LiveAgentView</code></td>
+              <td><span class="chip muted">None</span></td>
+              <td><span class="chip ok">Basic</span> Wheel, click row, search input</td>
+              <td><span class="chip ok">Full</span> Tabs, rows, toggles, wheel, footer pills, child forward</td>
+            </tr>
+            <tr data-cat="safety">
+              <td><strong>RPC / Non-TUI</strong></td>
+              <td><span class="chip err">Missing</span> (no <code>ctx.mode</code> guard)</td>
+              <td>Warns in non-TUI; JSON dump on list</td>
+              <td><code>canOpenDialog</code> rejects non-TUI with warning</td>
+              <td><span class="chip ok">Full parity</span> <code>ctx.ui.select</code>/<code>input</code> menu</td>
+              <td>N/A</td>
+              <td><span class="chip ok">Auto fallback</span> Schema-driven <code>select</code>/<code>input</code> in RPC mode</td>
+            </tr>
+            <tr data-cat="safety">
+              <td><strong>Persistence Hardening</strong></td>
+              <td><span class="chip err">Minimal</span> Plain <code>writeFile</code>, swallows errors</td>
+              <td>In-band entries (separate log store is hardened)</td>
+              <td><span class="chip ok">Strong</span> <code>lstat</code>, <code>O_NOFOLLOW</code>, atomic rename, optimistic disk check</td>
+              <td><span class="chip ok">Strongest</span> Atomic <code>wx</code>, 64 KiB cap, secret rejection, strict schema + migrations</td>
+              <td>N/A</td>
+              <td><span class="chip ok">Union of both</span> Symlink/NOFOLLOW + 64 KiB + secret guard + optimistic lock</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="source">Sources: <code>pi-context-prune/src/{config,commands}.ts</code>, <code>pi-background-monitor/src/{index,ui}.ts</code>, <code>pi-subagent-manager/src/{prefs/settings,ui/dialog,ui/settings-ui}.ts</code>, <code>pi-context-decisions/src/{settings,extension/settings-dialog,extension/settings-model}.ts</code>.</div>
+
+      <div class="cards">
+        <div class="card">
+          <h4>Best Ideas from <code>pi-subagent-manager</code></h4>
+          <ul>
+            <li><strong>Override-only layered JSON:</strong> Global and Project files store only deltas from the lower layer, so changing a global default automatically propagates to projects that didn't override it.</li>
+            <li><strong>Provenance dots (<code>●</code>):</strong> A fixed 3-cell middle column makes Global vs Project inheritance scannable at a glance.</li>
+            <li><strong>Optimistic concurrency (<code>expectedLayers</code>):</strong> Refuses to overwrite if another Pi session modified settings on disk while the dialog was open.</li>
+            <li><strong><code>DialogSession</code>:</strong> Lets imperative <code>await dialogMenu(...)</code> flows run inside one stable overlay without flicker.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Best Ideas from <code>pi-context-decisions</code></h4>
+          <ul>
+            <li><strong>Pure-data <code>settings-model.ts</code>:</strong> Zero <code>pi-tui</code> imports in field metadata and layout math — 100% unit-testable without a terminal.</li>
+            <li><strong>Singleton manager + <code>AbortSignal</code>:</strong> Re-invoking the command focuses and navigates the existing overlay; shutdown aborts async loaders cleanly.</li>
+            <li><strong>Hardened persistence:</strong> 64 KiB read/write cap, recursive secret-key rejection, terminal control-sequence sanitization on pasted input.</li>
+            <li><strong>Full RPC fallback:</strong> Non-TUI clients get a working <code>ctx.ui.select</code> / <code>ctx.ui.input</code> settings menu from the same field metadata.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 -->
+    <section id="pi-tui">
+      <div class="sec-kicker">03 / Platform Internals</div>
+      <h2>What <code>@earendil-works/pi-tui</code> v1.5.2 Gives Us — and Its Gotchas</h2>
+      <p>
+        Auditing the compiled <code>@earendil-works/pi-tui</code> and <code>@earendil-works/pi-coding-agent</code>
+        packages reveals several subtle runtime behaviors that a shared library can hide behind safe defaults.
+      </p>
+
+      <div class="cards">
+        <div class="card">
+          <h4>1. Never call <code>tui.hideOverlay()</code> directly</h4>
+          <p>
+            <code>TuiBase.hideOverlay()</code> unconditionally pops <code>overlayStack[length - 1]</code>,
+            regardless of which overlay called it or visual focus order. Always close via the <code>done()</code>
+            callback from <code>ctx.ui.custom()</code>, which invokes <code>overlayHandle.hide()</code> and splices
+            the exact overlay entry safely.
+          </p>
+        </div>
+        <div class="card">
+          <h4>2. Use the injected <code>keybindings</code> argument</h4>
+          <p>
+            <code>ctx.ui.custom((tui, theme, keybindings, done) =&gt; ...)</code> passes the host's
+            <code>KeybindingsManager</code>. Importing <code>getKeybindings()</code> directly from
+            <code>@earendil-works/pi-tui</code> can bind to a duplicate module instance and miss user keybinding overrides.
+          </p>
+        </div>
+        <div class="card">
+          <h4>3. <code>maxHeight</code> hard-slices overflow</h4>
+          <p>
+            In <code>compositeOverlays</code>, if <code>component.render(width)</code> returns more lines than
+            <code>maxHeight</code>, Pi slices off the bottom lines — clipping your bottom border and footer hints.
+            The dialog must compute its own height budget from <code>tui.terminal?.rows</code> (and re-read it on every render).
+          </p>
+        </div>
+        <div class="card">
+          <h4>4. <code>ctx.mode</code> vs <code>tui.mode</code></h4>
+          <p>
+            <code>ctx.mode</code> is <code>"tui" | "rpc" | "json" | "print"</code> (use this to decide overlay vs RPC fallback).
+            Inside <code>ctx.ui.custom</code>, <code>tui.mode</code> is <code>"regular" | "fullscreen"</code> — only
+            <code>"fullscreen"</code> (<code>TuiAltScreen</code>) enables SGR mouse tracking and dispatches <code>handleMouse</code>.
+          </p>
+        </div>
+      </div>
+
+      <details>
+        <summary>Built-in <code>pi-tui</code> primitives we can reuse directly (zero extra dependencies)</summary>
+        <ul>
+          <li><code>Input</code> &amp; <code>Editor</code>: Single-line and multiline text editing with <code>CURSOR_MARKER</code> hardware cursor placement and left-click cursor positioning.</li>
+          <li><code>fuzzyFilter</code>: Built-in fuzzy search utility — eliminates needing <code>fuzzysort</code> as a runtime dependency for searchable pickers.</li>
+          <li><code>visibleWidth</code>, <code>truncateToWidth</code>, <code>wrapTextWithAnsi</code>, <code>stripTerminalSequences</code>: ANSI-aware layout and sanitization.</li>
+          <li><code>Theme</code> tokens: Standardized <code>fg</code> (<code>accent</code>, <code>border</code>, <code>muted</code>, <code>dim</code>, <code>warning</code>, <code>success</code>, <code>error</code>, <code>text</code>) and <code>bg</code> (<code>selectedBg</code>) ensure every extension matches the user's active Pi theme (dark or light).</li>
+        </ul>
+      </details>
+    </section>
+
+    <!-- 04 -->
+    <section id="architecture">
+      <div class="sec-kicker">04 / Proposed Architecture</div>
+      <h2>Three Composable Layers</h2>
+      <p>
+        Rather than a monolithic widget, <code>pi-extension-settings-dialog</code> should be structured as three clean
+        layers with explicit boundaries so pure logic stays testable without a TTY and extensions can opt into only
+        what they need.
+      </p>
+
+      <div class="arch-stack">
+        <div class="arch-layer l1">
+          <div>
+            <div class="arch-name">Layer 3 · Mode Adapter</div>
+            <div class="arch-sub">openSettingsDialog(ctx, ...)</div>
+          </div>
+          <div class="arch-desc">
+            Inspects <code>ctx.mode</code> &amp; <code>ctx.hasUI</code>. In <code>"tui"</code> mode, mounts a singleton
+            <code>ctx.ui.custom</code> overlay with <code>AbortSignal</code> lifecycle. In <code>"rpc"</code> mode,
+            auto-generates a <code>ctx.ui.select</code>/<code>input</code> menu from the exact same schema. In headless
+            mode, returns structured diagnostics.
+          </div>
+        </div>
+        <div class="arch-layer l2">
+          <div>
+            <div class="arch-name">Layer 2 · TUI Dialog Engine</div>
+            <div class="arch-sub">SettingsDialogComponent</div>
+          </div>
+          <div class="arch-desc">
+            Single-overlay <code>Frame[]</code> route stack (peer tabs at root + pushed editors/pickers/confirmations),
+            priority height-budget allocator, <code>draft</code> + <code>Ctrl+S</code> or <code>immediate</code> save
+            engine, provenance column, and deterministic <strong>render-time hit-region table</strong> for fullscreen mouse events.
+          </div>
+        </div>
+        <div class="arch-layer l3">
+          <div>
+            <div class="arch-name">Layer 1 · Schema &amp; Store</div>
+            <div class="arch-sub">defineSettings() · SettingsStore</div>
+          </div>
+          <div class="arch-desc">
+            Zero-TUI-import declarative field definitions, TypeScript type inference, Global + Trusted Project
+            override-only JSON layering, provenance calculation, optimistic concurrency checks, migrations, and
+            symlink/secret/size-hardened atomic I/O.
+          </div>
+        </div>
+        <div class="arch-layer l4">
+          <div>
+            <div class="arch-name">Host · Pi Platform</div>
+            <div class="arch-sub">@earendil-works/pi-tui &amp; pi-coding-agent</div>
+          </div>
+          <div class="arch-desc">
+            <code>TUI</code> / <code>TuiAltScreen</code> overlay compositing, SGR 1006 mouse dispatch,
+            <code>Input</code>, <code>Editor</code>, <code>KeybindingsManager</code>, <code>Theme</code>,
+            <code>ctx.isProjectTrusted()</code>.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 05 -->
+    <section id="declarative">
+      <div class="sec-kicker">05 / Developer Experience</div>
+      <h2>Declarative Schema &amp; Type Inference</h2>
+      <p>
+        Extension authors should declare settings once — getting runtime validation, TypeScript types, TUI editors,
+        help text, provenance tracking, and RPC fallback menus automatically.
+      </p>
+
+<pre><code><span class="tok-k">import</span> { defineSettings, field, openSettingsDialog } <span class="tok-k">from</span> <span class="tok-s">"pi-extension-settings-dialog"</span>;
+
+<span class="tok-k">export const</span> mySchema = defineSettings({
+  id: <span class="tok-s">"my-extension"</span>,                 <span class="tok-c">// ~/.pi/agent/my-extension/settings.json</span>
+  title: <span class="tok-s">"My Extension"</span>,
+  scopes: [<span class="tok-s">"global"</span>, <span class="tok-s">"project"</span>],      <span class="tok-c">// project auto-gated on ctx.isProjectTrusted()</span>
+  saveMode: <span class="tok-s">"draft"</span>,                  <span class="tok-c">// "draft" (Ctrl+S) | "immediate"</span>
+  tabs: [
+    { id: <span class="tok-s">"general"</span>, label: <span class="tok-s">"General"</span> },
+    { id: <span class="tok-s">"advanced"</span>, label: <span class="tok-s">"Advanced"</span> },
+  ],
+  fields: {
+    enabled: field.boolean({
+      tab: <span class="tok-s">"general"</span>,
+      label: <span class="tok-s">"Enable extension"</span>,
+      default: <span class="tok-k">true</span>,
+      description: <span class="tok-s">"Toggle extension behavior without unloading."</span>,
+    }),
+    mode: field.enum({
+      tab: <span class="tok-s">"general"</span>,
+      label: <span class="tok-s">"Execution mode"</span>,
+      default: <span class="tok-s">"opportunistic"</span>,
+      options: [
+        { value: <span class="tok-s">"off"</span>, label: <span class="tok-s">"Off"</span>, description: <span class="tok-s">"Disable hooks and tools."</span> },
+        { value: <span class="tok-s">"opportunistic"</span>, label: <span class="tok-s">"Opportunistic"</span>, description: <span class="tok-s">"Run only on large tasks."</span> },
+        { value: <span class="tok-s">"strict"</span>, label: <span class="tok-s">"Strict"</span>, tone: <span class="tok-s">"warn"</span>, description: <span class="tok-s">"Always enforce policy."</span> },
+      ],
+    }),
+    threshold: field.number({
+      tab: <span class="tok-s">"advanced"</span>,
+      label: <span class="tok-s">"Relevance threshold"</span>,
+      default: <span class="tok-t">0.375</span>, min: <span class="tok-t">0</span>, max: <span class="tok-t">1</span>, integer: <span class="tok-k">false</span>,
+      description: <span class="tok-s">"Minimum score [0..1] to include a candidate."</span>,
+    }),
+    maxConcurrent: field.integer({
+      tab: <span class="tok-s">"advanced"</span>,
+      label: <span class="tok-s">"Max concurrent jobs"</span>,
+      default: <span class="tok-t">8</span>, min: <span class="tok-t">1</span>, max: <span class="tok-t">64</span>,
+    }),
+    model: field.custom&lt;<span class="tok-t">string</span>&gt;({
+      tab: <span class="tok-s">"advanced"</span>,
+      label: <span class="tok-s">"Classifier model"</span>,
+      default: <span class="tok-s">""</span>,
+      experimental: <span class="tok-k">true</span>,             <span class="tok-c">// renders [lab] prefix</span>
+      validate: (v) =&gt; <span class="tok-k">typeof</span> v === <span class="tok-s">"string"</span> &amp;&amp; (v === <span class="tok-s">""</span> || <span class="tok-p">/^[^\s/]+\/[^\s]+$/</span>.test(v)),
+      format: (v) =&gt; v || <span class="tok-s">"Not selected"</span>,
+      openSubroute: ({ value, commit, cancel }) =&gt; createModelPickerComponent(value, commit, cancel),
+    }),
+  },
+});
+
+<span class="tok-c">// Fully inferred TypeScript type: { enabled: boolean; mode: "off" | "opportunistic" | "strict"; ... }</span>
+<span class="tok-k">export type</span> MySettings = <span class="tok-k">typeof</span> mySchema.Type;
+
+<span class="tok-c">// Inside a Pi slash command:</span>
+<span class="tok-k">await</span> openSettingsDialog(ctx, {
+  schema: mySchema,
+  agentDir: getAgentDir(),
+  onApply: (next, meta) =&gt; runtime.applySettings(next),
+});</code></pre>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Field Builder</th>
+              <th>Inline / Sub-route Editor</th>
+              <th>Built-in Validation</th>
+              <th>RPC Fallback</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>field.boolean</code></td>
+              <td>Inline toggle on <code>Enter</code>, <code>Space</code>, or single click</td>
+              <td>Strict <code>typeof === "boolean"</code></td>
+              <td><code>ctx.ui.select(["On", "Off"])</code></td>
+            </tr>
+            <tr>
+              <td><code>field.integer</code> / <code>field.number</code></td>
+              <td>Sub-route <code>Input</code> prefilled + cursor at end; optional <code>←</code>/<code>→</code> step</td>
+              <td><code>Number.isSafeInteger</code> / <code>Number.isFinite</code> + <code>[min, max]</code></td>
+              <td><code>ctx.ui.input()</code> + validation loop</td>
+            </tr>
+            <tr>
+              <td><code>field.string</code></td>
+              <td><code>Input</code> (single-line) or <code>Editor</code> (<code>multiline: true</code>, <code>Ctrl+S</code>)</td>
+              <td><code>minLength</code>, <code>maxLength</code>, <code>pattern</code>, control-char strip</td>
+              <td><code>ctx.ui.input()</code> / <code>ctx.ui.editor()</code></td>
+            </tr>
+            <tr>
+              <td><code>field.enum</code></td>
+              <td>Inline cycle (≤3 options) or searchable <code>SelectRoute</code> with per-option help</td>
+              <td>Exact membership in <code>options[].value</code></td>
+              <td><code>ctx.ui.select()</code> with labels</td>
+            </tr>
+            <tr>
+              <td><code>field.multiSelect</code></td>
+              <td>Searchable checklist (<code>[x]</code>/<code>[ ]</code>) + optional collapsible groups (<code>[-]</code>)</td>
+              <td>String array, deduped, bounded count &amp; item length</td>
+              <td>Notifies or sequential toggle select</td>
+            </tr>
+            <tr>
+              <td><code>field.custom</code></td>
+              <td>Extension-supplied <code>Component &amp; Focusable</code> mounted in route stack</td>
+              <td>Custom <code>validate(raw)</code> predicate</td>
+              <td>Optional <code>rpcEdit(ctx, val)</code> hook</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 06 -->
+    <section id="persistence">
+      <div class="sec-kicker">06 / Persistence &amp; Security</div>
+      <h2>Global vs Project Layering &amp; Hardened JSON I/O</h2>
+      <p>
+        Settings persistence in an agent harness is a security boundary: untrusted repositories can contain malicious
+        <code>.pi/</code> directories, symlinks pointing outside the project, or accidentally pasted API keys.
+        The store layer should ship hardened by default.
+      </p>
+
+      <div class="cards">
+        <div class="card">
+          <h4>Two-Layer Resolution &amp; Override Diffing</h4>
+          <p>Effective settings resolve as <code>defaults → global → project</code> (with <code>project</code> skipped unless <code>ctx.isProjectTrusted()</code> is true).</p>
+          <ul>
+            <li>Saving to <strong>Global</strong> persists only keys where <code>value !== default</code>.</li>
+            <li>Saving to <strong>Project</strong> persists only keys where <code>value !== (global ?? default)</code>.</li>
+            <li>Each key carries provenance: <code>"default" | "global" | "project" | "both"</code>.</li>
+            <li>Built-in <strong>Save scope</strong> row and <strong>Restore defaults</strong> action (deletes the target scope's file cleanly with confirmation).</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Defense-in-Depth File Safety</h4>
+          <ul>
+            <li><strong>Symlink refusal:</strong> <code>lstat</code> every path segment + target file; open temp files with <code>O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW</code> (<code>0o600</code>) in <code>0o700</code> dirs.</li>
+            <li><strong>Atomic replacement:</strong> Write to <code>.settings.&lt;uuid&gt;.tmp</code>, <code>rename</code> into place, cleanup in <code>finally</code>.</li>
+            <li><strong>Size &amp; secret caps:</strong> 64 KiB max read/write; reject keys matching <code>/api.?key|token|secret|password|authorization|credential/i</code>.</li>
+            <li><strong>Optimistic locking:</strong> Snapshot on-disk layers on dialog open; refuse save if files changed externally while editing.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note warn">
+        <strong>Session-scoped settings escape hatch:</strong> Extensions like <code>pi-background-monitor</code> persist
+        ephemeral limits inside session history via <code>pi.appendEntry()</code> instead of JSON files. Exposing a tiny
+        <code>StorageAdapter</code> interface (<code>load()</code>, <code>save()</code>, <code>deleteScope?()</code>) lets
+        those extensions reuse the entire declarative TUI dialog without touching the filesystem.
+      </div>
+    </section>
+
+    <!-- 07 -->
+    <section id="mouse">
+      <div class="sec-kicker">07 / Full-TUI Interaction</div>
+      <h2>Making Mouse Clicks First-Class in Fullscreen TUI Mode</h2>
+      <p>
+        In Pi v1.5.2, fullscreen mode (<code>TuiAltScreen</code>, detected via <code>tui.mode === "fullscreen"</code>)
+        enables SGR 1006 mouse tracking automatically. When the user clicks inside an overlay,
+        <code>TuiBase.dispatchMouseToOverlay()</code> hit-tests overlays top-down and invokes
+        <code>component.handleMouse(event)</code> with <strong>0-based overlay-local <code>x</code> and <code>y</code></strong>.
+      </p>
+
+      <h3>How Render-Time Hit Regions Work</h3>
+      <p>
+        Because <code>SettingsDialogComponent.render(width)</code> already computes the exact line index and column
+        span of every tab chip, setting row, and footer action pill, it can populate a flat <code>HitRegion[]</code>
+        array during each render pass at virtually zero cost:
+      </p>
+
+<pre><code><span class="tok-k">interface</span> <span class="tok-t">HitRegion</span> {
+  y: <span class="tok-t">number</span>;           <span class="tok-c">// 0-based row inside the overlay</span>
+  x0: <span class="tok-t">number</span>;          <span class="tok-c">// inclusive start column (visibleWidth)</span>
+  x1: <span class="tok-t">number</span>;          <span class="tok-c">// exclusive end column</span>
+  kind: <span class="tok-s">"tab"</span> | <span class="tok-s">"row"</span> | <span class="tok-s">"action"</span> | <span class="tok-s">"child"</span>;
+  id: <span class="tok-t">string</span>;
+}
+
+handleMouse(event: <span class="tok-t">TuiMouseEvent</span>): <span class="tok-t">TuiMouseEventResult</span> | <span class="tok-t">undefined</span> {
+  <span class="tok-c">// 1. Forward to active child (Input, Editor, or custom sub-route) with local coords</span>
+  <span class="tok-k">if</span> (frame.child &amp;&amp; inBox(event, childBounds)) {
+    <span class="tok-k">return</span> frame.child.handleMouse?.({ ...event, x: event.x - childBounds.x, y: event.y - childBounds.y });
+  }
+  <span class="tok-c">// 2. Wheel scrolls active list or help/status viewport</span>
+  <span class="tok-k">if</span> (event.type === <span class="tok-s">"wheel"</span>) {
+    scrollBy(Math.trunc(event.wheelDelta ?? <span class="tok-t">0</span>));
+    <span class="tok-k">return</span> { handled: <span class="tok-k">true</span>, render: <span class="tok-k">true</span> };
+  }
+  <span class="tok-c">// 3. Press claims target (suppresses screen text selection &amp; enables click synthesis!)</span>
+  <span class="tok-k">const</span> hit = hitTest(regions, event.x, event.y);
+  <span class="tok-k">if</span> (!hit) <span class="tok-k">return</span> { handled: <span class="tok-k">true</span>, render: <span class="tok-k">false</span> }; <span class="tok-c">// keep clicks inside dialog from selecting text</span>
+  <span class="tok-k">if</span> (event.type === <span class="tok-s">"press"</span> &amp;&amp; event.button === <span class="tok-s">"left"</span>) {
+    <span class="tok-k">if</span> (hit.kind === <span class="tok-s">"row"</span>) selectRow(hit.id);
+    <span class="tok-k">return</span> { handled: <span class="tok-k">true</span>, focus: <span class="tok-k">true</span>, render: <span class="tok-k">true</span> };
+  }
+  <span class="tok-c">// 4. Synthesized "click" (same cell release within 500ms) activates tabs, toggles, pills</span>
+  <span class="tok-k">if</span> (event.type === <span class="tok-s">"click"</span> &amp;&amp; event.button === <span class="tok-s">"left"</span>) {
+    <span class="tok-k">if</span> (hit.kind === <span class="tok-s">"tab"</span>) switchTab(hit.id);
+    <span class="tok-k">if</span> (hit.kind === <span class="tok-s">"action"</span>) triggerAction(hit.id);       <span class="tok-c">// "save" | "cancel" | "back"</span>
+    <span class="tok-k">if</span> (hit.kind === <span class="tok-s">"row"</span> &amp;&amp; (isBool(hit.id) || event.clickCount === <span class="tok-t">2</span> || wasSelected)) activateRow(hit.id);
+    <span class="tok-k">return</span> { handled: <span class="tok-k">true</span>, render: <span class="tok-k">true</span> };
+  }
+}</code></pre>
+
+      <div class="note">
+        <strong>Two subtle Pi mouse details to get right:</strong>
+        (1) Returning <code>{ handled: true }</code> on <code>"press"</code> is mandatory — without it,
+        <code>TuiAltScreen</code> falls through to terminal text-selection and will <em>not</em> synthesize a
+        <code>"click"</code> event on release.
+        (2) Inside <code>tmux</code> / <code>zellij</code> / <code>screen</code>, Pi intentionally omits
+        <code>\x1b[?1003h</code> (all-motion tracking), so hover <code>"move"</code> events will not fire there;
+        hover highlights must always be progressive enhancement, never required for discoverability.
+      </div>
+    </section>
+
+    <!-- 08 -->
+    <section id="simulator">
+      <div class="sec-kicker">08 / Interactive Prototype</div>
+      <h2>Try the Proposed Dialog &amp; Layered Override Model</h2>
+      <p>
+        Interact with this live simulation of <code>pi-extension-settings-dialog</code>. Toggle between
+        <strong>Fullscreen (Mouse + Keyboard)</strong> and <strong>Regular (Keyboard only)</strong> modes,
+        click tabs or rows (or use <code>↑</code>/<code>↓</code>, <code>Tab</code>, <code>Enter</code>,
+        <code>Space</code>, <code>Ctrl+S</code>), switch save scope, and watch the override-only JSON and
+        <code>TuiMouseEvent</code> log update in real time.
+      </p>
+
+      <div class="lab">
+        <div class="lab-bar">
+          <div class="lab-title">Live TUI Settings Dialog Prototype</div>
+          <div class="lab-controls">
+            <button class="lab-btn on" id="btn-mode">tui.mode: fullscreen (mouse ON)</button>
+            <button class="lab-btn" id="btn-savemode">saveMode: draft (Ctrl+S)</button>
+            <button class="lab-btn" id="btn-reset">Reset demo</button>
+          </div>
+        </div>
+        <div class="lab-grid">
+          <div class="tui-pane" id="tui-pane" tabindex="0" aria-label="Simulated Pi TUI settings dialog">
+            <div class="tui-frame">
+              <div class="tui-top">
+                <span id="sim-crumb">My Extension › General</span>
+                <span class="tui-badge" id="sim-dirty"></span>
+              </div>
+              <div class="tui-tabs" id="sim-tabs"></div>
+              <div class="tui-rows" id="sim-rows"></div>
+              <div class="tui-inline-edit" id="sim-editor" style="display:none;">
+                <span style="color:#93c5fd;">Value:</span>
+                <input id="sim-input" type="text" />
+                <button class="tui-act primary" id="sim-apply-edit">Enter ✓</button>
+                <button class="tui-act" id="sim-cancel-edit">Esc</button>
+              </div>
+              <div class="tui-help" id="sim-help"></div>
+              <div class="tui-legend">
+                Saved: <span class="dot-g">●</span> Global · <span class="dot-p">●</span> Current Project · <span class="dot-g">●</span> <span class="dot-p">●</span> Both
+              </div>
+              <div class="tui-foot">
+                <span id="sim-hint">↑↓ move · Tab tab · Space/Enter edit · Ctrl+S save</span>
+                <div class="tui-actions">
+                  <button class="tui-act primary" id="sim-save-btn">[Ctrl+S Save]</button>
+                  <button class="tui-act" id="sim-discard-btn">[Esc Discard]</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="inspector-pane">
+            <div class="insp-box">
+              <div class="insp-head">
+                <span>Global settings.json (overrides)</span>
+                <span id="insp-g-path" style="color:var(--ink-soft);">~/.pi/agent/demo/settings.json</span>
+              </div>
+              <pre class="insp-pre" id="insp-global">{}</pre>
+            </div>
+            <div class="insp-box">
+              <div class="insp-head">
+                <span>Project settings.json (overrides)</span>
+                <span style="color:var(--ink-soft);">.pi/agent/demo/settings.json</span>
+              </div>
+              <pre class="insp-pre" id="insp-project">{}</pre>
+            </div>
+            <div class="insp-box">
+              <div class="insp-head">
+                <span>Last TuiMouseEvent / Action</span>
+                <span id="insp-mode-pill" style="color:var(--teal);">fullscreen</span>
+              </div>
+              <pre class="insp-pre" id="insp-event">Click a tab, row, or button (or focus dialog &amp; use keyboard).</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 09 -->
+    <section id="roadmap">
+      <div class="sec-kicker">09 / Scope, Tradeoffs &amp; Rollout</div>
+      <h2>Packaging Strategy &amp; Recommended Rollout</h2>
+
+      <div class="cards">
+        <div class="card">
+          <h4>Package Shape</h4>
+          <ul>
+            <li><strong>Name:</strong> <code>pi-extension-settings-dialog</code> (pure ESM, Node ≥ 22, TypeScript sources + declarations).</li>
+            <li><strong>Dependencies:</strong> <strong>Zero</strong> runtime dependencies. Peer deps: <code>@earendil-works/pi-coding-agent &gt;= 1.5.0</code> and <code>@earendil-works/pi-tui *</code>.</li>
+            <li><strong>Subpath exports:</strong>
+              <code>/schema</code> (pure data + validation, zero Pi imports),
+              <code>/store</code> (Node fs layered JSON persistence),
+              <code>/dialog</code> (TUI overlay + mouse),
+              <code>.</code> (all-in-one <code>openSettingsDialog</code>).
+            </li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Explicit Non-Goals</h4>
+          <ul>
+            <li><strong>No domain pickers:</strong> Model registries, auth credential checks, and MCP server discovery stay in host extensions via <code>field.custom</code>.</li>
+            <li><strong>No secret storage:</strong> Credentials belong in Pi's auth store / env vars; the store actively rejects secret-like keys.</li>
+            <li><strong>No layout framework:</strong> Don't try to replace <code>pi-tui</code>'s general-purpose <code>VStack</code>/<code>HStack</code> — focus strictly on settings dialogs.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Recommended Migration Order (Dogfooding Across the 4 Extensions)</h3>
+      <ol>
+        <li><strong>Phase 1 — Build &amp; test on <code>pi-context-prune</code>:</strong> Smallest schema, biggest immediate win (gains atomic hardened writes, validation, project scope, <code>ctx.mode</code> RPC fallback, and mouse support while deleting ~180 LOC of <code>SettingsOverlay</code> glue).</li>
+        <li><strong>Phase 2 — Validate layered provenance &amp; <code>Ctrl+S</code> on <code>pi-subagent-manager</code>:</strong> Exercises 2-layer override diffing, provenance dots, optimistic concurrency, Restore Defaults, and <code>field.custom</code> sub-routes for <code>HousekeepingModelPicker</code> and <code>SubagentExtensions</code>.</li>
+        <li><strong>Phase 3 — Validate tabs, immediate-save &amp; RPC parity on <code>pi-context-decisions</code>:</strong> Exercises peer tabs, <code>saveMode: "immediate"</code>, singleton focus/navigate, legacy schema migration hooks, and <code>ctx.ui.select</code>/<code>input</code> RPC parity.</li>
+        <li><strong>Phase 4 — Validate pluggable <code>StorageAdapter</code> on <code>pi-background-monitor</code>:</strong> Exercises session-entry persistence (<code>pi.appendEntry</code>) inside the same declarative dialog API.</li>
+      </ol>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+  // 1. Sidebar scroll-spy & mobile jump nav
+  const sections = [...document.querySelectorAll("main section[id]")];
+  const tocLinks = [...document.querySelectorAll("#toc a")];
+  const mobileNav = document.getElementById("mobile-nav");
+
+  const setActive = (id) => {
+    tocLinks.forEach((a) => a.classList.toggle("active", a.getAttribute("href") === `#${id}`));
+    if (mobileNav && mobileNav.value !== `#${id}`) mobileNav.value = `#${id}`;
+  };
+
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver((entries) => {
+      const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      if (visible.length) setActive(visible[0].target.id);
+    }, { rootMargin: "-18% 0px -70% 0px" });
+    sections.forEach((s) => io.observe(s));
+  }
+
+  mobileNav?.addEventListener("change", () => {
+    const target = document.querySelector(mobileNav.value);
+    target?.scrollIntoView({ behavior: "smooth" });
+  });
+
+  // 2. Audit table filter
+  const filterBtns = [...document.querySelectorAll(".filter-btn")];
+  const auditRows = [...document.querySelectorAll("#audit-table tbody tr")];
+  filterBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      filterBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const cat = btn.dataset.filter;
+      auditRows.forEach((row) => {
+        row.style.display = cat === "all" || row.dataset.cat === cat ? "" : "none";
+      });
+    });
+  });
+
+  // 3. Interactive TUI Settings Dialog Simulator
+  const DEFAULTS = {
+    enabled: true,
+    mode: "opportunistic",
+    threshold: 0.375,
+    maxConcurrent: 8,
+    nerdIcons: false,
+    failMode: "closed",
+  };
+  const SCHEMA = [
+    { id: "enabled", tab: "general", label: "Enable extension", kind: "bool", help: "Toggle extension behavior without unloading. Space/Enter or click toggles." },
+    { id: "mode", tab: "general", label: "Execution mode", kind: "enum", options: ["off", "opportunistic", "strict"], help: "Controls when hooks run: off, opportunistic (large tasks), or strict (always)." },
+    { id: "nerdIcons", tab: "general", label: "[lab] Nerd Font icons", kind: "bool", help: "Experimental: use Nerd Font glyphs in status footer. Requires a patched font." },
+    { id: "threshold", tab: "advanced", label: "Relevance threshold", kind: "float", min: 0, max: 1, help: "Decimal in [0, 1]. Higher values filter more aggressively (default 0.375)." },
+    { id: "maxConcurrent", tab: "advanced", label: "Max concurrent jobs", kind: "int", min: 1, max: 64, help: "Positive integer in [1, 64] capping simultaneous workers." },
+    { id: "failMode", tab: "advanced", label: "On failure", kind: "enum", options: ["closed", "open"], help: "closed: fail safe (recommended). open: allow all candidates when classifier fails." },
+  ];
+  const TABS = [
+    { id: "general", label: "General" },
+    { id: "advanced", label: "Advanced" },
+    { id: "scope", label: "Scope" },
+  ];
+
+  let fullscreen = true;
+  let saveMode = "draft"; // "draft" | "immediate"
+  let activeTab = "general";
+  let selectedIdx = 0;
+  let scope = "project"; // "global" | "project"
+  let globalLayer = { maxConcurrent: 12 };
+  let projectLayer = { mode: "strict" };
+  let draft = {};
+  let editingId = null;
+
+  const computeEffective = () => ({ ...DEFAULTS, ...globalLayer, ...projectLayer });
+  const resetDraft = () => { draft = computeEffective(); };
+  resetDraft();
+
+  const elCrumb = document.getElementById("sim-crumb");
+  const elDirty = document.getElementById("sim-dirty");
+  const elTabs = document.getElementById("sim-tabs");
+  const elRows = document.getElementById("sim-rows");
+  const elHelp = document.getElementById("sim-help");
+  const elHint = document.getElementById("sim-hint");
+  const elEditor = document.getElementById("sim-editor");
+  const elInput = document.getElementById("sim-input");
+  const elGlobal = document.getElementById("insp-global");
+  const elProject = document.getElementById("insp-project");
+  const elEvent = document.getElementById("insp-event");
+  const elModePill = document.getElementById("insp-mode-pill");
+  const btnMode = document.getElementById("btn-mode");
+  const btnSaveMode = document.getElementById("btn-savemode");
+  const btnSave = document.getElementById("sim-save-btn");
+  const btnDiscard = document.getElementById("sim-discard-btn");
+  const tuiPane = document.getElementById("tui-pane");
+
+  const logEvent = (obj) => { elEvent.textContent = typeof obj === "string" ? obj : JSON.stringify(obj, null, 2); };
+
+  const isDirty = () => JSON.stringify(draft) !== JSON.stringify(computeEffective());
+
+  const persistDraft = () => {
+    const inherited = scope === "global" ? DEFAULTS : { ...DEFAULTS, ...globalLayer };
+    const overrides = {};
+    for (const k of Object.keys(DEFAULTS)) {
+      if (draft[k] !== inherited[k]) overrides[k] = draft[k];
+    }
+    if (scope === "global") globalLayer = overrides;
+    else projectLayer = overrides;
+    resetDraft();
+  };
+
+  const currentRows = () => {
+    if (activeTab === "scope") {
+      return [
+        { id: "__scope", label: "Save scope", kind: "meta", value: scope === "global" ? "Global" : "Current Project", help: "Choose whether Ctrl+S writes overrides to Global (~/.pi/agent/...) or Current Project (.pi/agent/...)." },
+        { id: "__reset_project", label: "Restore project defaults", kind: "meta", value: Object.keys(projectLayer).length ? `${Object.keys(projectLayer).length} overrides` : "clean", help: "Deletes .pi/agent/demo/settings.json so all values inherit from Global." },
+        { id: "__reset_global", label: "Restore global defaults", kind: "meta", value: Object.keys(globalLayer).length ? `${Object.keys(globalLayer).length} overrides` : "clean", help: "Deletes ~/.pi/agent/demo/settings.json so built-in defaults apply." },
+      ];
+    }
+    return SCHEMA.filter((f) => f.tab === activeTab);
+  };
+
+  const formatVal = (row) => {
+    if (row.kind === "meta") return row.value;
+    const v = draft[row.id];
+    if (row.kind === "bool") return v ? "On" : "Off";
+    return String(v);
+  };
+
+  const provenanceHtml = (id) => {
+    if (!(id in DEFAULTS)) return `<span class="dot-e">·</span> <span class="dot-e">·</span>`;
+    const g = id in globalLayer && globalLayer[id] !== DEFAULTS[id];
+    const p = id in projectLayer && projectLayer[id] !== (globalLayer[id] ?? DEFAULTS[id]);
+    return `${g ? '<span class="dot-g">●</span>' : '<span class="dot-e">·</span>'} ${p ? '<span class="dot-p">●</span>' : '<span class="dot-e">·</span>'}`;
+  };
+
+  const activateRow = (row) => {
+    if (row.id === "__scope") {
+      scope = scope === "global" ? "project" : "global";
+      render();
+      return;
+    }
+    if (row.id === "__reset_project") {
+      projectLayer = {};
+      resetDraft();
+      logEvent({ action: "deleteScope", scope: "project", result: "Deleted project overrides" });
+      render();
+      return;
+    }
+    if (row.id === "__reset_global") {
+      globalLayer = {};
+      resetDraft();
+      logEvent({ action: "deleteScope", scope: "global", result: "Deleted global overrides" });
+      render();
+      return;
+    }
+    if (row.kind === "bool") {
+      draft[row.id] = !draft[row.id];
+      if (saveMode === "immediate") persistDraft();
+      render();
+      return;
+    }
+    if (row.kind === "enum") {
+      const idx = row.options.indexOf(draft[row.id]);
+      draft[row.id] = row.options[(idx + 1) % row.options.length];
+      if (saveMode === "immediate") persistDraft();
+      render();
+      return;
+    }
+    if (row.kind === "int" || row.kind === "float") {
+      editingId = row.id;
+      elEditor.style.display = "flex";
+      elInput.value = String(draft[row.id]);
+      elInput.focus();
+      elInput.select();
+    }
+  };
+
+  const commitInlineEdit = () => {
+    if (!editingId) return;
+    const field = SCHEMA.find((f) => f.id === editingId);
+    const num = Number(elInput.value.trim());
+    const valid = field.kind === "int"
+      ? Number.isSafeInteger(num) && num >= field.min && num <= field.max
+      : Number.isFinite(num) && num >= field.min && num <= field.max;
+    if (!valid) {
+      logEvent({ validationError: `${field.id} must be ${field.kind} in [${field.min}, ${field.max}]` });
+      return;
+    }
+    draft[field.id] = num;
+    editingId = null;
+    elEditor.style.display = "none";
+    if (saveMode === "immediate") persistDraft();
+    tuiPane.focus();
+    render();
+  };
+
+  const cancelInlineEdit = () => {
+    editingId = null;
+    elEditor.style.display = "none";
+    tuiPane.focus();
+  };
+
+  const render = () => {
+    const rows = currentRows();
+    selectedIdx = Math.min(Math.max(0, selectedIdx), Math.max(0, rows.length - 1));
+    const tabObj = TABS.find((t) => t.id === activeTab);
+    elCrumb.textContent = `My Extension › ${tabObj.label} (${scope})`;
+    elDirty.textContent = saveMode === "draft" && isDirty() ? "● unsaved" : saveMode === "immediate" ? "auto-save" : "";
+
+    elTabs.innerHTML = "";
+    TABS.forEach((t, idx) => {
+      const b = document.createElement("button");
+      b.className = `tui-tab${t.id === activeTab ? " active" : ""}${fullscreen ? "" : " disabled-mouse"}`;
+      b.textContent = t.label;
+      b.addEventListener("click", () => {
+        if (!fullscreen) {
+          logEvent({ ignored: true, reason: "tui.mode === 'regular' does not dispatch mouse events; press Tab." });
+          return;
+        }
+        activeTab = t.id;
+        selectedIdx = 0;
+        logEvent({ type: "click", button: "left", x: 3 + idx * 11, y: 1, hitRegion: { kind: "tab", id: t.id }, result: { handled: true, render: true } });
+        render();
+      });
+      elTabs.appendChild(b);
+    });
+
+    elRows.innerHTML = "";
+    rows.forEach((row, i) => {
+      const div = document.createElement("div");
+      div.className = `tui-row${i === selectedIdx ? " selected" : ""}${fullscreen ? "" : " disabled-mouse"}`;
+      div.innerHTML = `<span>${i === selectedIdx ? "❯" : " "}</span><span>${row.label}</span><span class="tui-prov">${provenanceHtml(row.id)}</span><span class="tui-val">${formatVal(row)}</span>`;
+      div.addEventListener("click", () => {
+        if (!fullscreen) {
+          logEvent({ ignored: true, reason: "tui.mode === 'regular' has no mouse tracking; focus dialog and use ↑↓ + Enter." });
+          return;
+        }
+        const wasSelected = selectedIdx === i;
+        selectedIdx = i;
+        const autoAct = row.kind === "bool" || wasSelected;
+        logEvent({ type: "click", button: "left", x: 14, y: 3 + i, hitRegion: { kind: "row", id: row.id }, action: autoAct ? "activate" : "select", result: { handled: true, focus: true, render: true } });
+        if (autoAct) activateRow(row);
+        else render();
+      });
+      elRows.appendChild(div);
+    });
+
+    elHelp.textContent = rows[selectedIdx]?.help ?? "";
+    elHint.textContent = saveMode === "draft"
+      ? (fullscreen ? "Click/↑↓ move · Space/Enter edit · Ctrl+S save" : "↑↓ move · Tab tab · Space/Enter edit · Ctrl+S save")
+      : "Immediate save · ↑↓ move · Tab tab · Space/Enter edit";
+
+    btnSave.style.display = saveMode === "draft" ? "" : "none";
+    btnDiscard.style.display = saveMode === "draft" ? "" : "none";
+    btnSave.className = `tui-act primary${fullscreen ? "" : " disabled-mouse"}`;
+    btnDiscard.className = `tui-act${fullscreen ? "" : " disabled-mouse"}`;
+
+    elGlobal.textContent = JSON.stringify(globalLayer, null, 2);
+    elProject.textContent = JSON.stringify(projectLayer, null, 2);
+    elModePill.textContent = fullscreen ? "fullscreen" : "regular";
+  };
+
+  tuiPane.addEventListener("keydown", (e) => {
+    if (editingId) return;
+    const rows = currentRows();
+    if (e.key === "ArrowDown") { e.preventDefault(); selectedIdx = Math.min(rows.length - 1, selectedIdx + 1); render(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); selectedIdx = Math.max(0, selectedIdx - 1); render(); }
+    else if (e.key === "Tab") {
+      e.preventDefault();
+      const idx = TABS.findIndex((t) => t.id === activeTab);
+      activeTab = TABS[(idx + (e.shiftKey ? -1 : 1) + TABS.length) % TABS.length].id;
+      selectedIdx = 0;
+      render();
+    }
+    else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      if (rows[selectedIdx]) {
+        logEvent({ type: "keyboard", key: e.key === " " ? "Space" : "Enter", row: rows[selectedIdx].id });
+        activateRow(rows[selectedIdx]);
+      }
+    }
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+      e.preventDefault();
+      if (saveMode === "draft") {
+        persistDraft();
+        logEvent({ type: "keyboard", key: "Ctrl+S", savedScope: scope });
+        render();
+      }
+    }
+    else if (e.key === "Escape") {
+      e.preventDefault();
+      resetDraft();
+      logEvent({ type: "keyboard", key: "Esc", action: "discard draft" });
+      render();
+    }
+  });
+
+  elInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); commitInlineEdit(); }
+    if (e.key === "Escape") { e.preventDefault(); cancelInlineEdit(); }
+  });
+  document.getElementById("sim-apply-edit").addEventListener("click", commitInlineEdit);
+  document.getElementById("sim-cancel-edit").addEventListener("click", cancelInlineEdit);
+
+  btnSave.addEventListener("click", () => {
+    if (!fullscreen) { logEvent({ ignored: true, reason: "Press Ctrl+S in regular mode." }); return; }
+    persistDraft();
+    logEvent({ type: "click", button: "left", hitRegion: { kind: "action", id: "save" }, savedScope: scope });
+    render();
+  });
+  btnDiscard.addEventListener("click", () => {
+    if (!fullscreen) { logEvent({ ignored: true, reason: "Press Esc in regular mode." }); return; }
+    resetDraft();
+    logEvent({ type: "click", button: "left", hitRegion: { kind: "action", id: "discard" } });
+    render();
+  });
+
+  btnMode.addEventListener("click", () => {
+    fullscreen = !fullscreen;
+    btnMode.classList.toggle("on", fullscreen);
+    btnMode.textContent = fullscreen ? "tui.mode: fullscreen (mouse ON)" : "tui.mode: regular (mouse OFF)";
+    logEvent({ modeChanged: fullscreen ? "fullscreen (TuiAltScreen, SGR 1006 mouse active)" : "regular (TuiMainScreen, keyboard-only)" });
+    render();
+  });
+
+  btnSaveMode.addEventListener("click", () => {
+    saveMode = saveMode === "draft" ? "immediate" : "draft";
+    btnSaveMode.textContent = saveMode === "draft" ? "saveMode: draft (Ctrl+S)" : "saveMode: immediate";
+    if (saveMode === "immediate" && isDirty()) persistDraft();
+    render();
+  });
+
+  document.getElementById("btn-reset").addEventListener("click", () => {
+    globalLayer = { maxConcurrent: 12 };
+    projectLayer = { mode: "strict" };
+    scope = "project";
+    activeTab = "general";
+    selectedIdx = 0;
+    cancelInlineEdit();
+    resetDraft();
+    logEvent("Demo reset to initial Global + Project layers.");
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
