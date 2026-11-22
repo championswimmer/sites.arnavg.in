@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decision Model Benchmark — Quality, Latency &amp; Cost</title>
+<meta name="description" content="Compare 23 OpenRouter decision models at three skill-selection thresholds, using a manually labeled benchmark.">
+<style>
+:root{color-scheme:light dark;--bg:#fafaf7;--panel:#fff;--ink:#1a1a18;--muted:#565650;--line:#d9d8d2;--grid:#e6e5df;--accent:#166534;--accent-bg:#edf7ee;--plot:#fbfbf9;--zero:#f0f0eb;--model-light:38%;font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+@media(prefers-color-scheme:dark){:root{--bg:#121311;--panel:#1b1c1a;--ink:#ecece6;--muted:#b4b4ab;--line:#3b3c35;--grid:#35362f;--accent:#86efac;--accent-bg:#202e21;--plot:#191a18;--zero:#252621;--model-light:69%}}
+*{box-sizing:border-box}body{margin:0;color:var(--ink);background:var(--bg)}a{color:var(--accent)}a:hover{text-decoration-thickness:2px}button,input{font:inherit}button{cursor:pointer;color:var(--ink)}button:hover,summary:hover{border-color:var(--accent)}:where(button,input,a,summary,[tabindex]):focus-visible{outline:2px solid var(--accent);outline-offset:3px}.wrap{max-width:1460px;margin:auto;padding:22px clamp(14px,3vw,42px) 42px}.crumb{font-size:.84rem;color:var(--muted)}h1,h2{font-family:Georgia,"Times New Roman",serif;line-height:1.18}h1{font-size:clamp(2rem,4.6vw,3.6rem);letter-spacing:-.035em;margin:.65rem 0 .35rem}h2{font-size:1.38rem;margin:0}p{margin:.35rem 0 .7rem}.lede{color:var(--muted);max-width:78ch;margin:0 0 1.1rem}.formula{border:1px solid var(--line);background:var(--panel);padding:11px 15px;border-radius:10px;margin:0 0 14px}.formula h2{font-size:1.07rem;margin-bottom:.15rem}.formula strong{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.formula p{margin:.25rem 0 0;color:var(--muted);font-size:.87rem}.layout{display:grid;gap:12px;align-items:start}.chart-grid{display:grid;gap:12px;min-width:0}.card,.controls{background:var(--panel);border:1px solid var(--line);border-radius:11px;min-width:0}.card{padding:12px 11px 8px}.card h2{margin:0 3px}.chart-cap{color:var(--muted);font-size:.84rem;margin:4px 3px 5px;min-height:2.5em}.stage{position:relative;min-width:0}.stage svg{display:block;width:100%;overflow:visible}.stage svg text{font-size:11px;fill:var(--muted);font-family:inherit}.stage svg .grid{stroke:var(--grid);shape-rendering:crispEdges}.series{color:var(--model);opacity:1}.series[data-dimmed=true]{opacity:.16}.dot{cursor:help}.controls{padding:12px}.controls fieldset{border:0;padding:0;margin:0 0 12px;min-width:0}.controls legend{padding:0;font-weight:700;margin-bottom:5px}.settings{display:flex;flex-wrap:wrap;gap:5px}.check{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border:1px solid var(--line);border-radius:5px;cursor:pointer;font-variant-numeric:tabular-nums}.check input{accent-color:var(--accent);margin:0}.icon{width:12px;height:12px;flex:none;vertical-align:middle}.controls p,.note{font-size:.84rem;color:var(--muted)}.filter-label{display:block;font-size:.88rem;font-weight:600;margin:0 0 3px}.query{border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--ink);width:100%;padding:5px 7px}.actions{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}.actions button{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:3px 7px;font-size:.81rem}.models{display:grid;gap:3px;max-height:306px;overflow:auto;padding:4px 3px;margin:0 -3px}.model{display:flex;align-items:center;text-align:left;gap:6px;min-height:28px;width:100%;min-width:0;padding:4px 6px;border:1px solid var(--line);border-radius:5px;background:var(--panel);font-size:.74rem}.model[aria-pressed=true]{background:var(--accent-bg)}.model .name{flex:1;overflow-wrap:anywhere}.state{color:var(--muted);font-size:.72rem}.swatch{width:9px;height:9px;border-radius:50%;flex:none;background:var(--model);border:1px solid var(--model)}.model[aria-pressed=false] .swatch{background:transparent}.details{padding:8px 11px;margin:9px 0 0;min-height:3.3rem}.details p{margin:.2rem 0;font-size:.85rem}.inspect-name{font-weight:650;overflow-wrap:anywhere}#model-status{margin:0 0 4px}.empty{fill:var(--ink)!important;font-size:14px!important;font-weight:600}.tip{position:absolute;pointer-events:none;z-index:1;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:5px 8px;width:max-content;max-width:min(255px,90%);box-shadow:0 2px 8px #0002;font-size:.78rem;overflow-wrap:anywhere}.table-card{margin-top:12px;padding:8px 12px}.table-card summary{cursor:pointer;width:fit-content;font-weight:650}.table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.86rem}caption{text-align:left;color:var(--muted);padding:6px 0}th,td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}th:first-child{text-align:left}footer{margin-top:17px;color:var(--muted);font-size:.87rem;max-width:92ch}[hidden]{display:none!important}.screen-reader{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+.charts{min-width:0}@media(max-width:689px){.models{max-height:145px}}
+
+@media(min-width:690px) and (max-width:1019px){.chart-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1020px){.layout{grid-template-columns:minmax(0,1fr) clamp(270px,24%,335px)}.controls{grid-column:2;grid-row:1}.charts{grid-column:1;grid-row:1}.models{max-height:362px}}
+@media(min-width:1210px){.chart-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <nav class="crumb" aria-label="Location"><a href="/research/">Research</a> / Decision models</nav>
+  <h1>Decision Model Benchmark</h1>
+  <p class="lede">How well do models pick relevant skills? Explore 23 OpenRouter models with complete results on ten manually labeled tasks. Frozen benchmark · November 22, 2026.</p>
+  <section class="formula" aria-labelledby="formula-title">
+    <h2 id="formula-title">Picking quality</h2>
+    <strong>100 × (required picks kept − 0.25 × denied picks) ÷ 22</strong>
+    <p>100 means all 22 required picks and no denied picks. Four denied picks cost as much as one miss; optional picks are neutral. Denied picks include every pick on the two unrelated tasks. Higher is better.</p>
+  </section>
+  <noscript><p>This benchmark explorer needs JavaScript for plotting and controls. No account or API key is needed.</p></noscript>
+  <div class="layout">
+    <aside class="controls" aria-label="Chart controls">
+      <fieldset>
+        <legend>Threshold settings</legend>
+        <div id="settings" class="settings"></div>
+      </fieldset>
+      <label class="filter-label" for="query">Models</label>
+      <input id="query" class="query" type="search" placeholder="Filter model list" autocomplete="off">
+      <div class="actions"><button id="bright-all" type="button">Brighten all</button><button id="dim-all" type="button">Dim all</button></div>
+      <p id="model-status" aria-live="polite"></p>
+      <div id="models" class="models" aria-label="Model brightness controls"></div>
+      <p>Toggle a model to dim or brighten it on both charts. Focus a model button to see its values below the charts.</p>
+    </aside>
+    <div class="charts">
+      <div class="chart-grid">
+        <section class="card" aria-labelledby="latency-title">
+          <h2 id="latency-title">Quality vs. latency</h2>
+          <p class="chart-cap">Median end-to-end milliseconds per task.</p>
+          <div class="stage" id="latency-plot"></div>
+        </section>
+        <section class="card" aria-labelledby="cost-title">
+          <h2 id="cost-title">Quality vs. reported cost</h2>
+          <p class="chart-cap">USD for all 10 tasks. *$0 means zero reported; positive costs use a log scale.</p>
+          <div class="stage" id="cost-plot"></div>
+        </section>
+      </div>
+      <div class="card details" aria-label="Model values"><p id="point-detail" aria-live="polite">Hover or tap a chart point, or focus a model button, for exact values.</p></div>
+    </div>
+  </div>
+  <details class="card table-card">
+    <summary>Exact values for every model and threshold</summary>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Benchmark table (scroll horizontally if needed)"><table>
+      <caption>Each setting uses the same measured latency and cost for that model. Reported cost excludes the initial routing probe.</caption>
+      <thead><tr><th scope="col">Model</th><th scope="col">Median (ms)</th><th scope="col">p95 (ms)</th><th scope="col">10-task cost</th><th scope="col">Quality 0.30</th><th scope="col">Quality 0.40</th><th scope="col">Quality 0.50</th></tr></thead>
+      <tbody id="values"></tbody>
+    </table></div>
+  </details>
+  <footer>
+    <p>Thresholds replay the same saved 0–2 relevance scores using the cutoff <code>raw score ≥ 2 × threshold</code> and a cap of 12 skills per task. This changes which skills are picked, not the latency or cost of inference. The $0 lane is separated for readability; spacing within it does not indicate cost, and a reported $0 is not a pricing guarantee.</p>
+    <p>Scope: one account, one trial for each model and task, thirty public demo skills per task, and one manual baseline. 23 models completed all ten tasks. Results are descriptive, not a general performance ranking or an availability guarantee. <a href="https://github.com/championswimmer/pi-context-decisions">Benchmark project</a>.</p>
+  </footer>
+</main>
+<script id="benchmark-data" type="application/json">
+[
+  ["baseten/elephant-1",252.2,0.00154644,448.9,[22,4,10],[22,3,7],[22,1,7]],
+  ["baseten/groundhog-1",324.4,0.00156296,391.4,[22,2,8],[22,2,7],[21,1,4]],
+  ["baseten/joey-1",234.05,0.00044184,283.3,[21,6,1],[21,3,1],[21,1,1]],
+  ["baseten/mammoth-1",293.8,0.0044184,353.4,[22,7,11],[22,4,10],[22,0,5]],
+  ["cloudflare/clef",523.35,0,865.2,[22,10,7],[22,6,6],[21,3,4]],
+  ["cloudflare/clef-flash",389.25,0,673.9,[21,11,7],[21,4,4],[21,0,2]],
+  ["cloudflare/clef-omni",251.6,0.0074241,3872.5,[22,3,6],[22,1,4],[22,0,2]],
+  ["liquid/d1-ultra",253.85,0.001675464,794.7,[22,28,15],[22,13,14],[22,5,10]],
+  ["liquid/d1.1",265.1,0.00079784,509.2,[22,7,9],[22,2,9],[22,0,6]],
+  ["liquid/d1.2",298.3,0.00079784,463.9,[22,14,14],[22,5,10],[22,1,8]],
+  ["liquid/d1.2-ultra",287.6,0.001675464,460.2,[22,9,12],[22,4,9],[22,0,6]],
+  ["microsoft/microsoft-decision-1",461.8,0.001333248,808.8,[22,28,15],[22,22,12],[22,7,8]],
+  ["microsoft/microsoft-decision-1.1",337.95,0.001576512,714.9,[22,27,15],[22,13,13],[22,6,9]],
+  ["nace-ai/drex-max",727.9,0,1125.5,[21,2,7],[21,1,4],[21,0,1]],
+  ["nace-ai/drex-max-finance",400.6,0,530.4,[22,2,8],[21,1,4],[21,0,3]],
+  ["nace-ai/drex-v1.5",312.4,0,513,[21,7,10],[21,2,8],[21,1,6]],
+  ["nace-ai/drex-v2.0",731.85,0,1113.2,[22,6,10],[22,2,9],[22,2,7]],
+  ["perplexity/pplx-decider-flash-v1.2",327.5,0.00035744,2572.6,[22,9,11],[22,5,8],[22,2,5]],
+  ["perplexity/pplx-decider-flash-v1.3:free",224.35,0,292,[22,8,10],[22,5,8],[22,2,2]],
+  ["perplexity/pplx-decider-v1.2",310.35,0.00071488,832.3,[22,7,12],[22,3,12],[22,1,5]],
+  ["perplexity/pplx-decider-v1.3:free",309.8,0,1356.3,[22,14,14],[22,10,12],[22,0,7]],
+  ["typesafe/jev-1.13",184.6,0.00192024,332.9,[22,32,15],[22,19,14],[22,10,12]],
+  ["typesafe/jev-1.14",191.65,0.00192024,203.9,[22,32,15],[22,22,14],[22,10,11]]
+]
+</script>
+<script>
+(() => {
+  'use strict';
+  const rows = JSON.parse(document.querySelector('#benchmark-data').textContent);
+  const requiredTotal = 22;
+  const thresholds = ['0.30', '0.40', '0.50'];
+  const activeSettings = thresholds.map(() => true);
+  const highlighted = new Set(rows.map(row => row[0]));
+  const ids = id => document.getElementById(id);
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const quality = ([kept, denied]) => 100 * (kept - 0.25 * denied) / requiredTotal;
+  const money = cost => cost ? `$${cost.toFixed(6)}` : '$0 reported';
+  const ms = n => `${Number(n.toFixed(2))} ms`;
+  const human = ([kept, denied, optional]) => `${kept}/${requiredTotal} required kept, ${denied} denied, ${optional} optional`;
+  const color = index => `hsl(${Math.round((index * 137.508 + 206) % 360)} ${index % 2 ? 64 : 76}% var(--model-light))`;
+  const labels = rows.map(([name]) => name);
+  const range = { min: Math.floor(Math.min(...rows.flatMap(row => row.slice(4).map(quality))) / 10) * 10, max: 100 };
+  const zeroLane = rows.filter(row => row[2] === 0).map(row => row[0]);
+  const stageSpecs = [[ids('latency-plot'), false], [ids('cost-plot'), true]];
+  let inspected = null;
+  let pointNodes = [];
+  function elem(tag, text, attrs = {}) {
+    const node = document.createElement(tag);
+    if (text != null) node.textContent = text;
+    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+    return node;
+  }
+  function svg(tag, attrs = {}, text) {
+    const node = document.createElementNS(svgNS, tag);
+    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+    if (text != null) node.textContent = text;
+    return node;
+  }
+  function marker(i, x, y, size) {
+    if (i === 0) return svg('circle', { cx:x, cy:y, r:size, fill:'var(--plot)', stroke:'currentColor', 'stroke-width':1.7 });
+    if (i === 1) return svg('path', { d:`M${x} ${y-size}L${x+size} ${y}L${x} ${y+size}L${x-size} ${y}Z`, fill:'var(--plot)', stroke:'currentColor', 'stroke-width':1.6 });
+    return svg('rect', { x:x-size/2, y:y-size/2, width:size, height:size, fill:'currentColor' });
+  }
+  function inspect(row, setting = null) {
+    inspected = row && { row, setting };
+    const detail = ids('point-detail');
+    if (!row) { detail.textContent = 'Hover or tap a chart point, or focus a model button, for exact values.'; return; }
+    const [name, latency, cost, p95, ...stats] = row;
+    const shown = (setting === null ? thresholds.map((_, i) => i) : [setting])
+      .filter(i => activeSettings[i]);
+    const parts = shown.map(i => `${thresholds[i]}: ${quality(stats[i]).toFixed(1)} (${human(stats[i])})`);
+    detail.replaceChildren(elem('span', name, { class:'inspect-name' }), document.createTextNode(` · ${ms(latency)} median · ${ms(p95)} p95 · ${money(cost)} per 10 tasks. ${parts.length ? parts.join(' · ') : 'Turn on a threshold to see picking quality.'}`));
+  }
+  function dim(name, bright) {
+    if (bright) highlighted.add(name); else highlighted.delete(name);
+  }
+  function showBrightness() {
+    for (const btn of ids('models').querySelectorAll('.model')) {
+      const bright = highlighted.has(btn.dataset.model);
+      btn.setAttribute('aria-pressed', String(bright));
+      btn.querySelector('.state').textContent = bright ? 'Bright' : 'Dim';
+    }
+    for (const group of pointNodes) group.dataset.dimmed = String(!highlighted.has(group.dataset.model));
+    const visible = ids('models').querySelectorAll('.model:not([hidden])').length;
+    ids('model-status').textContent = `${highlighted.size} of ${rows.length} bright${visible === rows.length ? '' : ` · ${visible} matching`}`;
+  }
+  for (const [i, setting] of thresholds.entries()) {
+    const label = elem('label', null, {class:'check'});
+    const input = elem('input', null, {type:'checkbox', checked:'', value:setting});
+    const shape = svg('svg', {class:'icon', viewBox:'0 0 14 14', 'aria-hidden':'true'});
+    shape.append(marker(i, 7, 7, 4.2));
+    input.addEventListener('change', () => {
+      activeSettings[i] = input.checked;
+      render();
+      if (inspected) inspect(inspected.row, activeSettings[inspected.setting] ? inspected.setting : null);
+    });
+    label.append(input, shape, document.createTextNode(setting));
+    ids('settings').append(label);
+  }
+  rows.forEach((row, index) => {
+    const [name, latency, cost, p95, ...stats] = row;
+    const button = elem('button', null, { type:'button', class:'model', 'data-model':name, 'aria-pressed':'true', 'aria-label':name });
+    button.style.setProperty('--model', color(index));
+    button.append(elem('span', null, { class:'swatch', 'aria-hidden':'true' }), elem('span', name, { class:'name' }), elem('span', 'Bright', { class:'state', 'aria-hidden':'true' }));
+    button.addEventListener('click', () => { dim(name, !highlighted.has(name)); showBrightness(); inspect(row); });
+    button.addEventListener('focus', () => inspect(row));
+    ids('models').append(button);
+    const tr = elem('tr');
+    tr.append(elem('th', name, { scope:'row' }));
+    for (const value of [Number(latency.toFixed(2)), p95, money(cost), ...stats.map(v => quality(v).toFixed(1))]) tr.append(elem('td', String(value)));
+    ids('values').append(tr);
+  });
+  ids('query').addEventListener('input', event => {
+    const query = event.currentTarget.value.trim().toLowerCase();
+    for (const button of ids('models').querySelectorAll('button')) button.hidden = !button.dataset.model.toLowerCase().includes(query);
+    showBrightness();
+  });
+  ids('bright-all').addEventListener('click', () => { labels.forEach(name => dim(name, true)); showBrightness(); });
+  ids('dim-all').addEventListener('click', () => { highlighted.clear(); showBrightness(); });
+
+  function plot(stage, isCost) {
+    const width = Math.max(275, Math.floor(stage.getBoundingClientRect().width));
+    const narrow = width < 410, height = narrow ? 307 : 348;
+    const left = narrow ? 32 : 36, right = width - 29, top = 19, bottom = height - 53;
+    const valueY = v => bottom - 6 - (bottom-top-15) * (v-range.min) / (range.max-range.min);
+    const paidLeft = left + (narrow ? 69 : 88), minCost = .0003, maxCost = .01;
+    const positiveX = cost => paidLeft + (right-paidLeft) * Math.log(cost/minCost) / Math.log(maxCost/minCost);
+    const costX = (cost, name) => cost > 0 ? positiveX(cost) : left + 6 + (paidLeft-left-21) * zeroLane.indexOf(name) / Math.max(1, zeroLane.length-1);
+    const timeX = time => left + (right-left) * (time-100) / 700;
+    const center = 'middle';
+    const root = svg('svg', { viewBox:`0 0 ${width} ${height}`, width, height, role:'img', 'aria-label':isCost ? 'Picking quality versus reported cost. Exact values are in the table below.' : 'Picking quality versus median latency. Exact values are in the table below.' });
+    const ticks = svg('g');
+    root.append(svg('rect', { x:left, y:top, width:right-left, height:bottom-top, rx:4, fill:'var(--plot)', stroke:'var(--line)' }), ticks);
+    if (isCost) root.insertBefore(svg('rect', { x:left+1, y:top+1, width:paidLeft-left-8, height:bottom-top-2, fill:'var(--zero)' }), ticks);
+    const addLabel = (x, y, str, anchor = center) => ticks.append(svg('text', {x,y,'text-anchor':anchor},str));
+    for (let v = range.min; v <= range.max; v += 10) {
+      const y = valueY(v);
+      ticks.append(svg('line',{x1:left,x2:right,y1:y,y2:y,class:'grid'}));
+      addLabel(left-7,y+4,v,'end');
+    }
+    const xTicks = isCost ? [[minCost,'$0.0003'], [.001,'$0.001'], [.003,'$0.003'], [maxCost,'$0.01']] : (narrow ? [100,300,500,700] : [100,200,300,400,500,600,700,800]).map(v=>[v,v]);
+    for (const [v, label] of xTicks) {
+      const x = isCost ? positiveX(v) : timeX(v);
+      ticks.append(svg('line', { x1:x,x2:x,y1:top,y2:bottom,class:'grid' }));
+      addLabel(x,bottom+16,label);
+    }
+    if (isCost) addLabel(left+(paidLeft-left-8)/2,bottom+16,'$0*');
+    addLabel((left+right)/2,bottom+36,isCost ? 'Reported USD per 10 tasks' : 'Median milliseconds per task');
+    if (!activeSettings.some(Boolean)) {
+      root.append(svg('text', { x:(left+right)/2,y:(top+bottom)/2,class:'empty','text-anchor':center }, 'Turn on a threshold to show points'));
+      stage.replaceChildren(root);
+      return;
+    }
+    const tip = elem('div', '', {class:'tip', hidden:''});
+    const locate = (event, text) => {
+      const bound = stage.getBoundingClientRect();
+      tip.textContent = text;
+      tip.hidden = false;
+      tip.style.left = `${Math.max(1, Math.min(bound.width-tip.offsetWidth, event.clientX-bound.left+9))}px`;
+      tip.style.top = `${Math.max(1, Math.min(bound.height-tip.offsetHeight, event.clientY-bound.top+9))}px`;
+    };
+    rows.forEach((row, index) => {
+      const [name, latency, cost, , ...stats] = row;
+      const x = isCost ? costX(cost,name) : timeX(latency);
+      const points = stats.map((v,i) => [i,valueY(quality(v))]).filter(([i])=>activeSettings[i]);
+      const group = svg('g', { class:'series','data-model':name,'data-dimmed':String(!highlighted.has(name)) });
+      group.style.setProperty('--model', color(index));
+      pointNodes.push(group);
+      if (points.length > 1) group.append(svg('line', { x1:x, x2:x, y1:Math.min(...points.map(p=>p[1])), y2:Math.max(...points.map(p=>p[1])), stroke:'currentColor','stroke-width':1.6,opacity:.65 }));
+      for (const [i,y] of points) {
+        const dot = svg('g', { class:'dot','data-setting':thresholds[i] });
+        const text = `${name} · ${thresholds[i]} · quality ${quality(stats[i]).toFixed(1)} · ${isCost ? money(cost) : ms(latency)}`;
+        dot.append(marker(i,x,y, i === 0 ? 6.6 : 5.2), svg('circle',{cx:x,cy:y,r:8,fill:'transparent'}));
+        dot.addEventListener('pointermove', event => locate(event,text));
+        dot.addEventListener('pointerleave', () => { tip.hidden = true; });
+        dot.addEventListener('click', () => inspect(row,i));
+        group.append(dot);
+      }
+      root.append(group);
+    });
+    stage.replaceChildren(root,tip);
+  }
+  function render() {
+    pointNodes = [];
+    for (const [stage,isCost] of stageSpecs) plot(stage,isCost);
+    showBrightness();
+  }
+  render();
+  let frame = 0;
+  window.addEventListener('resize', () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(render); });
+})();
+</script>
+</body>
+</html>
