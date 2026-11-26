@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pi extension banners</title>
+<meta name="description" content="Horizontal and vertical banners for Arnav Gupta's pi coding-agent extensions.">
+<style>
+:root{--bg:#0d1116;--panel:#161d27;--line:#495059;--text:#ebe7e4;--muted:#9fa4ab;--accent:#F1BE58}
+@media (prefers-color-scheme:light){:root{--bg:#f3f2f0;--panel:#fff;--line:#c9c4bf;--text:#1b1f24;--muted:#5c5650;--accent:#b86b52}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+main{max-width:1200px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:1.6rem;margin:0 0 4px}
+h2{font-size:1.1rem;margin:40px 0 4px}
+p{color:var(--muted);margin:0 0 16px}
+a{color:var(--accent)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.btns button{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:6px;width:36px;height:36px;font:inherit;cursor:pointer}
+.btns button:hover{border-color:var(--accent)}
+.track{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding:8px 2px 16px;scrollbar-color:var(--line) transparent}
+.card{flex:0 0 auto;margin:0;scroll-snap-align:start;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px}
+.card img{display:block;height:auto;border-radius:4px}
+.h .card{width:min(560px,85vw)} .h img{width:100%}
+.v .card{width:min(300px,70vw)} .v img{width:100%}
+figcaption{padding:8px 4px 2px;font-size:.9rem}
+figcaption span{display:block;color:var(--muted);font-size:.8rem}
+</style></head><body><main>
+<h1>Pi extension banners</h1>
+<p>Banners for my <a href="https://github.com/badlogic/pi-mono">pi</a> coding-agent extensions. Images are linked straight from GitHub; click one to open it full size.</p>
+
+<section>
+<div class="bar"><h2>Horizontal (1200&times;630)</h2><div class="btns"><button type="button" data-t="h" data-d="-1" aria-label="Previous">&larr;</button> <button type="button" data-t="h" data-d="1" aria-label="Next">&rarr;</button></div></div>
+<p>For GitHub, npm and the pi package gallery.</p>
+<div class="track h" id="h">
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-background-monitor/main/assets/banner.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-background-monitor/main/assets/banner.png" alt="pi-background-monitor banner" width="1200" height="630" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-background-monitor">pi-background-monitor</a> <span>npm i pi-background-monitor</span></figcaption></figure>
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-cache-graph/main/assets/banner.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-cache-graph/main/assets/banner.png" alt="pi-cache-graph banner" width="1200" height="630" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-cache-graph">pi-cache-graph</a> <span>npm i pi-cache-graph</span></figcaption></figure>
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-checklist/main/assets/banner.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-checklist/main/assets/banner.png" alt="pi-checklist banner" width="1200" height="630" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-checklist">pi-checklist</a> <span>npm i pi-checklist</span></figcaption></figure>
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-context-decisions/main/assets/banner.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-context-decisions/main/assets/banner.png" alt="pi-context-decisions banner" width="1200" height="630" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-context-decisions">pi-context-decisions</a> <span>npm i pi-context-decisions</span></figcaption></figure>
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-context-prune/main/assets/banner.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-context-prune/main/assets/banner.png" alt="pi-context-prune banner" width="1200" height="630" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-context-prune">pi-context-prune</a> <span>npm i pi-context-prune</span></figcaption></figure>
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-context-usage/main/assets/banner.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-context-usage/main/assets/banner.png" alt="pi-context-usage banner" width="1200" height="630" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-context-usage">pi-context-usage</a> <span>npm i pi-context-usage</span></figcaption></figure>
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-faster/main/assets/banner.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-faster/main/assets/banner.png" alt="pi-faster banner" width="1200" height="630" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-faster">pi-faster</a> <span>npm i pi-faster</span></figcaption></figure>
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-gauge/main/assets/banner.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-gauge/main/assets/banner.png" alt="pi-gauge banner" width="1200" height="630" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-gauge">pi-gauge</a> <span>npm i pi-gauge</span></figcaption></figure>
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-gh-footer/main/assets/banner.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-gh-footer/main/assets/banner.png" alt="pi-gh-footer banner" width="1200" height="630" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-gh-footer">pi-gh-footer</a> <span>npm i pi-gh-footer</span></figcaption></figure>
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-subagent-manager/main/assets/banner.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-subagent-manager/main/assets/banner.png" alt="pi-subagent-manager banner" width="1200" height="630" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-subagent-manager">pi-subagent-manager</a> <span>npm i pi-subagent-manager</span></figcaption></figure>
+</div>
+</section>
+
+<section>
+<div class="bar"><h2>Vertical (1080&times;1920)</h2><div class="btns"><button type="button" data-t="v" data-d="-1" aria-label="Previous">&larr;</button> <button type="button" data-t="v" data-d="1" aria-label="Next">&rarr;</button></div></div>
+<p>Story-sized, for sharing on phones.</p>
+<div class="track v" id="v">
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-background-monitor/main/assets/banner-vertical.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-background-monitor/main/assets/banner-vertical.png" alt="pi-background-monitor banner" width="1080" height="1920" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-background-monitor">pi-background-monitor</a> <span>npm i pi-background-monitor</span></figcaption></figure>
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-cache-graph/main/assets/banner-vertical.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-cache-graph/main/assets/banner-vertical.png" alt="pi-cache-graph banner" width="1080" height="1920" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-cache-graph">pi-cache-graph</a> <span>npm i pi-cache-graph</span></figcaption></figure>
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-checklist/main/assets/banner-vertical.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-checklist/main/assets/banner-vertical.png" alt="pi-checklist banner" width="1080" height="1920" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-checklist">pi-checklist</a> <span>npm i pi-checklist</span></figcaption></figure>
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-context-decisions/main/assets/banner-vertical.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-context-decisions/main/assets/banner-vertical.png" alt="pi-context-decisions banner" width="1080" height="1920" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-context-decisions">pi-context-decisions</a> <span>npm i pi-context-decisions</span></figcaption></figure>
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-context-prune/main/assets/banner-vertical.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-context-prune/main/assets/banner-vertical.png" alt="pi-context-prune banner" width="1080" height="1920" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-context-prune">pi-context-prune</a> <span>npm i pi-context-prune</span></figcaption></figure>
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-context-usage/main/assets/banner-vertical.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-context-usage/main/assets/banner-vertical.png" alt="pi-context-usage banner" width="1080" height="1920" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-context-usage">pi-context-usage</a> <span>npm i pi-context-usage</span></figcaption></figure>
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-faster/main/assets/banner-vertical.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-faster/main/assets/banner-vertical.png" alt="pi-faster banner" width="1080" height="1920" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-faster">pi-faster</a> <span>npm i pi-faster</span></figcaption></figure>
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-gauge/main/assets/banner-vertical.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-gauge/main/assets/banner-vertical.png" alt="pi-gauge banner" width="1080" height="1920" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-gauge">pi-gauge</a> <span>npm i pi-gauge</span></figcaption></figure>
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-gh-footer/main/assets/banner-vertical.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-gh-footer/main/assets/banner-vertical.png" alt="pi-gh-footer banner" width="1080" height="1920" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-gh-footer">pi-gh-footer</a> <span>npm i pi-gh-footer</span></figcaption></figure>
+<figure class="card"><a href="https://raw.githubusercontent.com/championswimmer/pi-subagent-manager/main/assets/banner-vertical.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/championswimmer/pi-subagent-manager/main/assets/banner-vertical.png" alt="pi-subagent-manager banner" width="1080" height="1920" loading="lazy"></a><figcaption><a href="https://github.com/championswimmer/pi-subagent-manager">pi-subagent-manager</a> <span>npm i pi-subagent-manager</span></figcaption></figure>
+</div>
+</section>
+</main>
+<script>
+document.querySelectorAll(".btns button").forEach(function(b){
+  b.addEventListener("click",function(){
+    var t=document.getElementById(b.dataset.t);
+    t.scrollBy({left:Number(b.dataset.d)*t.clientWidth*0.8,behavior:"smooth"});
+  });
+});
+</script>
+</body></html>
